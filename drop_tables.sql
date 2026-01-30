@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS run_slots CASCADE;
+DROP TABLE IF EXISTS convention_classes CASCADE;

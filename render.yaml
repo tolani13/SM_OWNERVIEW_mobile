@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: studio-maestro-api
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Set your Postgres connection string in the dashboard and name it DATABASE_URL
+      # - key: DATABASE_URL
+      #   value: <postgres-connection-string>
+    disk:
+      name: tmp
+      sizeGB: 1
+    # Optional region pin; uncomment and set to your closest region
+    # region: oregon

@@ -1,0 +1,47 @@
+Please update the Studio Maestro app with the following:
+
+Fix all broken links and actions:
+
+Studio: “Add Dancer”, “Add Class”, “Edit” on class schedule, “Room Bookings → Manage”, and “Add Teacher” must all open working forms that save and update the data.
+
+Routines: “New Routine” must work end-to-end (create routine with name, style, type, assign dancers).
+
+Conventions: allow editing convention sessions (teacher, room, time, level).
+
+Competitions: add a clear “Add Competition” flow (name, dates, location).
+
+Run sheet: allow editing run slots (time, stage, order, category) in addition to notes.
+
+Run sheet improvements:
+
+Add fields on each run slot for placement/award (e.g. placement text and an optional special award text).
+
+Visually highlight “our” studio’s routines in the run sheet (e.g., background or badge on those rows).
+
+Finance improvements:
+
+In Studio Fees: allow defining monthly tuition per age group (Mini/Junior/Teen/Senior) and show each dancer’s age group and monthly rate with a paid/unpaid toggle.
+
+In Costume Fees vs Comp Fees: give each its own accent color so they are easy to distinguish.
+
+Costume fees must be tracked per dancer per routine (a dancer may have costume paid for a solo but still owe for a group routine).
+
+Studio / Teachers / Solos:
+
+Under Studio → Teachers: show teacher name, small photo/avatar, classes they teach, and whether they are available for solo/private sessions.
+
+Add ability to schedule simple “solo practice” or private sessions with a teacher (even if it’s just a basic time-slot list per teacher for now).
+
+Allow creating “special classes / guest choreographer” events with fields like title, date/time, teacher/guest, target age group, room, and show them either in Studio or Announcements.
+
+Announcements:
+
+Allow a pinned announcement at the top of the Announcements page for permanent studio policies; normal announcements appear below by date.
+
+Dancer Profile:
+
+Add fields for parent/guardian name(s), parent contact (phone/email), emergency contact, and a free-text “Studio Notes” field (for allergies, medical notes, etc.).
+
+Mobile:
+
+Either wire the people icon in the top-right on mobile to a useful “People” overlay (Dancers / Teachers) or remove it so there is no dead icon.
