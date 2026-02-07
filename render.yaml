@@ -9,6 +9,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NPM_CONFIG_PRODUCTION
+        value: "false" # install devDependencies so tsx is available for build
       # Set your Postgres connection string in the dashboard and name it DATABASE_URL
       # - key: DATABASE_URL
       #   value: <postgres-connection-string>

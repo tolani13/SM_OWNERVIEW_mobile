@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { 
-  Dancer, 
-  InsertDancer, 
-  Teacher, 
-  InsertTeacher, 
-  Routine, 
+import type {
+  Dancer,
+  InsertDancer,
+  Teacher,
+  InsertTeacher,
+  Routine,
   InsertRoutine,
   Competition,
   InsertCompetition,
@@ -22,39 +22,35 @@ import type {
   InsertAnnouncement,
   CompetitionRegistration,
   InsertCompetitionRegistration,
-  StudioSettings, 
+  StudioSettings,
   InsertStudioSettings,
-  Policy, 
+  Policy,
   InsertPolicy,
-  PolicyAgreement, 
+  PolicyAgreement,
   InsertPolicyAgreement,
-  Recital, 
+  Recital,
   InsertRecital,
-  RecitalLineup, 
-  InsertRecitalLineup
+  RecitalLineup,
+  InsertRecitalLineup,
 } from "@server/schema";
-import { mockDancers, mockRoutines, mockCompetitions, mockStudioFees } from "@/lib/mockData";
 
-// Dancers - MOCK DATA
+// Helper to keep a minimal graceful fallback while removing mock data dependencies
+function safeJsonFetch<T>(url: string): Promise<T> {
+  return fetch(url).then(async (res) => {
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || `Request failed: ${res.status}`);
+    }
+    return res.json();
+  });
+}
+
+// Dancers
 export function useDancers() {
   return useQuery({
     queryKey: ["dancers"],
-    queryFn: async () => {
-      return mockDancers.map(d => ({
-        id: d.id,
-        firstName: d.firstName,
-        lastName: d.lastName,
-        age: d.age,
-        status: d.isActive ? 'Active' : 'Inactive',
-        email: `${d.firstName.toLowerCase()}.${d.lastName.toLowerCase()}@example.com`,
-        phone: '555-0100',
-        emergencyContact: 'Parent',
-        emergencyPhone: '555-0101',
-        medicalNotes: null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }));
-    }
+    queryFn: async () => safeJsonFetch<Dancer[]>("/api/dancers"),
+    placeholderData: [],
   });
 }
 
@@ -155,22 +151,12 @@ export function useUpdateTeacher() {
   });
 }
 
-// Routines - MOCK DATA
+// Routines
 export function useRoutines() {
   return useQuery({
     queryKey: ["routines"],
-    queryFn: async () => {
-      return mockRoutines.map(r => ({
-        id: r.id,
-        name: r.name,
-        style: r.style,
-        duration: r.duration,
-        ageLevel: r.style,
-        notes: null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }));
-    }
+    queryFn: async () => safeJsonFetch<Routine[]>("/api/routines"),
+    placeholderData: [],
   });
 }
 
@@ -223,46 +209,19 @@ export function useDeleteRoutine() {
   });
 }
 
-// Competitions - MOCK DATA
+// Competitions
 export function useCompetitions() {
   return useQuery({
     queryKey: ["competitions"],
-    queryFn: async () => {
-      return mockCompetitions.map(c => ({
-        id: c.id,
-        name: c.name,
-        location: c.location,
-        startDate: c.date,
-        endDate: c.date,
-        status: c.status,
-        registrationDeadline: c.date,
-        notes: null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }));
-    }
+    queryFn: async () => safeJsonFetch<Competition[]>("/api/competitions"),
+    placeholderData: [],
   });
 }
 
 export function useCompetition(id: string) {
   return useQuery({
     queryKey: ["competitions", id],
-    queryFn: async () => {
-      const comp = mockCompetitions.find(c => c.id === id);
-      if (!comp) throw new Error('Competition not found');
-      return {
-        id: comp.id,
-        name: comp.name,
-        location: comp.location,
-        startDate: comp.date,
-        endDate: comp.date,
-        status: comp.status,
-        registrationDeadline: comp.date,
-        notes: null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-    },
+    queryFn: async () => safeJsonFetch<Competition>(`/api/competitions/${id}`),
     enabled: !!id,
   });
 }
@@ -674,28 +633,15 @@ export function useDeleteAnnouncement() {
   });
 }
 
-// Fees - MOCK DATA
+// Fees
 export function useFees(dancerId?: string) {
   return useQuery({
     queryKey: ["fees", dancerId],
     queryFn: async () => {
-      const fees = mockStudioFees.map(f => ({
-        id: f.id,
-        dancerId: f.dancerId,
-        type: 'Tuition' as const,
-        amount: f.monthlyTuition.toString(),
-        dueDate: new Date().toISOString(),
-        status: f.status,
-        description: 'Monthly Tuition',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }));
-      
-      if (dancerId) {
-        return fees.filter(f => f.dancerId === dancerId);
-      }
-      return fees;
-    }
+      const url = dancerId ? `/api/fees?dancerId=${dancerId}` : "/api/fees";
+      return safeJsonFetch<Fee[]>(url);
+    },
+    placeholderData: [],
   });
 }
 

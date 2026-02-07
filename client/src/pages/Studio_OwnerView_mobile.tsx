@@ -126,8 +126,14 @@ export default function Studio() {
         await updateStudioClass.mutateAsync({
           id: editingClassId,
           data: {
-            ...newClass,
-            level: levelString
+            name: newClass.name!,
+            day: newClass.day!,
+            time: newClass.time!,
+            level: levelString,
+            type: newClass.type || "Weekly",
+            description: newClass.description || "",
+            cost: newClass.cost || "",
+            teacherId: newClass.teacherId || null
           }
         });
         toast.success("Class updated successfully!");

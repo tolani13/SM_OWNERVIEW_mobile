@@ -98,7 +98,33 @@ export const competitionRegistrations = pgTable("competition_registrations", {
 export type CompetitionRegistration = typeof competitionRegistrations.$inferSelect;
 export type InsertCompetitionRegistration = typeof competitionRegistrations.$inferInsert;
 
-// ========== RUN SLOTS ==========
+// ========== COMPETITION RUN SHEETS ==========
+export const competitionRunSheets = pgTable("competition_run_sheets", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  competitionId: text("competition_id").notNull().references(() => competitions.id, { onDelete: "cascade" }),
+  
+  // Core Fields (editable by user)
+  entryNumber: text("entry_number"), // Competition entry # (e.g., "1", "42", "248")
+  routineName: text("routine_name").notNull(), // Routine name
+  division: text("division").notNull(), // Mini, Junior, Teen, Senior, etc.
+  style: text("style").notNull(), // Jazz, Ballet, Contemporary, etc.
+  groupSize: text("group_size").notNull(), // Solo, Duo/Trio, Small Group, etc.
+  studioName: text("studio_name").notNull(), // Studio name
+  performanceTime: text("performance_time").notNull(), // 12hr format without AM/PM (e.g., "1:30", "11:45")
+  
+  // Optional Fields
+  day: text("day"), // Friday, Saturday, Sunday
+  notes: text("notes"), // Owner notes
+  placement: text("placement"), // 1st, 2nd, 3rd, etc.
+  award: text("award"), // Special awards
+  
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+export type CompetitionRunSheet = typeof competitionRunSheets.$inferSelect;
+export type InsertCompetitionRunSheet = typeof competitionRunSheets.$inferInsert;
+
+// ========== RUN SLOTS (LEGACY - Keep for backward compatibility) ==========
 export const runSlots = pgTable("run_slots", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
   competitionId: text("competition_id").notNull().references(() => competitions.id, { onDelete: "cascade" }),
@@ -350,3 +376,15 @@ export const studioSettings = pgTable("studio_settings", {
 
 export type StudioSettings = typeof studioSettings.$inferSelect;
 export type InsertStudioSettings = typeof studioSettings.$inferInsert;
+
+// ========== RELATIONS ==========
+export const competitionsRelations = relations(competitions, ({ many }) => ({
+  runSheets: many(competitionRunSheets)
+}));
+
+export const competitionRunSheetsRelations = relations(competitionRunSheets, ({ one }) => ({
+  competition: one(competitions, {
+    fields: [competitionRunSheets.competitionId],
+    references: [competitions.id]
+  })
+}));

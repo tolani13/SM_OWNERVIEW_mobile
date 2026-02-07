@@ -1,25 +1,37 @@
+import { useState } from "react";
 import { Layout } from "@/components/Layout";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { Plus, Search, ChevronRight, Music, Save, DollarSign } from "lucide-react";
-import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Plus, Search, ChevronRight, Music, Save, DollarSign, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { useRoutines, useCreateRoutine, useUpdateRoutine, useDeleteRoutine, useDancers } from "@/hooks/useData";
-import type { Routine, InsertRoutine } from "@server/schema";
+import {
+  useRoutines,
+  useCreateRoutine,
+  useUpdateRoutine,
+  useDeleteRoutine,
+  useDancers,
+} from "@/hooks/useData";
+import type { InsertRoutine } from "@server/schema";
 
 export default function Routines() {
     const { data: routines = [], isLoading: routinesLoading } = useRoutines();
@@ -177,13 +189,29 @@ export default function Routines() {
                     </Table>
                 </div>
 
-                <Sheet open={!!selectedRoutineId} onOpenChange={(open) => !open && setSelectedRoutineId(null)}>
-                    <SheetContent className="w-[400px] sm:w-[540px] overflow-y-auto">
+                <Dialog open={!!selectedRoutineId} onOpenChange={(open) => !open && setSelectedRoutineId(null)}>
+                    <DialogContent className="max-w-3xl w-[720px] max-h-[90vh] overflow-y-auto">
                         {selectedRoutine && (
-                            <div className="space-y-8 py-6">
-                                <div className="border-b pb-6">
-                                    <SheetTitle className="text-2xl font-display mb-1">Edit Routine</SheetTitle>
-                                    <SheetDescription>Update details and cast for {selectedRoutine.name}.</SheetDescription>
+                            <div className="space-y-8 py-2">
+                                <div className="flex items-center justify-between border-b pb-4">
+                                    <div>
+                                      <DialogHeader className="space-y-1">
+                                        <DialogTitle className="text-2xl font-display">Edit Routine</DialogTitle>
+                                        <DialogDescription>Update details and cast for {selectedRoutine.name}.</DialogDescription>
+                                      </DialogHeader>
+                                    </div>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => {
+                                        if (!confirm("Delete this routine? This cannot be undone.")) return;
+                                        deleteRoutine.mutate(selectedRoutine.id, {
+                                          onSuccess: () => setSelectedRoutineId(null),
+                                        });
+                                      }}
+                                    >
+                                      <Trash2 className="w-4 h-4 mr-1" /> Delete
+                                    </Button>
                                 </div>
 
                                 <div className="space-y-4">
@@ -234,8 +262,7 @@ export default function Routines() {
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center">
                                         <h3 className="font-semibold text-lg">Cast List</h3>
-                                    <Badge variant="secondary">{(selectedRoutine.dancerIds || []).length} Selected</Badge>
-                                    <Badge variant="secondary">{selectedRoutine.dancerIds.length} Selected</Badge>
+                                        <Badge variant="secondary">{(selectedRoutine.dancerIds || []).length} Selected</Badge>
                                     </div>
                                     <Card>
                                         <CardContent className="p-4">
@@ -308,15 +335,17 @@ export default function Routines() {
                                 </Button>
                             </div>
                         )}
-                    </SheetContent>
-                </Sheet>
+                    </DialogContent>
+                </Dialog>
 
-                <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                    <SheetContent className="w-[400px] sm:w-[540px] overflow-y-auto">
-                        <div className="space-y-8 py-6">
-                            <div className="border-b pb-6">
-                                <SheetTitle className="text-2xl font-display mb-1">Create Routine</SheetTitle>
-                                <SheetDescription>Add a new routine to your studio.</SheetDescription>
+                <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                    <DialogContent className="max-w-3xl w-[720px] max-h-[90vh] overflow-y-auto">
+                        <div className="space-y-8 py-2">
+                            <div className="border-b pb-4">
+                                <DialogHeader>
+                                  <DialogTitle className="text-2xl font-display mb-1">Create Routine</DialogTitle>
+                                  <DialogDescription>Add a new routine to your studio.</DialogDescription>
+                                </DialogHeader>
                             </div>
 
                             <div className="space-y-4">
@@ -418,8 +447,8 @@ export default function Routines() {
                                 <Plus className="w-4 h-4 mr-2" /> Create Routine
                             </Button>
                         </div>
-                    </SheetContent>
-                </Sheet>
+                    </DialogContent>
+                </Dialog>
             </div>
         </Layout>
     )

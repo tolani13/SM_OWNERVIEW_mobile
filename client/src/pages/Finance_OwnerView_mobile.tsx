@@ -30,6 +30,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { Slider } from "@/components/ui/slider";
 import {
   Dialog,
   DialogContent,
@@ -108,6 +109,12 @@ export default function Finance() {
   const [rateEffectiveDate, setRateEffectiveDate] = useState(
     new Date().toISOString().split("T")[0],
   );
+  const [paidOverrides, setPaidOverrides] = useState<Record<string, boolean>>({});
+
+  const handleRateChange = (level: string, value: number[]) => {
+    const next = value?.[0] ?? 0;
+    setTuitionRates((prev) => ({ ...prev, [level]: Math.max(0, next) }));
+  };
 
   // Costume Edit State
   const [editingCostumeFee, setEditingCostumeFee] = useState<{
@@ -136,12 +143,14 @@ export default function Finance() {
         );
 
         if (existing) {
-          matrix[dancer.id][index] = existing;
+          const paid = paidOverrides[existing.id] ?? existing.paid;
+          matrix[dancer.id][index] = { ...existing, paid };
         } else {
+          const rate = dancer.level ? tuitionRates[dancer.level] ?? 0 : 0;
           matrix[dancer.id][index] = {
             id: `virt-tuition-${dancer.id}-${index}`,
             type: "Tuition",
-            amount: tuitionRates[dancer.level] || 0,
+            amount: rate,
             paid: false,
             // store an ISO date; month interpreted via getUTCMonth above
             dueDate: new Date(2024, index, 1).toISOString(),
@@ -153,12 +162,14 @@ export default function Finance() {
     });
 
     setTuitionMatrix(matrix);
-  }, [fees, tuitionRates, dancers]);
+  }, [fees, tuitionRates, dancers, paidOverrides]);
 
   const toggleFeePaid = (id: string) => {
     const fee = fees.find((f) => f.id === id);
+    const currentPaid = paidOverrides[id] ?? fee?.paid ?? false;
+    setPaidOverrides((prev) => ({ ...prev, [id]: !currentPaid }));
     if (!fee) return;
-    updateFee.mutate({ id, data: { paid: !fee.paid } });
+    updateFee.mutate({ id, data: { paid: !currentPaid } });
   };
 
   if (feesLoading || dancersLoading || competitionsLoading || routinesLoading) {
@@ -169,6 +180,33 @@ export default function Finance() {
         </div>
       </Layout>
     );
+  }
+
+  const hasAnyData = fees.length > 0 || dancers.length > 0;
+
+  const renderEmptyFinance = () => (
+    <Layout>
+      <div className="flex items-center justify-center h-72">
+        <div className="text-center space-y-3 max-w-md">
+          <h2 className="text-xl font-semibold">No finance data yet</h2>
+          <p className="text-muted-foreground text-sm">
+            Add dancers and fees to see tuition, competition, and costume tracking.
+          </p>
+          <div className="flex items-center justify-center gap-2">
+            <Button asChild variant="outline" size="sm">
+              <a href="/dancers">Add a dancer</a>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <a href="/competitions">Go to competitions</a>
+            </Button>
+          </div>
+        </div>
+      </div>
+    </Layout>
+  );
+
+  if (!hasAnyData) {
+    return renderEmptyFinance();
   }
 
   const toggleTuitionMonth = (dancerId: string, monthIndex: number) => {
@@ -183,8 +221,22 @@ export default function Finance() {
         dueDate: fee.dueDate,
         dancerId: fee.dancerId,
       });
+      setTuitionMatrix((prev) => ({
+        ...prev,
+        [dancerId]: {
+          ...(prev[dancerId] || {}),
+          [monthIndex]: { ...fee, paid: true },
+        },
+      }));
     } else {
       toggleFeePaid(fee.id);
+      setTuitionMatrix((prev) => ({
+        ...prev,
+        [dancerId]: {
+          ...(prev[dancerId] || {}),
+          [monthIndex]: { ...fee, paid: !fee.paid },
+        },
+      }));
     }
   };
 
@@ -340,22 +392,25 @@ export default function Finance() {
                   </Button>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex flex-wrap gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {Object.entries(tuitionRates).map(([level, rate]) => (
-                      <div
-                        key={level}
-                        className="flex flex-col items-center p-3 bg-secondary/10 rounded-lg min-w-[80px]"
-                      >
-                        <span className="text-xs font-bold uppercase text-muted-foreground">
-                          {level}
-                        </span>
-                        <span className="font-bold text-lg">${rate}</span>
+                      <div key={level} className="p-3 rounded-lg border bg-secondary/10">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-bold uppercase text-muted-foreground">{level}</span>
+                          <span className="font-bold text-lg">${rate}</span>
+                        </div>
+                        <Slider
+                          value={[rate]}
+                          min={0}
+                          max={400}
+                          step={5}
+                          onValueChange={(v) => handleRateChange(level, v)}
+                        />
                       </div>
                     ))}
                   </div>
                   <div className="text-xs text-muted-foreground mt-4 text-right">
-                    Effective as of:{" "}
-                    {new Date(rateEffectiveDate).toLocaleDateString()}
+                    Effective as of: {new Date(rateEffectiveDate).toLocaleDateString()}
                   </div>
                 </CardContent>
               </Card>
@@ -415,6 +470,7 @@ export default function Finance() {
                             </TableCell>
                             {MONTHS.map((_, index) => {
                               const fee = tuitionMatrix[dancer.id]?.[index];
+                              const paid = fee ? (paidOverrides[fee.id] ?? fee.paid) : false;
                               return (
                                 <TableCell
                                   key={index}
@@ -422,7 +478,7 @@ export default function Finance() {
                                 >
                                   <div className="flex justify-center">
                                     <Switch
-                                      checked={!!fee?.paid}
+                                      checked={!!paid}
                                       onCheckedChange={() =>
                                         toggleTuitionMonth(dancer.id, index)
                                       }
@@ -450,17 +506,17 @@ export default function Finance() {
           >
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {competitions.map((comp) => {
-                const feesForComp = compFees.filter(
-                  (f) => f.competitionId === comp.id,
-                );
+                        const feesForComp = compFees.filter(
+                          (f) => f.competitionId === comp.id,
+                        );
                 if (feesForComp.length === 0) return null;
 
                 const total = feesForComp.reduce(
                   (sum, f) => sum + parseAmount(f.amount),
                   0,
                 );
-                const paid = feesForComp
-                  .filter((f) => f.paid)
+                        const paid = feesForComp
+                          .filter((f) => paidOverrides[f.id] ?? f.paid)
                   .reduce(
                     (sum, f) => sum + parseAmount(f.amount),
                     0,
@@ -549,6 +605,7 @@ export default function Finance() {
                         const routine = routines.find(
                           (r) => r.id === fee.routineId,
                         );
+                        const paid = paidOverrides[fee.id] ?? fee.paid ?? false;
 
                         return (
                           <div
@@ -598,7 +655,7 @@ export default function Finance() {
                                 </button>
                               </div>
                               <Switch
-                                checked={fee.paid}
+                                checked={paid}
                                 onCheckedChange={() => toggleFeePaid(fee.id)}
                                 className="data-[state=checked]:bg-green-500"
                               />
@@ -689,7 +746,9 @@ export default function Finance() {
                     <div className="col-span-2 text-right">Paid</div>
                   </div>
                   <div className="space-y-1">
-                    {selectedCompEntries.map((fee) => (
+                        {selectedCompEntries.map((fee) => {
+                          const paid = paidOverrides[fee.id] ?? fee.paid;
+                          return (
                       <div
                         key={fee.id}
                         className="grid grid-cols-12 items-center p-4 bg-white rounded-xl shadow-sm border border-gray-50 hover:border-blue-500/20 transition-all"
@@ -718,13 +777,14 @@ export default function Finance() {
                         </div>
                         <div className="col-span-2 flex justify-end">
                           <Switch
-                            checked={fee.paid}
+                            checked={paid}
                             onCheckedChange={() => toggleFeePaid(fee.id)}
                             className="data-[state=checked]:bg-green-500"
                           />
                         </div>
                       </div>
-                    ))}
+                    );
+                    })}
                   </div>
                 </div>
               </div>
