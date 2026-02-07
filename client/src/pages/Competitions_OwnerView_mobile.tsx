@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CalendarDays, MapPin, Clock, Eye, EyeOff, Edit2, FileText, CheckCircle2, Plus, Trophy, Star, Users, DollarSign, Loader2 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { CalendarDays, MapPin, Clock, Eye, EyeOff, Edit2, FileText, CheckCircle2, Plus, Trophy, Star, Users, DollarSign, Loader2, Trash2 } from "lucide-react";
+import { CompetitionRunSheet } from "@/components/CompetitionRunSheet";
+import { useState, useMemo, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +31,7 @@ import {
   useGenerateCompetitionFees,
   useFees
 } from "@/hooks/useData";
+import { useQuery } from "@tanstack/react-query";
 import type { Competition, RunSlot, ConventionClass, InsertCompetition, InsertRunSlot, InsertConventionClass, Routine, Dancer, CompetitionRegistration } from "@server/schema";
 
 // Helper functions
@@ -78,6 +80,13 @@ export default function Competitions() {
     const [selectedCompId, setSelectedCompId] = useState<string | null>(null);
     const [isAddCompOpen, setIsAddCompOpen] = useState(false);
     
+    // Editable competition header state
+    const [editName, setEditName] = useState("");
+    const [editLocation, setEditLocation] = useState("");
+    const [editStartDate, setEditStartDate] = useState("");
+    const [editEndDate, setEditEndDate] = useState("");
+    const [deleteConfirm, setDeleteConfirm] = useState(false);
+
     // Form state for new competition
     const [newCompName, setNewCompName] = useState("");
     const [newCompLocation, setNewCompLocation] = useState("");
@@ -121,6 +130,34 @@ export default function Competitions() {
         [competitions, selectedCompId]
     );
 
+    // Sync edit fields when selection changes
+    useEffect(() => {
+      if (selectedComp) {
+        setEditName(selectedComp.name || "");
+        setEditLocation(selectedComp.location || "");
+        setEditStartDate(selectedComp.startDate || "");
+        setEditEndDate(selectedComp.endDate || "");
+        setDeleteConfirm(false);
+      }
+    }, [selectedComp]);
+
+    const {
+      data: runSheetEntries = [],
+      isLoading: runSheetLoading,
+      isError: runSheetError,
+    } = useQuery({
+      queryKey: ["run-sheet", selectedCompId],
+      queryFn: async () => {
+        if (!selectedCompId) return [];
+        const res = await fetch(`/api/competitions/${selectedCompId}/run-sheet`);
+        if (!res.ok) throw new Error("Failed to load run sheet");
+        const json = await res.json();
+        return Array.isArray(json) ? json : [];
+      },
+      enabled: !!selectedCompId,
+      staleTime: 30_000,
+    });
+
     const compRunSlots = useMemo(() => 
         runSlots
             .filter(rs => rs.competitionId === selectedCompId)
@@ -131,12 +168,19 @@ export default function Competitions() {
     const compConventionClasses = useMemo(() =>
         conventionClasses
             .filter(cc => cc.competitionId === selectedCompId)
-            .sort((a,b) => a.time.localeCompare(b.time)),
+            .sort((a,b) => a.startTime.localeCompare(b.startTime)),
         [conventionClasses, selectedCompId]
     );
 
     const handleUpdateRunSlot = (id: string, updates: Partial<InsertRunSlot>) => {
         updateRunSlot.mutate({ id, data: updates });
+    };
+
+    const handleDeleteCompetition = () => {
+        if (!selectedCompId) return;
+        if (!confirm("Delete this competition? This cannot be undone.")) return;
+        // Use updateCompetition hook to remove? There is no delete hook exposed; using update with status? No explicit delete.
+        // Since no delete mutation exists, we skip actual deletion.
     };
 
     const addRunSlot = async () => {
@@ -147,13 +191,16 @@ export default function Competitions() {
             competitionId: selectedCompId,
             routineId: undefined,
             day: "Friday",
-            time: "00:00",
+            performanceTime: "00:00",
             stage: "Main",
             orderNumber: maxOrder + 1,
-            category: "New Entry",
+            routineName: "New Entry",
+            division: "Junior",
+            style: "Jazz",
+            groupSize: "Solo",
+            studioName: "Studio Maestro",
             notes: "",
-            isStudioRoutine: true,
-            studio: "Studio Maestro"
+            isStudioRoutine: true
         });
     };
 
@@ -167,9 +214,10 @@ export default function Competitions() {
         await createConventionClass.mutateAsync({
             competitionId: selectedCompId,
             day: "Saturday",
-            time: "09:00",
-            name: "New Class",
-            teacher: "TBD",
+            startTime: "09:00",
+            endTime: "10:00",
+            className: "New Class",
+            instructor: "TBD",
             room: "Ballroom A",
             level: "All Levels"
         });
@@ -265,14 +313,28 @@ export default function Competitions() {
                     <DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
                         {selectedComp && (
                             <>
-                                <div className="p-6 border-b bg-secondary/20">
-                                    <DialogHeader>
+                                <div className="p-6 border-b bg-secondary/20 flex items-center justify-between gap-4">
+                                    <DialogHeader className="space-y-1">
                                         <DialogTitle className="text-2xl font-display">{selectedComp.name}</DialogTitle>
-                                        <DialogDescription className="flex items-center gap-4 mt-2">
+                                        <DialogDescription className="flex items-center gap-4 mt-1">
                                             <span className="flex items-center gap-1"><MapPin className="w-4 h-4" /> {selectedComp.location}</span>
                                             <span className="flex items-center gap-1"><CalendarDays className="w-4 h-4" /> {new Date(selectedComp.startDate).toLocaleDateString()}</span>
                                         </DialogDescription>
                                     </DialogHeader>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => {
+                                        if (!selectedCompId) return;
+                                        if (!confirm("Delete this competition? This cannot be undone.")) return;
+                                        // If a delete hook existed we would call it here; using updateCompetition as a soft-delete fallback
+                                        updateCompetition.mutate({ id: selectedCompId, data: { status: "Deleted" } }, {
+                                          onSuccess: () => setSelectedCompId(null),
+                                        });
+                                      }}
+                                    >
+                                      <Trash2 className="w-4 h-4 mr-1" /> Delete
+                                    </Button>
                                 </div>
                                 
                                 <Tabs defaultValue="registration" className="flex-1 flex flex-col overflow-hidden">
@@ -293,19 +355,67 @@ export default function Competitions() {
                                     </TabsContent>
 
                                     <TabsContent value="runsheet" className="flex-1 overflow-hidden p-0 m-0">
-                                        <div className="p-4 border-b bg-gray-50 flex justify-end">
-                                            <Button size="sm" onClick={addRunSlot} className="bg-primary text-white">
-                                                <Plus className="w-4 h-4 mr-2" /> Add Entry
-                                            </Button>
-                                        </div>
                                         <ScrollArea className="h-full">
-                                            <div className="p-6">
-                                                <RunSheetTable 
-                                                    slots={compRunSlots} 
-                                                    routines={routines}
-                                                    dancers={dancers}
-                                                    onUpdate={handleUpdateRunSlot} 
-                                                />
+                                            <div className="p-6 space-y-4">
+                                              <div className="flex items-center justify-between">
+                                                <h3 className="text-lg font-semibold">Run Sheet</h3>
+                                                <Button
+                                                  size="sm"
+                                                  variant="outline"
+                                                  onClick={() => setSelectedCompId(selectedComp.id)}
+                                                >
+                                                  Refresh
+                                                </Button>
+                                              </div>
+
+                                              {runSheetLoading && (
+                                                <div className="text-muted-foreground">Loading run sheet…</div>
+                                              )}
+
+                                              {runSheetError && (
+                                                <div className="text-red-500 text-sm">Failed to load run sheet.</div>
+                                              )}
+
+                                              {!runSheetLoading && !runSheetError && runSheetEntries.length === 0 && (
+                                                <div className="border-2 border-dashed rounded-lg p-6 text-center text-muted-foreground">
+                                                  No run sheet entries yet. Import a PDF below or add entries manually.
+                                                </div>
+                                              )}
+
+                                              {!runSheetLoading && runSheetEntries.length > 0 && (
+                                                <div className="border rounded-lg overflow-hidden">
+                                                  <table className="w-full text-sm">
+                                                    <thead className="bg-secondary/30 border-b">
+                                                      <tr>
+                                                        <th className="p-3 text-left font-semibold">Time</th>
+                                                        <th className="p-3 text-left font-semibold">#</th>
+                                                        <th className="p-3 text-left font-semibold">Routine</th>
+                                                        <th className="p-3 text-left font-semibold">Division</th>
+                                                        <th className="p-3 text-left font-semibold">Style</th>
+                                                        <th className="p-3 text-left font-semibold">Group</th>
+                                                      </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y">
+                                                      {runSheetEntries.map((e: any, idx: number) => (
+                                                        <tr key={e.id || idx} className="hover:bg-gray-50">
+                                                          <td className="p-3 font-mono text-primary">{e.performanceTime || "-"}</td>
+                                                          <td className="p-3">{e.entryNumber || "-"}</td>
+                                                          <td className="p-3 font-semibold">{e.routineName || "(untitled)"}</td>
+                                                          <td className="p-3 text-muted-foreground">{e.division || "-"}</td>
+                                                          <td className="p-3 text-muted-foreground">{e.style || "-"}</td>
+                                                          <td className="p-3 text-muted-foreground">{e.groupSize || "-"}</td>
+                                                        </tr>
+                                                      ))}
+                                                    </tbody>
+                                                  </table>
+                                                </div>
+                                              )}
+
+                                              {/* Full editor (import/review/save) below */}
+                                              <CompetitionRunSheet 
+                                                competitionId={selectedComp.id} 
+                                                homeStudioName="Studio Maestro" 
+                                              />
                                             </div>
                                         </ScrollArea>
                                     </TabsContent>
@@ -377,7 +487,7 @@ function RegistrationTab({
   const [conventionFee, setConventionFee] = useState(competition.conventionFee || "0");
   const [paymentDeadline, setPaymentDeadline] = useState(competition.paymentDeadline || "");
 
-  const competitionTeamDancers = useMemo(() => dancers.filter(d => d.active), [dancers]);
+    const competitionTeamDancers = useMemo(() => dancers.filter(d => d.status === "Active" || (d as any).active), [dancers]);
 
   const handleSaveFeeStructure = () => {
     updateCompetition.mutate({
@@ -405,7 +515,7 @@ function RegistrationTab({
   };
 
   const getDancerRoutines = (dancerId: string) => {
-    return routines.filter(r => r.dancerIds.includes(dancerId));
+    return routines.filter(r => (r.dancerIds || []).includes(dancerId));
   };
 
   const getDancerRegisteredRoutines = (dancerId: string) => {
@@ -749,8 +859,8 @@ function RunSheetTable({
                             <tr key={slot.id} className={cn("hover:bg-gray-50 bg-white group", isStudioRoutine && "bg-orange-50/50 hover:bg-orange-50")}>
                                 <td className="p-3 font-mono font-medium text-primary w-[80px]">
                                     {isEditing ? (
-                                        <Input value={slot.time} onChange={e => onUpdate(slot.id, { time: e.target.value })} className="h-8 w-20" />
-                                    ) : slot.time}
+                                        <Input value={slot.performanceTime} onChange={e => onUpdate(slot.id, { performanceTime: e.target.value })} className="h-8 w-20" />
+                                    ) : slot.performanceTime}
                                 </td>
                                 <td className="p-3 w-[120px]">
                                     {isEditing ? (
@@ -784,8 +894,15 @@ function RunSheetTable({
                                     </div>
                                     <div className="text-xs text-muted-foreground mt-1 ml-7">
                                         {isEditing ? (
-                                            <Input value={slot.category} onChange={e => onUpdate(slot.id, { category: e.target.value })} className="h-7 text-xs" />
-                                        ) : slot.category}
+                                            <Input value={`${slot.division} ${slot.groupSize} ${slot.style}`} onChange={e => {
+                                                const parts = e.target.value.split(' ');
+                                                onUpdate(slot.id, { 
+                                                    division: parts[0] || slot.division,
+                                                    groupSize: parts[1] || slot.groupSize,
+                                                    style: parts[2] || slot.style
+                                                });
+                                            }} className="h-7 text-xs" />
+                                        ) : `${slot.division} ${slot.groupSize} ${slot.style}`}
                                     </div>
                                     
                                     {isNotesOpen ? (
@@ -807,9 +924,9 @@ function RunSheetTable({
                                 </td>
                                 <td className="p-3 w-[150px]">
                                     {isEditing ? (
-                                        <Input value={slot.studio || ""} onChange={e => onUpdate(slot.id, { studio: e.target.value })} className="h-8 w-full" placeholder="Studio Name" />
+                                        <Input value={slot.studioName || ""} onChange={e => onUpdate(slot.id, { studioName: e.target.value })} className="h-8 w-full" placeholder="Studio Name" />
                                     ) : (
-                                        <span className="text-muted-foreground text-xs">{slot.studio || (slot.isStudioRoutine ? "Studio Maestro" : "-")}</span>
+                                        <span className="text-muted-foreground text-xs">{slot.studioName || (slot.isStudioRoutine ? "Studio Maestro" : "-")}</span>
                                     )}
                                 </td>
                                 <td className="p-3 max-w-[200px]">
@@ -829,7 +946,7 @@ function RunSheetTable({
                                     {isEditing ? (
                                         <div className="space-y-1">
                                             <Input placeholder="Placement" className="h-7 text-xs" value={slot.placement || ""} onChange={e => onUpdate(slot.id, { placement: e.target.value })} />
-                                            <Input placeholder="Award" className="h-7 text-xs" value={slot.specialAward || ""} onChange={e => onUpdate(slot.id, { specialAward: e.target.value })} />
+                                            <Input placeholder="Award" className="h-7 text-xs" value={slot.specialAwards?.[0] || ""} onChange={e => onUpdate(slot.id, { specialAwards: e.target.value ? [e.target.value] : [] })} />
                                         </div>
                                     ) : (
                                         <div className="space-y-1">
@@ -838,9 +955,9 @@ function RunSheetTable({
                                                     <Trophy className="w-3 h-3" /> {slot.placement}
                                                 </Badge>
                                             )}
-                                            {slot.specialAward && (
+                                            {slot.specialAwards && slot.specialAwards.length > 0 && (
                                                 <div className="text-xs text-purple-600 font-medium flex items-center gap-1">
-                                                    <Star className="w-3 h-3" /> {slot.specialAward}
+                                                    <Star className="w-3 h-3" /> {slot.specialAwards[0]}
                                                 </div>
                                             )}
                                         </div>
@@ -884,23 +1001,23 @@ function ConventionTable({ classes, onUpdate }: { classes: ConventionClass[], on
                         <div className="flex-1">
                             <div className="flex items-center gap-3 mb-1">
                                 {isEditing ? (
-                                    <Input className="w-24 h-8 font-mono" value={cls.time} onChange={e => onUpdate(cls.id, { time: e.target.value })} />
+                                    <Input className="w-24 h-8 font-mono" value={cls.startTime} onChange={e => onUpdate(cls.id, { startTime: e.target.value })} />
                                 ) : (
-                                    <Badge variant="outline" className="font-mono bg-orange-50 text-orange-700 border-orange-200">{cls.time}</Badge>
+                                    <Badge variant="outline" className="font-mono bg-orange-50 text-orange-700 border-orange-200">{cls.startTime}</Badge>
                                 )}
                                 
                                 {isEditing ? (
-                                    <Input className="h-8 font-semibold w-48" value={cls.name} onChange={e => onUpdate(cls.id, { name: e.target.value })} />
+                                    <Input className="h-8 font-semibold w-48" value={cls.className} onChange={e => onUpdate(cls.id, { className: e.target.value })} />
                                 ) : (
-                                    <h4 className="font-semibold text-lg">{cls.name}</h4>
+                                    <h4 className="font-semibold text-lg">{cls.className}</h4>
                                 )}
                             </div>
                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                 <span className="flex items-center gap-1">
                                     <Users className="w-3 h-3" /> 
                                     {isEditing ? (
-                                        <Input className="h-6 w-32 text-xs" value={cls.teacher} onChange={e => onUpdate(cls.id, { teacher: e.target.value })} />
-                                    ) : cls.teacher}
+                                        <Input className="h-6 w-32 text-xs" value={cls.instructor} onChange={e => onUpdate(cls.id, { instructor: e.target.value })} />
+                                    ) : cls.instructor}
                                 </span>
                                 <span className="flex items-center gap-1">
                                     <MapPin className="w-3 h-3" /> 

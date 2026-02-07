@@ -41,7 +41,7 @@ export default function Dashboard() {
     <Layout>
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-display font-bold text-foreground">Welcome back, Bethany & Josh!</h1>
+          <h1 className="text-3xl font-display font-bold text-foreground">Welcome back!</h1>
           <p className="text-muted-foreground mt-1">Here's what's happening at the studio today.</p>
         </div>
 

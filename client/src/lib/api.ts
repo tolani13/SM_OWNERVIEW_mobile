@@ -1,6 +1,37 @@
-import type { Dancer, InsertDancer, Teacher, InsertTeacher, Routine, InsertRoutine, Competition, InsertCompetition, RunSlot, InsertRunSlot, ConventionClass, InsertConventionClass, StudioClass, InsertStudioClass, PracticeBooking, InsertPracticeBooking, Announcement, InsertAnnouncement, Fee, InsertFee } from "@server/schema";
+import type {
+  Dancer,
+  InsertDancer,
+  Teacher,
+  InsertTeacher,
+  Routine,
+  InsertRoutine,
+  Competition,
+  InsertCompetition,
+  RunSlot,
+  InsertRunSlot,
+  ConventionClass,
+  InsertConventionClass,
+  StudioClass,
+  InsertStudioClass,
+  PracticeBooking,
+  InsertPracticeBooking,
+  Announcement,
+  InsertAnnouncement,
+  Fee,
+  InsertFee,
+  CompetitionRunSheet,
+  InsertCompetitionRunSheet,
+} from "@server/schema";
 
 const API_BASE = "/api";
+
+// Run sheet helper types
+export interface RunSheetImportResponse {
+  success: boolean;
+  entries: InsertCompetitionRunSheet[] | CompetitionRunSheet[];
+  warnings?: string[];
+  message?: string;
+}
 
 async function fetchAPI<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${url}`, {
@@ -108,4 +139,44 @@ export const feesAPI = {
   create: (data: InsertFee) => fetchAPI<Fee>("/fees", { method: "POST", body: JSON.stringify(data) }),
   update: (id: string, data: Partial<InsertFee>) => fetchAPI<Fee>(`/fees/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   delete: (id: string) => fetchAPI<void>(`/fees/${id}`, { method: "DELETE" }),
+};
+
+// Competition Run Sheet (new flow)
+export const runSheetAPI = {
+  getAll: (competitionId: string) => fetchAPI<CompetitionRunSheet[]>(`/competitions/${competitionId}/run-sheet`),
+  importPdf: (competitionId: string, file: File) => {
+    const formData = new FormData();
+    formData.append("pdf", file);
+
+    return fetch(`${API_BASE}/competitions/${competitionId}/run-sheet/import`, {
+      method: "POST",
+      body: formData,
+    }).then(async (res) => {
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || res.statusText);
+      }
+      return res.json() as Promise<RunSheetImportResponse>;
+    });
+  },
+  saveAll: (competitionId: string, entries: InsertCompetitionRunSheet[]) =>
+    fetchAPI<{ success: boolean; savedCount: number; entries: CompetitionRunSheet[] }>(
+      `/competitions/${competitionId}/run-sheet`,
+      {
+        method: "POST",
+        body: JSON.stringify({ entries }),
+      },
+    ),
+  addEntry: (competitionId: string, entry: InsertCompetitionRunSheet) =>
+    fetchAPI<CompetitionRunSheet>(`/competitions/${competitionId}/run-sheet/entry`, {
+      method: "POST",
+      body: JSON.stringify(entry),
+    }),
+  update: (id: string, data: Partial<CompetitionRunSheet>) =>
+    fetchAPI<CompetitionRunSheet>(`/run-sheet/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) => fetchAPI<void>(`/run-sheet/${id}`, { method: "DELETE" }),
+  deleteAll: (competitionId: string) => fetchAPI<void>(`/competitions/${competitionId}/run-sheet`, { method: "DELETE" }),
 };

@@ -7,6 +7,7 @@ import {
   routines,
   competitions,
   competitionRegistrations,
+  competitionRunSheets,
   runSlots,
   conventionClasses,
   studioClasses,
@@ -23,6 +24,8 @@ import {
   type InsertCompetition,
   type CompetitionRegistration,
   type InsertCompetitionRegistration,
+  type CompetitionRunSheet,
+  type InsertCompetitionRunSheet,
   type RunSlot,
   type InsertRunSlot,
   type ConventionClass,
@@ -168,55 +171,6 @@ export class Storage {
       );
   }
 
-  // ========== RUN SLOTS ==========
-  async getRunSlots(competitionId?: string): Promise<RunSlot[]> {
-    if (competitionId) {
-      return await this.db.select().from(runSlots).where(eq(runSlots.competitionId, competitionId));
-    }
-    return await this.db.select().from(runSlots);
-  }
-
-  async getRunSlot(id: string): Promise<RunSlot | undefined> {
-    const [slot] = await this.db.select().from(runSlots).where(eq(runSlots.id, id));
-    return slot;
-  }
-
-  async createRunSlot(data: InsertRunSlot): Promise<RunSlot> {
-    const [slot] = await this.db.insert(runSlots).values(data).returning();
-    return slot;
-  }
-
-  async updateRunSlot(id: string, data: Partial<InsertRunSlot>): Promise<RunSlot | undefined> {
-    const [slot] = await this.db.update(runSlots).set(data).where(eq(runSlots.id, id)).returning();
-    return slot;
-  }
-
-  async deleteRunSlot(id: string): Promise<void> {
-    await this.db.delete(runSlots).where(eq(runSlots.id, id));
-  }
-
-  // ========== CONVENTION CLASSES ==========
-  async getConventionClasses(competitionId?: string): Promise<ConventionClass[]> {
-    if (competitionId) {
-      return await this.db.select().from(conventionClasses).where(eq(conventionClasses.competitionId, competitionId));
-    }
-    return await this.db.select().from(conventionClasses);
-  }
-
-  async createConventionClass(data: InsertConventionClass): Promise<ConventionClass> {
-    const [cls] = await this.db.insert(conventionClasses).values(data).returning();
-    return cls;
-  }
-
-  async updateConventionClass(id: string, data: Partial<InsertConventionClass>): Promise<ConventionClass | undefined> {
-    const [cls] = await this.db.update(conventionClasses).set(data).where(eq(conventionClasses.id, id)).returning();
-    return cls;
-  }
-
-  async deleteConventionClass(id: string): Promise<void> {
-    await this.db.delete(conventionClasses).where(eq(conventionClasses.id, id));
-  }
-
   // ========== STUDIO CLASSES ==========
   async getStudioClasses(): Promise<StudioClass[]> {
     return await this.db.select().from(studioClasses);
@@ -356,6 +310,39 @@ export class Storage {
 
   async deleteConventionClassesByCompetition(competitionId: string): Promise<void> {
     await this.db.delete(conventionClasses).where(eq(conventionClasses.competitionId, competitionId));
+  }
+
+  // ========== COMPETITION RUN SHEETS ==========
+  async getCompetitionRunSheets(competitionId: string): Promise<CompetitionRunSheet[]> {
+    return await this.db.select().from(competitionRunSheets).where(eq(competitionRunSheets.competitionId, competitionId));
+  }
+
+  async getCompetitionRunSheet(id: string): Promise<CompetitionRunSheet | undefined> {
+    const [sheet] = await this.db.select().from(competitionRunSheets).where(eq(competitionRunSheets.id, id));
+    return sheet;
+  }
+
+  async createCompetitionRunSheet(data: InsertCompetitionRunSheet): Promise<CompetitionRunSheet> {
+    const [sheet] = await this.db.insert(competitionRunSheets).values(data).returning();
+    return sheet;
+  }
+
+  async createCompetitionRunSheetsBulk(data: InsertCompetitionRunSheet[]): Promise<CompetitionRunSheet[]> {
+    if (data.length === 0) return [];
+    return await this.db.insert(competitionRunSheets).values(data).returning();
+  }
+
+  async updateCompetitionRunSheet(id: string, data: Partial<InsertCompetitionRunSheet>): Promise<CompetitionRunSheet | undefined> {
+    const [sheet] = await this.db.update(competitionRunSheets).set(data).where(eq(competitionRunSheets.id, id)).returning();
+    return sheet;
+  }
+
+  async deleteCompetitionRunSheet(id: string): Promise<void> {
+    await this.db.delete(competitionRunSheets).where(eq(competitionRunSheets.id, id));
+  }
+
+  async deleteCompetitionRunSheetsByCompetition(competitionId: string): Promise<void> {
+    await this.db.delete(competitionRunSheets).where(eq(competitionRunSheets.competitionId, competitionId));
   }
 }
 

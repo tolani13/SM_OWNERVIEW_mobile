@@ -2,6 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { registerPDFParserRoutes } from "./pdf-parser-routes";
+import { registerRunSheetRoutes } from "./run-sheet-routes";
+import { z } from "zod";
 import type {
   InsertDancer,
   InsertTeacher,
@@ -21,6 +23,15 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  const feeStructureSchema = z.object({
+    solo: z.string(),
+    duetTrio: z.string(),
+    group: z.string(),
+    largeGroup: z.string(),
+    line: z.string(),
+    production: z.string(),
+    photoFee: z.string().optional()
+  });
   // ========== DANCERS ==========
   app.get("/api/dancers", async (req, res) => {
     try {
@@ -336,6 +347,14 @@ export async function registerRoutes(
       
       if (!competition) {
         return res.status(404).json({ error: "Competition not found" });
+      }
+
+      // Validate feeStructure shape if provided/overriding
+      if (competition.feeStructure) {
+        const parsed = feeStructureSchema.safeParse(competition.feeStructure);
+        if (!parsed.success) {
+          return res.status(400).json({ error: "Invalid feeStructure on competition", details: parsed.error.flatten() });
+        }
       }
 
       // Get all registrations for this competition
@@ -696,8 +715,11 @@ export async function registerRoutes(
     }
   });
 
-  // ========== PDF PARSER ROUTES ==========
+  // ========== PDF PARSER ROUTES (LEGACY) ==========
   registerPDFParserRoutes(app);
+
+  // ========== RUN SHEET ROUTES (NEW SIMPLIFIED APPROACH) ==========
+  registerRunSheetRoutes(app);
 
   return httpServer;
 }

@@ -27,11 +27,11 @@ export class PDFParser {
     const warnings: string[] = [];
 
     try {
-      const pdfParseInstance = new PDFParse(new Uint8Array(buffer));
-      const textResult = await pdfParseInstance.getText();
-      const infoResult = await pdfParseInstance.getInfo();
+      const pdf = new PDFParse(buffer);
+      const textResult = await pdf.getText();
+      const infoResult = await pdf.getInfo();
       const text = textResult.text;
-      const pageCount = infoResult.total || 1;
+      const pageCount = infoResult.total;
 
       if (!text || text.trim().length === 0) {
         return {
@@ -45,9 +45,9 @@ export class PDFParser {
         };
       }
 
-      const parser = this.detectParser(text);
+      const parserStrategy = this.detectParser(text);
 
-      if (!parser) {
+      if (!parserStrategy) {
         return {
           success: false,
           type: expectedType || 'runsheet',
@@ -62,24 +62,24 @@ export class PDFParser {
       const isConvention = this.detectConventionFormat(text);
       const type: 'runsheet' | 'convention' = expectedType || (isConvention ? 'convention' : 'runsheet');
 
-      let data: ParsedRunSlot[] | ParsedConventionClass[];
+      let parsedData: ParsedRunSlot[] | ParsedConventionClass[];
 
       try {
         if (type === 'convention') {
-          data = parser.parseConvention(text);
+          parsedData = parserStrategy.parseConvention(text);
         } else {
-          data = parser.parseRunSheet(text);
+          parsedData = parserStrategy.parseRunSheet(text);
         }
       } catch (error: any) {
         errors.push(`Parse error: ${error.message}`);
-        data = [];
+        parsedData = [];
       }
 
-      if (data.length === 0) {
+      if (parsedData.length === 0) {
         warnings.push('No entries were extracted from the PDF');
       }
 
-      const incompleteCount = data.filter(entry => {
+      const incompleteCount = parsedData.filter(entry => {
         if ('routineName' in entry) {
           return !entry.division || !entry.style || !entry.groupSize;
         } else {
@@ -92,13 +92,13 @@ export class PDFParser {
       }
 
       return {
-        success: data.length > 0,
+        success: parsedData.length > 0,
         type,
-        company: parser.company,
-        data,
+        company: parserStrategy.company,
+        data: parsedData,
         errors,
         warnings,
-        metadata: { parsedAt: new Date(), fileName, pageCount, totalEntries: data.length }
+        metadata: { parsedAt: new Date(), fileName, pageCount, totalEntries: parsedData.length }
       };
 
     } catch (error: any) {
