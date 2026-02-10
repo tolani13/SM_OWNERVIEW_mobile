@@ -39,10 +39,10 @@ app.use((req, res, next) => {
   const path = req.path;
   let capturedJsonResponse: unknown;
 
-  const originalResJson = res.json.bind(res);
-  res.json = ((body: any, ...args: any[]) => {
+  const originalResJson: any = res.json.bind(res);
+  res.json = ((body: any) => {
     capturedJsonResponse = body;
-    return originalResJson(body, ...args);
+    return originalResJson(body);
   }) as any;
 
   res.on("finish", () => {

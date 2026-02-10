@@ -45,7 +45,7 @@ export default function Dancers() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDancerId, setSelectedDancerId] = useState<string | null>(null);
-  const [editableDancer, setEditableDancer] = useState<Dancer | null>(null);
+  const [editableDancer, setEditableDancer] = useState<any | null>(null);
 
   const selectedDancer = dancers.find((d) => d.id === selectedDancerId);
 
@@ -70,7 +70,7 @@ export default function Dancers() {
     setSelectedDancerId(result.id);
   };
 
-  const filteredDancers = dancers.filter(
+  const filteredDancers = (dancers as any[]).filter(
     (d) =>
       d.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       d.lastName.toLowerCase().includes(searchTerm.toLowerCase()),
@@ -88,8 +88,6 @@ export default function Dancers() {
         data: {
           firstName: editableDancer.firstName,
           lastName: editableDancer.lastName,
-          age: editableDancer.age,
-          level: editableDancer.level,
           status: editableDancer.status,
           parentName: editableDancer.parentName,
           parentPhone: editableDancer.parentPhone,
@@ -266,7 +264,7 @@ export default function Dancers() {
                       <Select
                         value={editableDancer?.level}
                         onValueChange={(v) =>
-                          setEditableDancer((prev) => (prev ? { ...prev, level: v as Dancer["level"] } : prev))
+                          setEditableDancer((prev) => (prev ? { ...prev, level: v as any } : prev))
                         }
                       >
                         <SelectTrigger>
@@ -284,7 +282,7 @@ export default function Dancers() {
                     <div className="space-y-2">
                       <label className="text-xs font-bold uppercase text-muted-foreground">Status</label>
                       <Select
-                        value={editableDancer?.status}
+                        value={editableDancer?.status ?? undefined}
                         onValueChange={(v) =>
                           setEditableDancer((prev) => (prev ? { ...prev, status: v as Dancer["status"] } : prev))
                         }

@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Star, FileText, Edit2, Upload, Plus, Trash2, Save, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "react-hot-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Types matching backend schema
 interface RunSheetEntry {
@@ -37,11 +38,29 @@ interface CompetitionRunSheetProps {
 }
 
 export function CompetitionRunSheet({ competitionId, homeStudioName }: CompetitionRunSheetProps) {
+  const queryClient = useQueryClient();
   const [entries, setEntries] = useState<RunSheetEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [detailsModalEntry, setDetailsModalEntry] = useState<RunSheetEntry | null>(null);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [lastImportMeta, setLastImportMeta] = useState<{
+    methodUsed?: "text" | "ocr" | "text+ocr" | "none";
+    confidence?: number;
+    modeRequested?: "auto" | "text" | "ocr";
+    ocrDiagnostics?: {
+      engine: "rasterized" | "direct" | "none";
+      pageCount: number;
+      averageConfidence: number;
+      pages: Array<{
+        pageNumber: number;
+        confidence: number;
+        textLength: number;
+      }>;
+    };
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load existing run sheet on mount or competition change
@@ -67,39 +86,81 @@ export function CompetitionRunSheet({ competitionId, homeStudioName }: Competiti
     const file = event.target.files?.[0];
     if (!file) return;
 
+    setPendingFile(file);
+    setImportDialogOpen(true);
+
+    // Reset input so selecting the same file again still fires onChange
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleImportByType = async (type: "runsheet" | "convention", mode: "auto" | "text" | "ocr" = "auto") => {
+    if (!pendingFile) return;
+
     setIsLoading(true);
     const formData = new FormData();
-    formData.append("pdf", file);
+    formData.append("pdf", pendingFile);
 
     try {
-      const response = await fetch(`/api/competitions/${competitionId}/run-sheet/import`, {
-        method: "POST",
-        body: formData
-      });
+      if (type === "runsheet") {
+        formData.append("mode", mode);
+        const response = await fetch(`/api/competitions/${competitionId}/run-sheet/import`, {
+          method: "POST",
+          body: formData
+        });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to import PDF");
-      }
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Failed to import run sheet PDF");
+        }
 
-      const result = await response.json();
-      
-      // Show extracted entries for review
-      setEntries(result.entries);
-      
-      toast.success(`Extracted ${result.entries.length} entries. Review and save.`);
-      
-      if (result.warnings && result.warnings.length > 0) {
-        result.warnings.forEach((warning: string) => toast(warning, { icon: "⚠️" }));
+        const result = await response.json();
+
+        // Show extracted entries for review (not saved yet)
+        setEntries(result.entries);
+        setLastImportMeta({
+          methodUsed: result.methodUsed,
+          confidence: result.confidence,
+          modeRequested: result.modeRequested,
+          ocrDiagnostics: result.ocrDiagnostics,
+        });
+        queryClient.invalidateQueries({ queryKey: ["run-sheet", competitionId] });
+
+        toast.success(`Run sheet extracted: ${result.entries.length} entries (${result.methodUsed || "text"}). Review and save.`);
+
+        if (result.warnings && result.warnings.length > 0) {
+          result.warnings.forEach((warning: string) => toast(warning, { icon: "⚠️" }));
+        }
+      } else {
+        formData.append("type", "convention");
+
+        const response = await fetch(`/api/competitions/${competitionId}/parse-pdf`, {
+          method: "POST",
+          body: formData
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Failed to import convention PDF");
+        }
+
+        const result = await response.json();
+        queryClient.invalidateQueries({ queryKey: ["conventionClasses"] });
+        queryClient.invalidateQueries({ queryKey: ["conventionClasses", competitionId] });
+
+        toast.success(`Convention classes imported: ${result.savedCount || result.totalParsed || 0} saved.`);
+
+        if (result.warnings && result.warnings.length > 0) {
+          result.warnings.forEach((warning: string) => toast(warning, { icon: "⚠️" }));
+        }
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to import PDF");
     } finally {
       setIsLoading(false);
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+      setImportDialogOpen(false);
+      setPendingFile(null);
     }
   };
 
@@ -242,6 +303,20 @@ export function CompetitionRunSheet({ competitionId, homeStudioName }: Competiti
           )}
         </Button>
       </div>
+
+      {lastImportMeta && (
+        <div className="p-3 rounded-lg border bg-amber-50 text-sm text-amber-900 flex flex-wrap gap-3 items-center">
+          <span><strong>Import mode:</strong> {lastImportMeta.modeRequested || "auto"}</span>
+          <span><strong>Method used:</strong> {lastImportMeta.methodUsed || "text"}</span>
+          <span><strong>Confidence:</strong> {Math.round((lastImportMeta.confidence ?? 0) * 100)}%</span>
+          {lastImportMeta.ocrDiagnostics && lastImportMeta.ocrDiagnostics.pageCount > 0 && (
+            <span>
+              <strong>OCR pages:</strong> {lastImportMeta.ocrDiagnostics.pageCount} ({lastImportMeta.ocrDiagnostics.engine}, avg {Math.round(lastImportMeta.ocrDiagnostics.averageConfidence)}%)
+            </span>
+          )}
+          <span className="text-amber-700">Please review extracted rows before saving.</span>
+        </div>
+      )}
 
       {/* Run Sheet Table */}
       {entries.length === 0 ? (
@@ -532,6 +607,48 @@ export function CompetitionRunSheet({ competitionId, homeStudioName }: Competiti
               </Button>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Type Picker (single Import PDF button routes to 2 flows) */}
+      <Dialog open={importDialogOpen} onOpenChange={(open) => {
+        setImportDialogOpen(open);
+        if (!open) setPendingFile(null);
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Import PDF As</DialogTitle>
+            <DialogDescription>
+              Choose what this PDF contains so it can be parsed correctly.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 pt-2">
+            <Button
+              className="w-full justify-start"
+              variant="outline"
+              disabled={isLoading}
+              onClick={() => handleImportByType("runsheet", "auto")}
+            >
+              Competition Run Sheet (Auto: text + OCR fallback)
+            </Button>
+            <Button
+              className="w-full justify-start"
+              variant="outline"
+              disabled={isLoading}
+              onClick={() => handleImportByType("runsheet", "ocr")}
+            >
+              Competition Run Sheet (OCR-first)
+            </Button>
+            <Button
+              className="w-full justify-start"
+              variant="outline"
+              disabled={isLoading}
+              onClick={() => handleImportByType("convention")}
+            >
+              Convention Classes (usually 2–3 pages)
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

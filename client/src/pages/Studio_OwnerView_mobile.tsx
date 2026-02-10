@@ -446,7 +446,7 @@ export default function Studio() {
 
                     <div className="space-y-2">
                       <Label>Type</Label>
-                      <Select value={newClass.type} onValueChange={v => setNewClass({...newClass, type: v as "Weekly" | "Special Event"})}>
+                      <Select value={newClass.type ?? undefined} onValueChange={v => setNewClass({...newClass, type: v as "Weekly" | "Special Event"})}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>

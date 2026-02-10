@@ -1,7 +1,6 @@
 import { type Express } from "express";
 import { createServer as createViteServer, createLogger } from "vite";
 import { type Server } from "http";
-import viteConfig from "../vite.config";
 import fs from "fs";
 import path from "path";
 import { nanoid } from "nanoid";
@@ -9,6 +8,7 @@ import { nanoid } from "nanoid";
 const viteLogger = createLogger();
 
 export async function setupVite(server: Server, app: Express) {
+  const clientRoot = path.resolve(import.meta.dirname, "..", "client");
   const serverOptions = {
     middlewareMode: true,
     hmr: { server, path: "/vite-hmr" },
@@ -16,8 +16,15 @@ export async function setupVite(server: Server, app: Express) {
   };
 
   const vite = await createViteServer({
-    ...viteConfig,
+    root: clientRoot,
     configFile: false,
+    resolve: {
+      alias: {
+        "@": path.resolve(clientRoot, "src"),
+        "@shared": path.resolve(import.meta.dirname, "..", "shared"),
+        "@server": path.resolve(import.meta.dirname, "..", "server"),
+      },
+    },
     customLogger: {
       ...viteLogger,
       error: (msg, options) => {
@@ -36,9 +43,7 @@ export async function setupVite(server: Server, app: Express) {
 
     try {
       const clientTemplate = path.resolve(
-        import.meta.dirname,
-        "..",
-        "client",
+        clientRoot,
         "index.html",
       );
 

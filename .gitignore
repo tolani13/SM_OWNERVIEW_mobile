@@ -1,1 +1,13 @@
 node_modules
+dist
+*.log
+
+# local env/runtime artifacts
+.env.local
+
+# parser scratch/backup artifacts
+server/pdf-parser/parsers/*.bak
+
+# local extracted model/data artifacts
+eng.traineddata
+git/

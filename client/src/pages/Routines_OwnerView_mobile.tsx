@@ -320,7 +320,7 @@ export default function Routines() {
                                                 type="text"
                                                 inputMode="numeric"
                                                 className="pl-9"
-                                                value={selectedRoutine.costumeFee} 
+                                                value={selectedRoutine.costumeFee ?? ""} 
                                                 onChange={(e) => {
                                                     const value = e.target.value.replace(/[^0-9.]/g, '');
                                                     updateRoutine(selectedRoutine.id, "costumeFee", value);
@@ -432,7 +432,7 @@ export default function Routines() {
                                             type="text"
                                             inputMode="numeric"
                                             className="pl-9"
-                                            value={newRoutine.costumeFee} 
+                                            value={newRoutine.costumeFee ?? ""} 
                                             onChange={(e) => {
                                                 const value = e.target.value.replace(/[^0-9.]/g, '');
                                                 setNewRoutine({...newRoutine, costumeFee: value});

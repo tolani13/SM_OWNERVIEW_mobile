@@ -1,5 +1,5 @@
 import type { Express } from "express";
-import { createServer, type Server } from "http";
+import { type Server } from "http";
 import { storage } from "./storage";
 import { registerPDFParserRoutes } from "./pdf-parser-routes";
 import { registerRunSheetRoutes } from "./run-sheet-routes";
@@ -16,7 +16,6 @@ import type {
   InsertPracticeBooking,
   InsertAnnouncement,
   InsertFee,
-  Routine
 } from "./schema";
 
 export async function registerRoutes(
@@ -33,7 +32,7 @@ export async function registerRoutes(
     photoFee: z.string().optional()
   });
   // ========== DANCERS ==========
-  app.get("/api/dancers", async (req, res) => {
+  app.get("/api/dancers", async (_req, res) => {
     try {
       const dancers = await storage.getDancers();
       res.json(dancers);
@@ -90,7 +89,7 @@ export async function registerRoutes(
   });
 
   // ========== TEACHERS ==========
-  app.get("/api/teachers", async (req, res) => {
+  app.get("/api/teachers", async (_req, res) => {
     try {
       const teachers = await storage.getTeachers();
       res.json(teachers);
@@ -134,7 +133,7 @@ export async function registerRoutes(
   });
 
   // ========== ROUTINES ==========
-  app.get("/api/routines", async (req, res) => {
+  app.get("/api/routines", async (_req, res) => {
     try {
       const routines = await storage.getRoutines();
       res.json(routines);
@@ -251,9 +250,10 @@ export async function registerRoutes(
   });
 
   // ========== COMPETITIONS ==========
-  app.get("/api/competitions", async (req, res) => {
+  app.get("/api/competitions", async (_req, res) => {
     try {
-      const competitions = await storage.getCompetitions();
+      const allCompetitions = await storage.getCompetitions();
+      const competitions = allCompetitions.filter((c) => c.status !== "Deleted");
       res.json(competitions);
     } catch (error: any) {
       console.error("Get competitions error:", error);
@@ -321,7 +321,30 @@ export async function registerRoutes(
 
   app.post("/api/competition-registrations", async (req, res) => {
     try {
-      const registration = await storage.createCompetitionRegistration(req.body as InsertCompetitionRegistration);
+      const payload = req.body as InsertCompetitionRegistration;
+
+      if (!payload.competitionId || !payload.dancerId || !payload.routineId) {
+        return res.status(400).json({ error: "competitionId, dancerId, and routineId are required" });
+      }
+
+      const existing = await storage.getCompetitionRegistrationByKeys(
+        payload.competitionId,
+        payload.dancerId,
+        payload.routineId,
+      );
+      if (existing) {
+        return res.status(409).json({ error: "Registration already exists" });
+      }
+
+      const routine = await storage.getRoutine(payload.routineId);
+      if (!routine) {
+        return res.status(404).json({ error: "Routine not found" });
+      }
+      if (!routine.dancerIds?.includes(payload.dancerId)) {
+        return res.status(400).json({ error: "Dancer is not assigned to this routine" });
+      }
+
+      const registration = await storage.createCompetitionRegistration(payload);
       res.status(201).json(registration);
     } catch (error: any) {
       console.error("Create registration error:", error);
@@ -356,6 +379,9 @@ export async function registerRoutes(
           return res.status(400).json({ error: "Invalid feeStructure on competition", details: parsed.error.flatten() });
         }
       }
+
+      // Prevent duplicate fee generation by clearing previous competition fees first.
+      await storage.deleteCompetitionFees(competitionId);
 
       // Get all registrations for this competition
       const registrations = await storage.getCompetitionRegistrations(competitionId);
@@ -539,7 +565,7 @@ export async function registerRoutes(
   });
 
   // ========== STUDIO CLASSES ==========
-  app.get("/api/studio-classes", async (req, res) => {
+  app.get("/api/studio-classes", async (_req, res) => {
     try {
       const classes = await storage.getStudioClasses();
       res.json(classes);
@@ -583,7 +609,7 @@ export async function registerRoutes(
   });
 
   // ========== PRACTICE BOOKINGS ==========
-  app.get("/api/practice-bookings", async (req, res) => {
+  app.get("/api/practice-bookings", async (_req, res) => {
     try {
       const bookings = await storage.getPracticeBookings();
       res.json(bookings);
@@ -627,7 +653,7 @@ export async function registerRoutes(
   });
 
   // ========== ANNOUNCEMENTS ==========
-  app.get("/api/announcements", async (req, res) => {
+  app.get("/api/announcements", async (_req, res) => {
     try {
       const announcements = await storage.getAnnouncements();
       res.json(announcements);

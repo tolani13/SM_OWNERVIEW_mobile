@@ -3,23 +3,19 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CalendarDays, MapPin, Clock, Eye, EyeOff, Edit2, FileText, CheckCircle2, Plus, Trophy, Star, Users, DollarSign, Loader2, Trash2 } from "lucide-react";
+import { CalendarDays, MapPin, Edit2, CheckCircle2, Plus, Users, DollarSign, Loader2, Trash2 } from "lucide-react";
 import { CompetitionRunSheet } from "@/components/CompetitionRunSheet";
-import { useState, useMemo, useEffect } from "react";
-import { cn } from "@/lib/utils";
+import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
   useCompetitions, 
   useCreateCompetition, 
   useUpdateCompetition,
-  useRunSlots, 
-  useCreateRunSlot, 
-  useUpdateRunSlot, 
+  useDeleteCompetition,
   useConventionClasses, 
   useCreateConventionClass, 
   useUpdateConventionClass, 
@@ -32,26 +28,7 @@ import {
   useFees
 } from "@/hooks/useData";
 import { useQuery } from "@tanstack/react-query";
-import type { Competition, RunSlot, ConventionClass, InsertCompetition, InsertRunSlot, InsertConventionClass, Routine, Dancer, CompetitionRegistration } from "@server/schema";
-
-// Helper functions
-const getRoutineName = (routineId: string | undefined, routines: Routine[]) => {
-    if (!routineId) return "Unknown";
-    const routine = routines.find(r => r.id === routineId);
-    return routine ? routine.name : "Unknown";
-};
-
-const getDancerName = (dancerId: string | undefined, dancers: Dancer[]) => {
-    if (!dancerId) return "Unknown";
-    const dancer = dancers.find(d => d.id === dancerId);
-    return dancer ? `${dancer.firstName} ${dancer.lastName.charAt(0)}.` : "Unknown";
-};
-
-const getDancerFullName = (dancerId: string | undefined, dancers: Dancer[]) => {
-    if (!dancerId) return "Unknown";
-    const dancer = dancers.find(d => d.id === dancerId);
-    return dancer ? `${dancer.firstName} ${dancer.lastName}` : "Unknown";
-};
+import type { Competition, ConventionClass, InsertConventionClass, Routine, Dancer } from "@server/schema";
 
 const DEFAULT_FEE_STRUCTURE = {
   solo: "0",
@@ -65,28 +42,18 @@ const DEFAULT_FEE_STRUCTURE = {
 
 export default function Competitions() {
     const { data: competitions = [], isLoading: competitionsLoading } = useCompetitions();
-    const { data: runSlots = [], isLoading: runSlotsLoading } = useRunSlots();
     const { data: conventionClasses = [], isLoading: conventionClassesLoading } = useConventionClasses();
     const { data: routines = [], isLoading: routinesLoading } = useRoutines();
     const { data: dancers = [], isLoading: dancersLoading } = useDancers();
 
     const createCompetition = useCreateCompetition();
-    const updateCompetition = useUpdateCompetition();
-    const createRunSlot = useCreateRunSlot();
-    const updateRunSlot = useUpdateRunSlot();
+    const deleteCompetition = useDeleteCompetition();
     const createConventionClass = useCreateConventionClass();
     const updateConventionClass = useUpdateConventionClass();
 
     const [selectedCompId, setSelectedCompId] = useState<string | null>(null);
     const [isAddCompOpen, setIsAddCompOpen] = useState(false);
     
-    // Editable competition header state
-    const [editName, setEditName] = useState("");
-    const [editLocation, setEditLocation] = useState("");
-    const [editStartDate, setEditStartDate] = useState("");
-    const [editEndDate, setEditEndDate] = useState("");
-    const [deleteConfirm, setDeleteConfirm] = useState(false);
-
     // Form state for new competition
     const [newCompName, setNewCompName] = useState("");
     const [newCompLocation, setNewCompLocation] = useState("");
@@ -130,17 +97,6 @@ export default function Competitions() {
         [competitions, selectedCompId]
     );
 
-    // Sync edit fields when selection changes
-    useEffect(() => {
-      if (selectedComp) {
-        setEditName(selectedComp.name || "");
-        setEditLocation(selectedComp.location || "");
-        setEditStartDate(selectedComp.startDate || "");
-        setEditEndDate(selectedComp.endDate || "");
-        setDeleteConfirm(false);
-      }
-    }, [selectedComp]);
-
     const {
       data: runSheetEntries = [],
       isLoading: runSheetLoading,
@@ -158,51 +114,12 @@ export default function Competitions() {
       staleTime: 30_000,
     });
 
-    const compRunSlots = useMemo(() => 
-        runSlots
-            .filter(rs => rs.competitionId === selectedCompId)
-            .sort((a,b) => a.orderNumber - b.orderNumber),
-        [runSlots, selectedCompId]
-    );
-    
     const compConventionClasses = useMemo(() =>
         conventionClasses
-            .filter(cc => cc.competitionId === selectedCompId)
-            .sort((a,b) => a.startTime.localeCompare(b.startTime)),
+            .filter((cc: ConventionClass) => cc.competitionId === selectedCompId)
+            .sort((a: ConventionClass, b: ConventionClass) => (a.startTime || "").localeCompare(b.startTime || "")),
         [conventionClasses, selectedCompId]
     );
-
-    const handleUpdateRunSlot = (id: string, updates: Partial<InsertRunSlot>) => {
-        updateRunSlot.mutate({ id, data: updates });
-    };
-
-    const handleDeleteCompetition = () => {
-        if (!selectedCompId) return;
-        if (!confirm("Delete this competition? This cannot be undone.")) return;
-        // Use updateCompetition hook to remove? There is no delete hook exposed; using update with status? No explicit delete.
-        // Since no delete mutation exists, we skip actual deletion.
-    };
-
-    const addRunSlot = async () => {
-        if (!selectedCompId) return;
-        const maxOrder = compRunSlots.reduce((max, slot) => Math.max(max, slot.orderNumber), 0);
-        
-        await createRunSlot.mutateAsync({
-            competitionId: selectedCompId,
-            routineId: undefined,
-            day: "Friday",
-            performanceTime: "00:00",
-            stage: "Main",
-            orderNumber: maxOrder + 1,
-            routineName: "New Entry",
-            division: "Junior",
-            style: "Jazz",
-            groupSize: "Solo",
-            studioName: "Studio Maestro",
-            notes: "",
-            isStudioRoutine: true
-        });
-    };
 
     const handleUpdateConventionClass = (id: string, updates: Partial<InsertConventionClass>) => {
         updateConventionClass.mutate({ id, data: updates });
@@ -223,7 +140,7 @@ export default function Competitions() {
         });
     };
 
-    if (competitionsLoading || runSlotsLoading || conventionClassesLoading || routinesLoading || dancersLoading) {
+    if (competitionsLoading || conventionClassesLoading || routinesLoading || dancersLoading) {
         return (
             <Layout>
                 <div className="flex items-center justify-center h-64">
@@ -324,13 +241,11 @@ export default function Competitions() {
                                     <Button
                                       size="sm"
                                       variant="destructive"
-                                      onClick={() => {
+                                      onClick={async () => {
                                         if (!selectedCompId) return;
                                         if (!confirm("Delete this competition? This cannot be undone.")) return;
-                                        // If a delete hook existed we would call it here; using updateCompetition as a soft-delete fallback
-                                        updateCompetition.mutate({ id: selectedCompId, data: { status: "Deleted" } }, {
-                                          onSuccess: () => setSelectedCompId(null),
-                                        });
+                                        await deleteCompetition.mutateAsync(selectedCompId);
+                                        setSelectedCompId(null);
                                       }}
                                     >
                                       <Trash2 className="w-4 h-4 mr-1" /> Delete
@@ -476,7 +391,8 @@ function RegistrationTab({
   routines: Routine[], 
   dancers: Dancer[] 
 }) {
-  const { data: registrations = [] } = useCompetitionRegistrations(competition.id);
+  const { data: registrationsData = [] } = useCompetitionRegistrations(competition.id);
+  const registrations = registrationsData as any[];
   const { data: fees = [] } = useFees();
   const createRegistration = useCreateCompetitionRegistration();
   const deleteRegistration = useDeleteCompetitionRegistration();
@@ -805,188 +721,6 @@ function RegistrationTab({
   );
 }
 
-function RunSheetTable({ 
-    slots, 
-    routines, 
-    dancers, 
-    onUpdate 
-}: { 
-    slots: RunSlot[], 
-    routines: Routine[], 
-    dancers: Dancer[], 
-    onUpdate: (id: string, updates: Partial<InsertRunSlot>) => void 
-}) {
-    const [revealedNames, setRevealedNames] = useState<Record<string, boolean>>({});
-    const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
-    const [editingSlotId, setEditingSlotId] = useState<string | null>(null);
-
-    const toggleReveal = (id: string) => {
-        setRevealedNames(prev => ({ ...prev, [id]: !prev[id] }));
-    }
-
-    const toggleNotes = (id: string) => {
-        setExpandedNotes(prev => ({ ...prev, [id]: !prev[id] }));
-    }
-
-    if (slots.length === 0) {
-        return <div className="text-center p-8 text-muted-foreground">No run slots added yet.</div>
-    }
-
-    return (
-        <div className="border rounded-lg overflow-hidden">
-            <table className="w-full text-sm">
-                <thead className="bg-secondary/30 border-b">
-                    <tr>
-                        <th className="p-3 text-left font-semibold">Time</th>
-                        <th className="p-3 text-left font-semibold">Stage</th>
-                        <th className="p-3 text-center font-semibold">#</th>
-                        <th className="p-3 text-left font-semibold">Routine</th>
-                        <th className="p-3 text-left font-semibold">Studio</th>
-                        <th className="p-3 text-left font-semibold">Dancers</th>
-                        <th className="p-3 text-left font-semibold">Results</th>
-                        <th className="p-3 text-right font-semibold">Actions</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y">
-                    {slots.map(slot => {
-                        const routine = routines.find(r => r.id === slot.routineId);
-                        const isRevealed = revealedNames[slot.id];
-                        const isNotesOpen = expandedNotes[slot.id];
-                        const isEditing = editingSlotId === slot.id;
-                        const isStudioRoutine = slot.isStudioRoutine;
-                        
-                        return (
-                            <tr key={slot.id} className={cn("hover:bg-gray-50 bg-white group", isStudioRoutine && "bg-orange-50/50 hover:bg-orange-50")}>
-                                <td className="p-3 font-mono font-medium text-primary w-[80px]">
-                                    {isEditing ? (
-                                        <Input value={slot.performanceTime} onChange={e => onUpdate(slot.id, { performanceTime: e.target.value })} className="h-8 w-20" />
-                                    ) : slot.performanceTime}
-                                </td>
-                                <td className="p-3 w-[120px]">
-                                    {isEditing ? (
-                                        <Input value={slot.stage} onChange={e => onUpdate(slot.id, { stage: e.target.value })} className="h-8 w-full" />
-                                    ) : slot.stage}
-                                </td>
-                                <td className="p-3 text-center font-bold text-muted-foreground w-[60px]">
-                                    {isEditing ? (
-                                        <Input 
-                                            type="number" 
-                                            value={slot.orderNumber} 
-                                            onChange={e => onUpdate(slot.id, { orderNumber: parseInt(e.target.value) })} 
-                                            className="h-8 w-full text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
-                                        />
-                                    ) : slot.orderNumber}
-                                </td>
-                                <td className="p-3 min-w-[200px]">
-                                    <div className="font-semibold flex items-center gap-2">
-                                        <Button 
-                                            variant="ghost" 
-                                            size="sm" 
-                                            className={cn("h-5 w-5 p-0 rounded-full", isStudioRoutine ? "text-primary hover:text-primary/80" : "text-gray-300 hover:text-primary")}
-                                            onClick={() => onUpdate(slot.id, { isStudioRoutine: !isStudioRoutine })}
-                                            title={isStudioRoutine ? "Marked as Studio Routine" : "Mark as Studio Routine"}
-                                        >
-                                            <Star className={cn("w-3.5 h-3.5", isStudioRoutine && "fill-primary")} />
-                                        </Button>
-                                        
-                                        {isStudioRoutine && <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-[10px] px-1 py-0 h-5">US</Badge>}
-                                        {getRoutineName(slot.routineId, routines) || (isEditing ? <Input value={slot.routineId || ""} placeholder="Routine Name" /> : "Unknown Routine")}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground mt-1 ml-7">
-                                        {isEditing ? (
-                                            <Input value={`${slot.division} ${slot.groupSize} ${slot.style}`} onChange={e => {
-                                                const parts = e.target.value.split(' ');
-                                                onUpdate(slot.id, { 
-                                                    division: parts[0] || slot.division,
-                                                    groupSize: parts[1] || slot.groupSize,
-                                                    style: parts[2] || slot.style
-                                                });
-                                            }} className="h-7 text-xs" />
-                                        ) : `${slot.division} ${slot.groupSize} ${slot.style}`}
-                                    </div>
-                                    
-                                    {isNotesOpen ? (
-                                        <div className="mt-2 ml-7 animate-in slide-in-from-top-1">
-                                            <textarea 
-                                                className="w-full text-xs p-2 border rounded bg-yellow-50 min-h-[60px] focus:outline-none focus:border-primary"
-                                                placeholder="Enter judges notes or corrections..."
-                                                defaultValue={slot.notes || ""}
-                                                onBlur={(e) => onUpdate(slot.id, { notes: e.target.value })}
-                                            />
-                                        </div>
-                                    ) : (
-                                        slot.notes && (
-                                            <div className="mt-2 text-xs text-orange-700 bg-orange-50 p-2 rounded border border-orange-100 italic">
-                                                "{slot.notes}"
-                                            </div>
-                                        )
-                                    )}
-                                </td>
-                                <td className="p-3 w-[150px]">
-                                    {isEditing ? (
-                                        <Input value={slot.studioName || ""} onChange={e => onUpdate(slot.id, { studioName: e.target.value })} className="h-8 w-full" placeholder="Studio Name" />
-                                    ) : (
-                                        <span className="text-muted-foreground text-xs">{slot.studioName || (slot.isStudioRoutine ? "Studio Maestro" : "-")}</span>
-                                    )}
-                                </td>
-                                <td className="p-3 max-w-[200px]">
-                                    <div className="flex items-center gap-2">
-                                        <span className="truncate block max-w-[150px]">
-                                            {routine?.dancerIds.map(id => isRevealed ? getDancerFullName(id, dancers) : getDancerName(id, dancers)).join(", ")}
-                                            {!routine && !isStudioRoutine && <span className="text-muted-foreground italic">Non-studio entry</span>}
-                                        </span>
-                                        {routine && (
-                                            <button onClick={() => toggleReveal(slot.id)} className="text-muted-foreground hover:text-primary">
-                                                {isRevealed ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                                            </button>
-                                        )}
-                                    </div>
-                                </td>
-                                <td className="p-3 w-[180px]">
-                                    {isEditing ? (
-                                        <div className="space-y-1">
-                                            <Input placeholder="Placement" className="h-7 text-xs" value={slot.placement || ""} onChange={e => onUpdate(slot.id, { placement: e.target.value })} />
-                                            <Input placeholder="Award" className="h-7 text-xs" value={slot.specialAwards?.[0] || ""} onChange={e => onUpdate(slot.id, { specialAwards: e.target.value ? [e.target.value] : [] })} />
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-1">
-                                            {slot.placement && (
-                                                <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200 flex w-fit items-center gap-1">
-                                                    <Trophy className="w-3 h-3" /> {slot.placement}
-                                                </Badge>
-                                            )}
-                                            {slot.specialAwards && slot.specialAwards.length > 0 && (
-                                                <div className="text-xs text-purple-600 font-medium flex items-center gap-1">
-                                                    <Star className="w-3 h-3" /> {slot.specialAwards[0]}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </td>
-                                <td className="p-3 text-right">
-                                    <div className="flex items-center justify-end gap-1">
-                                        <Button variant="ghost" size="sm" onClick={() => toggleNotes(slot.id)} className={cn("h-8 w-8 p-0", slot.notes && "text-primary")}>
-                                            <FileText className="w-4 h-4" />
-                                        </Button>
-                                        <Button 
-                                            variant={isEditing ? "default" : "ghost"} 
-                                            size="sm" 
-                                            onClick={() => setEditingSlotId(isEditing ? null : slot.id)} 
-                                            className={cn("h-8 w-8 p-0", isEditing && "bg-primary text-white")}
-                                        >
-                                            <Edit2 className="w-4 h-4" />
-                                        </Button>
-                                    </div>
-                                </td>
-                            </tr>
-                        )
-                    })}
-                </tbody>
-            </table>
-        </div>
-    )
-}
-
 function ConventionTable({ classes, onUpdate }: { classes: ConventionClass[], onUpdate: (id: string, updates: Partial<InsertConventionClass>) => void }) {
     const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -1029,7 +763,7 @@ function ConventionTable({ classes, onUpdate }: { classes: ConventionClass[], on
                         </div>
                         <div className="flex items-center gap-4">
                              {isEditing ? (
-                                <Input className="h-8 w-24 text-xs" value={cls.level} onChange={e => onUpdate(cls.id, { level: e.target.value })} />
+                                <Input className="h-8 w-24 text-xs" value={cls.level || ""} onChange={e => onUpdate(cls.id, { level: e.target.value })} />
                             ) : (
                                 <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-200 border-orange-200 text-sm px-3 py-1">
                                     {cls.level}

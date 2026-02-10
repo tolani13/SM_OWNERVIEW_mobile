@@ -157,6 +157,24 @@ export class Storage {
     return registration;
   }
 
+  async getCompetitionRegistrationByKeys(
+    competitionId: string,
+    dancerId: string,
+    routineId: string,
+  ): Promise<CompetitionRegistration | undefined> {
+    const [registration] = await this.db
+      .select()
+      .from(competitionRegistrations)
+      .where(
+        and(
+          eq(competitionRegistrations.competitionId, competitionId),
+          eq(competitionRegistrations.dancerId, dancerId),
+          eq(competitionRegistrations.routineId, routineId),
+        ),
+      );
+    return registration;
+  }
+
   async deleteCompetitionRegistration(id: string): Promise<void> {
     await this.db.delete(competitionRegistrations).where(eq(competitionRegistrations.id, id));
   }
@@ -248,6 +266,17 @@ export class Storage {
 
   async deleteFee(id: string): Promise<void> {
     await this.db.delete(fees).where(eq(fees.id, id));
+  }
+
+  async deleteCompetitionFees(competitionId: string): Promise<void> {
+    await this.db
+      .delete(fees)
+      .where(
+        and(
+          eq(fees.competitionId, competitionId),
+          eq(fees.type, "Competition"),
+        ),
+      );
   }
 
   // ========== RUN SLOTS (PDF PARSED) ==========

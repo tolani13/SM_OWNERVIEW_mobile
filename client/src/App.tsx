@@ -12,6 +12,7 @@ import Routines from "@/pages/Routines_OwnerView_mobile";
 import Competitions from "@/pages/Competitions_OwnerView_mobile";
 import Finance from "@/pages/Finance_OwnerView_mobile";
 import Announcements from "@/pages/Announcements_OwnerView_mobile";
+import ParentPolicies from "@/pages/ParentPolicies";
 
 function Router() {
   return (
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/routines" component={Routines} />
       <Route path="/competitions" component={Competitions} />
       <Route path="/finance" component={Finance} />
+      <Route path="/policies" component={ParentPolicies} />
       <Route path="/announcements" component={Announcements} />
       <Route component={NotFound} />
     </Switch>
