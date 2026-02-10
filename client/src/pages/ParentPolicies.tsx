@@ -28,12 +28,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const policyTypeLabel: Record<PolicyType, string> = {
@@ -80,7 +80,7 @@ export default function ParentPolicies() {
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="mx-auto w-full max-w-6xl space-y-6">
         <div className="space-y-3">
           <h1 className="text-3xl font-display font-bold text-black">Policies</h1>
           <p className="text-black/80">
@@ -137,20 +137,21 @@ export default function ParentPolicies() {
               </CardContent>
             </Card>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="mx-auto grid w-full max-w-5xl gap-4 md:grid-cols-2 place-items-center">
               {visiblePolicies.map((policy) => {
                 const agreed = hasAgreement(policy.id);
                 return (
-                  <PolicyCard
-                    key={policy.id}
-                    title={policy.title}
-                    summary={policy.summary}
-                    appliesTo={policy.appliesTo}
-                    categoryLabel={policyTypeLabel[policy.type]}
-                    status={agreed ? "agreed" : "pending"}
-                    onViewFullPolicy={() => setSelectedPolicy(policy)}
-                    onToggleAgree={policy.requiresAgreement ? () => handleAgree(policy) : undefined}
-                  />
+                  <div key={policy.id} className="w-full max-w-xl">
+                    <PolicyCard
+                      title={policy.title}
+                      summary={policy.summary}
+                      appliesTo={policy.appliesTo}
+                      categoryLabel={policyTypeLabel[policy.type]}
+                      status={agreed ? "agreed" : "pending"}
+                      onViewFullPolicy={() => setSelectedPolicy(policy)}
+                      onToggleAgree={policy.requiresAgreement ? () => handleAgree(policy) : undefined}
+                    />
+                  </div>
                 );
               })}
             </div>
@@ -266,14 +267,14 @@ export default function ParentPolicies() {
           </TabsContent>
         </Tabs>
 
-        <Sheet open={!!selectedPolicy} onOpenChange={(open) => !open && setSelectedPolicy(null)}>
-          <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
+        <Dialog open={!!selectedPolicy} onOpenChange={(open) => !open && setSelectedPolicy(null)}>
+          <DialogContent className="w-full sm:max-w-xl max-h-[85vh] overflow-y-auto">
             {selectedPolicy && (
               <>
-                <SheetHeader>
-                  <SheetTitle className="text-black">{selectedPolicy.title}</SheetTitle>
-                  <SheetDescription className="text-black/80">{selectedPolicy.summary}</SheetDescription>
-                </SheetHeader>
+                <DialogHeader>
+                  <DialogTitle className="text-black">{selectedPolicy.title}</DialogTitle>
+                  <DialogDescription className="text-black/80">{selectedPolicy.summary}</DialogDescription>
+                </DialogHeader>
                 <div className="mt-6 space-y-4">
                   <Badge variant="outline" className="border-coral/40 bg-coral/10 text-coral">{selectedPolicy.appliesTo}</Badge>
                   <div
@@ -283,8 +284,8 @@ export default function ParentPolicies() {
                 </div>
               </>
             )}
-          </SheetContent>
-        </Sheet>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );

@@ -12,7 +12,10 @@ import Routines from "@/pages/Routines_OwnerView_mobile";
 import Competitions from "@/pages/Competitions_OwnerView_mobile";
 import Finance from "@/pages/Finance_OwnerView_mobile";
 import Announcements from "@/pages/Announcements_OwnerView_mobile";
+import StudioSettings from "@/pages/StudioSettings_OwnerView_mobile";
 import ParentPolicies from "@/pages/ParentPolicies";
+import RecitalListPage from "@/pages/recitals/RecitalListPage";
+import RecitalEditorPage from "@/pages/recitals/RecitalEditorPage";
 
 function Router() {
   return (
@@ -22,9 +25,12 @@ function Router() {
       <Route path="/dancers" component={Dancers} />
       <Route path="/routines" component={Routines} />
       <Route path="/competitions" component={Competitions} />
+      <Route path="/recitals" component={RecitalListPage} />
+      <Route path="/recitals/:id" component={RecitalEditorPage} />
       <Route path="/finance" component={Finance} />
       <Route path="/policies" component={ParentPolicies} />
       <Route path="/announcements" component={Announcements} />
+      <Route path="/settings" component={StudioSettings} />
       <Route component={NotFound} />
     </Switch>
   );
