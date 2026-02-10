@@ -48,7 +48,7 @@ export interface ParseResult {
   };
 }
 
-export type CompanyType = 'velocity' | 'wcde' | 'unknown';
+export type CompanyType = 'unknown';
 
 export interface ParserStrategy {
   /**

@@ -29,6 +29,19 @@ const API_BASE = "/api";
 export interface RunSheetImportResponse {
   success: boolean;
   entries: InsertCompetitionRunSheet[] | CompetitionRunSheet[];
+  methodUsed?: "text" | "ocr" | "text+ocr" | "none";
+  confidence?: number;
+  ocrDiagnostics?: {
+    engine: "rasterized" | "direct" | "none";
+    pageCount: number;
+    averageConfidence: number;
+    pages: Array<{
+      pageNumber: number;
+      confidence: number;
+      textLength: number;
+    }>;
+  };
+  modeRequested?: "auto" | "text" | "ocr";
   warnings?: string[];
   message?: string;
 }
@@ -144,9 +157,10 @@ export const feesAPI = {
 // Competition Run Sheet (new flow)
 export const runSheetAPI = {
   getAll: (competitionId: string) => fetchAPI<CompetitionRunSheet[]>(`/competitions/${competitionId}/run-sheet`),
-  importPdf: (competitionId: string, file: File) => {
+  importPdf: (competitionId: string, file: File, mode: "auto" | "text" | "ocr" = "auto") => {
     const formData = new FormData();
     formData.append("pdf", file);
+    formData.append("mode", mode);
 
     return fetch(`${API_BASE}/competitions/${competitionId}/run-sheet/import`, {
       method: "POST",

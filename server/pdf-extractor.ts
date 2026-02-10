@@ -5,6 +5,7 @@
  */
 
 import { PDFParse } from 'pdf-parse';
+import Tesseract from 'tesseract.js';
 
 export interface ExtractedRunSheetEntry {
   entryNumber?: string;
@@ -22,78 +23,112 @@ export interface ExtractionResult {
   success: boolean;
   entries: ExtractedRunSheetEntry[];
   rawText: string;
+  methodUsed: 'text' | 'ocr' | 'text+ocr' | 'none';
+  confidence: number;
+  ocrDiagnostics?: {
+    engine: 'rasterized' | 'direct' | 'none';
+    pageCount: number;
+    averageConfidence: number;
+    pages: Array<{
+      pageNumber: number;
+      confidence: number;
+      textLength: number;
+    }>;
+  };
   errors: string[];
   warnings: string[];
+}
+
+export interface ExtractRunSheetOptions {
+  mode?: 'auto' | 'text' | 'ocr';
 }
 
 export class PDFExtractor {
   /**
    * Extract text from PDF and attempt to parse run sheet entries
    */
-  async extractRunSheet(buffer: Buffer): Promise<ExtractionResult> {
+  async extractRunSheet(buffer: Buffer, options?: ExtractRunSheetOptions): Promise<ExtractionResult> {
     const errors: string[] = [];
     const warnings: string[] = [];
-    const entries: ExtractedRunSheetEntry[] = [];
+    const mode = options?.mode ?? 'auto';
 
     try {
-      // Extract raw text from PDF
-      const parser = new PDFParse(buffer);
-      const textResult = await parser.getText();
-      const rawText = textResult.text;
+      const textFromPdf = await this.extractTextFromPdf(buffer);
+      const parsedFromText = this.parseEntriesFromRawText(textFromPdf);
 
-      if (!rawText || rawText.trim().length === 0) {
+      if (mode === 'text') {
+        if (parsedFromText.entries.length === 0) {
+          warnings.push('Text mode found little/no structured entries. Try mode=ocr for scanned PDFs.');
+        }
         return {
-          success: false,
-          entries: [],
-          rawText: '',
-          errors: ['PDF contains no extractable text'],
-          warnings: []
+          success: true,
+          entries: parsedFromText.entries,
+          rawText: textFromPdf,
+          methodUsed: textFromPdf.trim().length > 0 ? 'text' : 'none',
+          confidence: this.estimateConfidence(parsedFromText.entries.length, textFromPdf),
+          errors,
+          warnings: [...warnings, ...parsedFromText.warnings],
         };
       }
 
-      // Split into lines
-      const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-
-      let currentDay: string | undefined;
-
-      for (const line of lines) {
-        // Detect day headers
-        const dayMatch = line.match(/^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)/i);
-        if (dayMatch) {
-          currentDay = dayMatch[1];
-          continue;
+      if (mode === 'ocr') {
+        const ocrResult = await this.extractTextWithOCR(buffer, warnings);
+        const parsedFromOcr = this.parseEntriesFromRawText(ocrResult.text);
+        if (parsedFromOcr.entries.length === 0) {
+          warnings.push('OCR mode did not produce structured entries. Manual review/edit likely needed.');
         }
-
-        // Skip header lines and breaks
-        if (
-          /^(time|entry|#|awards|break|lunch)/i.test(line) ||
-          line.length < 15
-        ) {
-          continue;
-        }
-
-        // Attempt to extract entry data using flexible pattern matching
-        const extracted = this.extractEntryFromLine(line);
-        
-        if (extracted) {
-          entries.push({
-            ...extracted,
-            day: currentDay,
-            rawLine: line
-          });
-        }
+        return {
+          success: true,
+          entries: parsedFromOcr.entries,
+          rawText: ocrResult.text,
+          methodUsed: ocrResult.text.trim().length > 0 ? 'ocr' : 'none',
+          confidence: this.estimateConfidence(parsedFromOcr.entries.length, ocrResult.text),
+          ocrDiagnostics: ocrResult.diagnostics,
+          errors,
+          warnings: [...warnings, ...parsedFromOcr.warnings],
+        };
       }
 
-      if (entries.length === 0) {
-        warnings.push('No entries could be extracted. You may need to enter data manually.');
+      // auto mode: text first, OCR fallback when text extraction is weak
+      if (parsedFromText.entries.length > 0) {
+        return {
+          success: true,
+          entries: parsedFromText.entries,
+          rawText: textFromPdf,
+          methodUsed: 'text',
+          confidence: this.estimateConfidence(parsedFromText.entries.length, textFromPdf),
+          errors,
+          warnings: parsedFromText.warnings,
+        };
       }
 
+      warnings.push('Text extraction found no structured entries. Attempting OCR fallback...');
+      const ocrResult = await this.extractTextWithOCR(buffer, warnings);
+      const parsedFromOcr = this.parseEntriesFromRawText(ocrResult.text);
+
+      if (parsedFromOcr.entries.length > 0) {
+        return {
+          success: true,
+          entries: parsedFromOcr.entries,
+          rawText: ocrResult.text,
+          methodUsed: 'ocr',
+          confidence: this.estimateConfidence(parsedFromOcr.entries.length, ocrResult.text),
+          ocrDiagnostics: ocrResult.diagnostics,
+          errors,
+          warnings: [...warnings, ...parsedFromOcr.warnings],
+        };
+      }
+
+      warnings.push('No entries could be extracted. You may need to enter data manually.');
       return {
-        success: entries.length > 0,
-        entries,
-        rawText,
+        success: true,
+        entries: [],
+        rawText: textFromPdf || ocrResult.text || '',
+        methodUsed: textFromPdf.trim().length > 0 && ocrResult.text.trim().length > 0 ? 'text+ocr' : (textFromPdf.trim().length > 0 ? 'text' : (ocrResult.text.trim().length > 0 ? 'ocr' : 'none')),
+        confidence: 0,
+        ocrDiagnostics: ocrResult.diagnostics,
         errors,
-        warnings
+        warnings,
       };
 
     } catch (error: any) {
@@ -101,10 +136,191 @@ export class PDFExtractor {
         success: false,
         entries: [],
         rawText: '',
+        methodUsed: 'none',
+        confidence: 0,
         errors: [`Failed to extract PDF: ${error.message}`],
         warnings: []
       };
     }
+  }
+
+  private async extractTextFromPdf(buffer: Buffer): Promise<string> {
+    try {
+      const parser = new PDFParse(new Uint8Array(buffer));
+      const textResult = await parser.getText();
+      return textResult.text || '';
+    } catch {
+      return '';
+    }
+  }
+
+  private async extractTextWithOCR(
+    buffer: Buffer,
+    warnings: string[],
+  ): Promise<{
+    text: string;
+    diagnostics: ExtractionResult['ocrDiagnostics'];
+  }> {
+    // Robust scanned-PDF OCR path: rasterize each PDF page to image, then OCR each page.
+    // IMPORTANT: Do not pass raw PDF buffers directly into Tesseract, as Leptonica cannot read PDF streams.
+    const rasterizedResult = await this.extractTextWithRasterizedPages(buffer, warnings);
+    if (rasterizedResult.text.trim().length > 0) {
+      return {
+        text: rasterizedResult.text,
+        diagnostics: {
+          engine: 'rasterized',
+          pageCount: rasterizedResult.pages.length,
+          averageConfidence: rasterizedResult.averageConfidence,
+          pages: rasterizedResult.pages,
+        },
+      };
+    }
+
+    warnings.push('Rasterized OCR returned no text. Skipping direct PDF OCR fallback (unsupported for PDF streams).');
+    return {
+      text: '',
+      diagnostics: {
+        engine: 'none',
+        pageCount: rasterizedResult.pages.length,
+        averageConfidence: rasterizedResult.averageConfidence,
+        pages: rasterizedResult.pages,
+      },
+    };
+  }
+
+  private async extractTextWithRasterizedPages(
+    buffer: Buffer,
+    warnings: string[],
+  ): Promise<{
+    text: string;
+    pages: Array<{ pageNumber: number; confidence: number; textLength: number }>;
+    averageConfidence: number;
+  }> {
+    try {
+      const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+      const canvasLib = await import('@napi-rs/canvas');
+      const { createRequire } = await import('module');
+      const { pathToFileURL } = await import('url');
+      const createCanvas = (canvasLib as any).createCanvas;
+
+      // Force worker/api version alignment by resolving worker from the same installed pdfjs-dist package.
+      const require = createRequire(import.meta.url);
+      const workerPath = require.resolve('pdfjs-dist/legacy/build/pdf.worker.mjs');
+      (pdfjsLib as any).GlobalWorkerOptions.workerSrc = pathToFileURL(workerPath).href;
+
+      if (!createCanvas) {
+        warnings.push('Canvas runtime unavailable for PDF rasterization.');
+        return {
+          text: '',
+          pages: [],
+          averageConfidence: 0,
+        };
+      }
+
+      const loadingTask = (pdfjsLib as any).getDocument({
+        data: new Uint8Array(buffer),
+        disableWorker: true,
+        useSystemFonts: true,
+      });
+
+      const pdf = await loadingTask.promise;
+      const pageTexts: string[] = [];
+      const pageDiagnostics: Array<{ pageNumber: number; confidence: number; textLength: number }> = [];
+
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const viewport = page.getViewport({ scale: 2.0 });
+
+        const canvas = createCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
+        const context = canvas.getContext('2d');
+        if (!context) continue;
+
+        await page.render({
+          canvasContext: context as any,
+          viewport,
+        }).promise;
+
+        const imageBuffer: Buffer = canvas.toBuffer('image/png');
+        const ocrResult = await Tesseract.recognize(imageBuffer, 'eng');
+        const pageText = ocrResult?.data?.text?.trim() || '';
+        const pageConfidence = Number(ocrResult?.data?.confidence || 0);
+
+        pageDiagnostics.push({
+          pageNumber: pageNum,
+          confidence: pageConfidence,
+          textLength: pageText.length,
+        });
+
+        if (pageText) {
+          pageTexts.push(pageText);
+        }
+      }
+
+      const averageConfidence =
+        pageDiagnostics.length > 0
+          ? pageDiagnostics.reduce((sum, p) => sum + p.confidence, 0) / pageDiagnostics.length
+          : 0;
+
+      return {
+        text: pageTexts.join('\n\n'),
+        pages: pageDiagnostics,
+        averageConfidence,
+      };
+    } catch (error: any) {
+      warnings.push(`Rasterized OCR path failed: ${error?.message || 'unknown error'}`);
+      return {
+        text: '',
+        pages: [],
+        averageConfidence: 0,
+      };
+    }
+  }
+
+  private parseEntriesFromRawText(rawText: string): { entries: ExtractedRunSheetEntry[]; warnings: string[] } {
+    const warnings: string[] = [];
+    const entries: ExtractedRunSheetEntry[] = [];
+
+    if (!rawText || rawText.trim().length === 0) {
+      return { entries, warnings: ['No extractable text found in document.'] };
+    }
+
+    const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    let currentDay: string | undefined;
+
+    for (const line of lines) {
+      const dayMatch = line.match(/^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)/i);
+      if (dayMatch) {
+        currentDay = dayMatch[1];
+        continue;
+      }
+
+      if (/^(time|entry|#|awards|break|lunch)/i.test(line) || line.length < 15) {
+        continue;
+      }
+
+      const extracted = this.extractEntryFromLine(line);
+      if (extracted) {
+        entries.push({
+          ...extracted,
+          day: currentDay,
+          rawLine: line,
+        });
+      }
+    }
+
+    if (entries.length === 0) {
+      warnings.push('No structured rows matched expected run-sheet patterns.');
+    }
+
+    return { entries, warnings };
+  }
+
+  private estimateConfidence(entryCount: number, rawText: string): number {
+    if (!rawText.trim()) return 0;
+    if (entryCount <= 0) return 0.15;
+    if (entryCount < 5) return 0.45;
+    if (entryCount < 20) return 0.7;
+    return 0.85;
   }
 
   /**

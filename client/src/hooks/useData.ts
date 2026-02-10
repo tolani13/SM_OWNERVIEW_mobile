@@ -2,25 +2,18 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
   Dancer,
   InsertDancer,
-  Teacher,
   InsertTeacher,
   Routine,
   InsertRoutine,
   Competition,
   InsertCompetition,
-  RunSlot,
   InsertRunSlot,
-  ConventionClass,
   InsertConventionClass,
-  StudioClass,
   InsertStudioClass,
-  PracticeBooking,
   InsertPracticeBooking,
   Fee,
   InsertFee,
-  Announcement,
   InsertAnnouncement,
-  CompetitionRegistration,
   InsertCompetitionRegistration,
   StudioSettings,
   InsertStudioSettings,
@@ -258,6 +251,24 @@ export function useUpdateCompetition() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["competitions"] });
+    },
+  });
+}
+
+export function useDeleteCompetition() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/competitions/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete competition");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["competitions"] });
+      queryClient.invalidateQueries({ queryKey: ["competition-registrations"] });
+      queryClient.invalidateQueries({ queryKey: ["fees"] });
+      queryClient.invalidateQueries({ queryKey: ["runSlots"] });
+      queryClient.invalidateQueries({ queryKey: ["conventionClasses"] });
+      queryClient.invalidateQueries({ queryKey: ["run-sheet"] });
     },
   });
 }

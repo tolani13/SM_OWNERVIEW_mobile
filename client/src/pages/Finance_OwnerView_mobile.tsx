@@ -146,7 +146,8 @@ export default function Finance() {
           const paid = paidOverrides[existing.id] ?? existing.paid;
           matrix[dancer.id][index] = { ...existing, paid };
         } else {
-          const rate = dancer.level ? tuitionRates[dancer.level] ?? 0 : 0;
+          const dancerLevel = (dancer as any).level as string | undefined;
+          const rate = dancerLevel ? tuitionRates[dancerLevel] ?? 0 : 0;
           matrix[dancer.id][index] = {
             id: `virt-tuition-${dancer.id}-${index}`,
             type: "Tuition",
@@ -462,11 +463,11 @@ export default function Finance() {
                             <TableCell className="font-medium sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                               {dancer.firstName} {dancer.lastName.charAt(0)}.
                               <div className="text-[10px] text-muted-foreground uppercase">
-                                {dancer.level}
+                                {(dancer as any).level || "N/A"}
                               </div>
                             </TableCell>
                             <TableCell className="text-center text-muted-foreground font-mono bg-gray-50/30">
-                              ${tuitionRates[dancer.level]}
+                              ${tuitionRates[(dancer as any).level] ?? 0}
                             </TableCell>
                             {MONTHS.map((_, index) => {
                               const fee = tuitionMatrix[dancer.id]?.[index];

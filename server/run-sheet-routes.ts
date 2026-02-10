@@ -52,6 +52,8 @@ export function registerRunSheetRoutes(app: Express): void {
     try {
       const { competitionId } = req.params;
       const file = req.file;
+      const importModeRaw = (req.body?.mode || req.query?.mode || 'auto') as string;
+      const importMode = ['auto', 'text', 'ocr'].includes(importModeRaw) ? (importModeRaw as 'auto' | 'text' | 'ocr') : 'auto';
 
       if (!file) {
         return res.status(400).json({ error: "No PDF file uploaded" });
@@ -64,7 +66,7 @@ export function registerRunSheetRoutes(app: Express): void {
       }
 
       // Extract text from PDF
-      const extractionResult = await pdfExtractor.extractRunSheet(file.buffer);
+      const extractionResult = await pdfExtractor.extractRunSheet(file.buffer, { mode: importMode });
 
       if (!extractionResult.success && extractionResult.errors.length > 0) {
         return res.status(400).json({
@@ -78,6 +80,10 @@ export function registerRunSheetRoutes(app: Express): void {
       return res.status(200).json({
         success: true,
         entries: extractionResult.entries,
+        methodUsed: extractionResult.methodUsed,
+        confidence: extractionResult.confidence,
+        ocrDiagnostics: extractionResult.ocrDiagnostics,
+        modeRequested: importMode,
         warnings: extractionResult.warnings,
         message: `Extracted ${extractionResult.entries.length} entries. Please review and save.`
       });
