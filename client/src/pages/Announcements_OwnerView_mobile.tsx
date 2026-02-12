@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Megaphone, Plus, Calendar, Tag, Pin, Edit2, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useAnnouncements, useCreateAnnouncement, useUpdateAnnouncement } from "@/hooks/useData";
@@ -111,8 +111,22 @@ export default function Announcements() {
         setNewPost({ ...newPost, tags: newTags.join(',') });
     }
 
-    const pinnedAnnouncements = announcements.filter(a => a.isPinned);
-    const regularAnnouncements = announcements.filter(a => !a.isPinned);
+    const toTimestamp = (value?: string | Date | null) => {
+        if (!value) return 0;
+        const ts = new Date(value).getTime();
+        return Number.isNaN(ts) ? 0 : ts;
+    };
+
+    const sortedAnnouncements = useMemo(() => {
+        return [...announcements].sort((a, b) => {
+            const aTime = toTimestamp(a.date) || toTimestamp(a.createdAt);
+            const bTime = toTimestamp(b.date) || toTimestamp(b.createdAt);
+            return bTime - aTime;
+        });
+    }, [announcements]);
+
+    const pinnedAnnouncements = sortedAnnouncements.filter(a => a.isPinned);
+    const regularAnnouncements = sortedAnnouncements.filter(a => !a.isPinned);
 
     const handleOpenCreate = () => {
         setNewPost({ tags: "Studio", isPinned: false, date: new Date().toISOString().split('T')[0] });
@@ -185,36 +199,44 @@ export default function Announcements() {
                         {pinnedAnnouncements.length > 0 && regularAnnouncements.length > 0 && (
                              <h2 className="text-sm font-bold uppercase text-muted-foreground">Recent Updates</h2>
                         )}
-                        {regularAnnouncements.map(announcement => (
-                            <Card key={announcement.id} className="border-none shadow-sm hover:shadow-md transition-shadow bg-white group relative overflow-hidden">
-                                <div className="h-2 bg-primary w-full origin-left group-hover:scale-x-105 transition-transform" />
-                                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Button 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        onClick={() => openEdit(announcement)}
-                                        aria-label={`Edit ${announcement.title}`}
-                                    >
-                                        <Edit2 className="w-4 h-4 text-muted-foreground" />
-                                    </Button>
-                                </div>
-                                <CardContent className="p-6">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <div className="flex gap-2 mb-2">
-                                            {(announcement.tags || "").split(',').filter(Boolean).map(tag => (
-                                                <Badge key={tag} variant="secondary" className="font-normal text-xs">{tag}</Badge>
-                                            ))}
-                                        </div>
-                                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                            <Calendar className="w-3 h-3" />
-                                            {formatDate(announcement.date)}
-                                        </span>
-                                    </div>
-                                    <h3 className="text-xl font-bold mb-2">{announcement.title}</h3>
-                                    <p className="text-muted-foreground">{announcement.content}</p>
+                        {regularAnnouncements.length === 0 ? (
+                            <Card className="border-dashed bg-white/80">
+                                <CardContent className="p-6 text-sm text-muted-foreground">
+                                    No recent announcements yet.
                                 </CardContent>
                             </Card>
-                        ))}
+                        ) : (
+                            regularAnnouncements.map(announcement => (
+                                <Card key={announcement.id} className="border-none shadow-sm hover:shadow-md transition-shadow bg-white group relative overflow-hidden">
+                                    <div className="h-2 bg-primary w-full origin-left group-hover:scale-x-105 transition-transform" />
+                                    <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            onClick={() => openEdit(announcement)}
+                                            aria-label={`Edit ${announcement.title}`}
+                                        >
+                                            <Edit2 className="w-4 h-4 text-muted-foreground" />
+                                        </Button>
+                                    </div>
+                                    <CardContent className="p-6">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div className="flex gap-2 mb-2">
+                                                {(announcement.tags || "").split(',').filter(Boolean).map(tag => (
+                                                    <Badge key={tag} variant="secondary" className="font-normal text-xs">{tag}</Badge>
+                                                ))}
+                                            </div>
+                                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                                <Calendar className="w-3 h-3" />
+                                                {formatDate(announcement.date)}
+                                            </span>
+                                        </div>
+                                        <h3 className="text-xl font-bold mb-2">{announcement.title}</h3>
+                                        <p className="text-muted-foreground">{announcement.content}</p>
+                                    </CardContent>
+                                </Card>
+                            ))
+                        )}
                     </div>
                 </div>
 

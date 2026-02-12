@@ -47,19 +47,8 @@ export function CompetitionRunSheet({ competitionId, homeStudioName }: Competiti
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [lastImportMeta, setLastImportMeta] = useState<{
-    methodUsed?: "text" | "ocr" | "text+ocr" | "none";
-    confidence?: number;
-    modeRequested?: "auto" | "text" | "ocr";
-    ocrDiagnostics?: {
-      engine: "rasterized" | "direct" | "none";
-      pageCount: number;
-      averageConfidence: number;
-      pages: Array<{
-        pageNumber: number;
-        confidence: number;
-        textLength: number;
-      }>;
-    };
+    parser?: string;
+    modeRequested?: string;
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -95,7 +84,7 @@ export function CompetitionRunSheet({ competitionId, homeStudioName }: Competiti
     }
   };
 
-  const handleImportByType = async (type: "runsheet" | "convention", mode: "auto" | "text" | "ocr" = "auto") => {
+  const handleImportByType = async (type: "runsheet" | "convention") => {
     if (!pendingFile) return;
 
     setIsLoading(true);
@@ -104,7 +93,7 @@ export function CompetitionRunSheet({ competitionId, homeStudioName }: Competiti
 
     try {
       if (type === "runsheet") {
-        formData.append("mode", mode);
+        formData.append("mode", "python");
         const response = await fetch(`/api/competitions/${competitionId}/run-sheet/import`, {
           method: "POST",
           body: formData
@@ -120,14 +109,12 @@ export function CompetitionRunSheet({ competitionId, homeStudioName }: Competiti
         // Show extracted entries for review (not saved yet)
         setEntries(result.entries);
         setLastImportMeta({
-          methodUsed: result.methodUsed,
-          confidence: result.confidence,
-          modeRequested: result.modeRequested,
-          ocrDiagnostics: result.ocrDiagnostics,
+          parser: result.parser || "python",
+          modeRequested: result.modeRequested || "python",
         });
         queryClient.invalidateQueries({ queryKey: ["run-sheet", competitionId] });
 
-        toast.success(`Run sheet extracted: ${result.entries.length} entries (${result.methodUsed || "text"}). Review and save.`);
+        toast.success(`Run sheet extracted: ${result.entries.length} entries (${result.parser || "python"} parser). Review and save.`);
 
         if (result.warnings && result.warnings.length > 0) {
           result.warnings.forEach((warning: string) => toast(warning, { icon: "⚠️" }));
@@ -306,14 +293,8 @@ export function CompetitionRunSheet({ competitionId, homeStudioName }: Competiti
 
       {lastImportMeta && (
         <div className="p-3 rounded-lg border bg-amber-50 text-sm text-amber-900 flex flex-wrap gap-3 items-center">
-          <span><strong>Import mode:</strong> {lastImportMeta.modeRequested || "auto"}</span>
-          <span><strong>Method used:</strong> {lastImportMeta.methodUsed || "text"}</span>
-          <span><strong>Confidence:</strong> {Math.round((lastImportMeta.confidence ?? 0) * 100)}%</span>
-          {lastImportMeta.ocrDiagnostics && lastImportMeta.ocrDiagnostics.pageCount > 0 && (
-            <span>
-              <strong>OCR pages:</strong> {lastImportMeta.ocrDiagnostics.pageCount} ({lastImportMeta.ocrDiagnostics.engine}, avg {Math.round(lastImportMeta.ocrDiagnostics.averageConfidence)}%)
-            </span>
-          )}
+          <span><strong>Import mode:</strong> {lastImportMeta.modeRequested || "python"}</span>
+          <span><strong>Parser:</strong> {lastImportMeta.parser || "python"}</span>
           <span className="text-amber-700">Please review extracted rows before saving.</span>
         </div>
       )}
@@ -628,17 +609,9 @@ export function CompetitionRunSheet({ competitionId, homeStudioName }: Competiti
               className="w-full justify-start"
               variant="outline"
               disabled={isLoading}
-              onClick={() => handleImportByType("runsheet", "auto")}
+              onClick={() => handleImportByType("runsheet")}
             >
-              Competition Run Sheet (Auto: text + OCR fallback)
-            </Button>
-            <Button
-              className="w-full justify-start"
-              variant="outline"
-              disabled={isLoading}
-              onClick={() => handleImportByType("runsheet", "ocr")}
-            >
-              Competition Run Sheet (OCR-first)
+              Competition Run Sheet (Python Parser)
             </Button>
             <Button
               className="w-full justify-start"

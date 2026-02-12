@@ -21,6 +21,7 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
   { id: "attendance", label: "Attendance", description: "Sign-in behavior and grace period" },
   { id: "staff", label: "Staff", description: "Teacher permissions and visibility" },
   { id: "parent-portal", label: "Parent Portal", description: "What parents can view" },
+  { id: "messaging", label: "Messaging", description: "Broadcast defaults and urgency controls" },
   { id: "integrations", label: "Integrations", description: "Payments and sync options" },
   { id: "documents", label: "Documents", description: "Policy and release defaults" },
   { id: "security", label: "Security", description: "Session and account rules" },
@@ -48,6 +49,8 @@ type SettingsFormState = {
   attendanceGraceMinutes: number;
   staffCanEditFinance: boolean;
   parentCanViewBalances: boolean;
+  messagingTimeSensitiveDefault: boolean;
+  messagingExpiryHours: number;
   stripeConnected: boolean;
   defaultPolicyText: string;
   requireMfaForAdmins: boolean;
@@ -74,6 +77,8 @@ const DEFAULT_STATE: SettingsFormState = {
   attendanceGraceMinutes: 15,
   staffCanEditFinance: false,
   parentCanViewBalances: true,
+  messagingTimeSensitiveDefault: false,
+  messagingExpiryHours: 24,
   stripeConnected: false,
   defaultPolicyText: "All tuition is due on the 1st of each month.",
   requireMfaForAdmins: true,
@@ -197,6 +202,27 @@ export default function StudioSettings() {
           <div className="flex items-center justify-between rounded-lg border p-3 max-w-md">
             <Label>Parents can view balances</Label>
             <Switch checked={form.parentCanViewBalances} onCheckedChange={(v) => setForm({ ...form, parentCanViewBalances: v })} />
+          </div>
+        );
+      case "messaging":
+        return (
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <Label>Enable time-sensitive by default</Label>
+              <Switch
+                checked={form.messagingTimeSensitiveDefault}
+                onCheckedChange={(v) => setForm({ ...form, messagingTimeSensitiveDefault: v })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Default expiry window (hours)</Label>
+              <Input
+                type="number"
+                min={1}
+                value={form.messagingExpiryHours}
+                onChange={(e) => setForm({ ...form, messagingExpiryHours: Number(e.target.value || 1) })}
+              />
+            </div>
           </div>
         );
       case "integrations":

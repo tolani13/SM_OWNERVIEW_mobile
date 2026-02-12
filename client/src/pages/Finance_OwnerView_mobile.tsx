@@ -30,7 +30,6 @@ import {
   Calendar,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { Slider } from "@/components/ui/slider";
 import {
   Dialog,
   DialogContent,
@@ -110,11 +109,6 @@ export default function Finance() {
     new Date().toISOString().split("T")[0],
   );
   const [paidOverrides, setPaidOverrides] = useState<Record<string, boolean>>({});
-
-  const handleRateChange = (level: string, value: number[]) => {
-    const next = value?.[0] ?? 0;
-    setTuitionRates((prev) => ({ ...prev, [level]: Math.max(0, next) }));
-  };
 
   // Costume Edit State
   const [editingCostumeFee, setEditingCostumeFee] = useState<{
@@ -400,12 +394,17 @@ export default function Finance() {
                           <span className="text-xs font-bold uppercase text-muted-foreground">{level}</span>
                           <span className="font-bold text-lg">${rate}</span>
                         </div>
-                        <Slider
-                          value={[rate]}
+                        <Input
+                          type="number"
                           min={0}
-                          max={400}
                           step={5}
-                          onValueChange={(v) => handleRateChange(level, v)}
+                          value={rate}
+                          onChange={(e) =>
+                            setTuitionRates((prev) => ({
+                              ...prev,
+                              [level]: Math.max(0, parseInt(e.target.value || "0") || 0),
+                            }))
+                          }
                         />
                       </div>
                     ))}

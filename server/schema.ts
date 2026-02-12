@@ -248,6 +248,83 @@ export const announcements = pgTable("announcements", {
 export type Announcement = typeof announcements.$inferSelect;
 export type InsertAnnouncement = typeof announcements.$inferInsert;
 
+// ========== MESSAGES ==========
+export const messages = pgTable("messages", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  subject: text("subject").notNull(),
+  body: text("body").notNull(),
+  audience: text("audience").default("All Families").notNull(),
+  channel: text("channel").default("in-app").notNull(),
+  status: text("status").default("Draft").notNull(), // Draft, Scheduled, Sent, Archived
+  isTimeSensitive: boolean("is_time_sensitive").default(false).notNull(),
+  sendAt: text("send_at"),
+  expiresAt: text("expires_at"),
+  createdBy: text("created_by").default("Owner").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type Message = typeof messages.$inferSelect;
+export type InsertMessage = typeof messages.$inferInsert;
+
+// ========== CHAT THREADS (Parent <-> Studio + CompChat) ==========
+export const chatThreads = pgTable("chat_threads", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  title: text("title").notNull(),
+  type: text("type").notNull().default("direct_parent_staff"), // direct_parent_staff, compchat, group_broadcast
+  createdById: text("created_by_id").notNull(),
+  createdByName: text("created_by_name").notNull(),
+  createdByRole: text("created_by_role").notNull(), // owner, staff, parent
+  staffOnlyBroadcast: boolean("staff_only_broadcast").default(false).notNull(),
+  isTimeSensitive: boolean("is_time_sensitive").default(false).notNull(),
+  expiresAt: text("expires_at"),
+  active: boolean("active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type ChatThread = typeof chatThreads.$inferSelect;
+export type InsertChatThread = typeof chatThreads.$inferInsert;
+
+export const chatThreadParticipants = pgTable("chat_thread_participants", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  threadId: text("thread_id").notNull().references(() => chatThreads.id, { onDelete: "cascade" }),
+  participantId: text("participant_id").notNull(),
+  participantName: text("participant_name").notNull(),
+  participantRole: text("participant_role").notNull(), // owner, staff, parent
+  authorized: boolean("authorized").default(true).notNull(),
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+});
+
+export type ChatThreadParticipant = typeof chatThreadParticipants.$inferSelect;
+export type InsertChatThreadParticipant = typeof chatThreadParticipants.$inferInsert;
+
+export const chatMessages = pgTable("chat_messages", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  threadId: text("thread_id").notNull().references(() => chatThreads.id, { onDelete: "cascade" }),
+  senderId: text("sender_id").notNull(),
+  senderName: text("sender_name").notNull(),
+  senderRole: text("sender_role").notNull(), // owner, staff, parent
+  body: text("body").notNull(),
+  isStaffBroadcast: boolean("is_staff_broadcast").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type ChatMessage = typeof chatMessages.$inferSelect;
+export type InsertChatMessage = typeof chatMessages.$inferInsert;
+
+export const chatMessageReads = pgTable("chat_message_reads", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  messageId: text("message_id").notNull().references(() => chatMessages.id, { onDelete: "cascade" }),
+  readerId: text("reader_id").notNull(),
+  readerName: text("reader_name").notNull(),
+  readerRole: text("reader_role").notNull(), // owner, staff, parent
+  readAt: timestamp("read_at").defaultNow().notNull(),
+});
+
+export type ChatMessageRead = typeof chatMessageReads.$inferSelect;
+export type InsertChatMessageRead = typeof chatMessageReads.$inferInsert;
+
 // ========== FEES ==========
 export const fees = pgTable("fees", {
   id: text("id").primaryKey().$defaultFn(() => createId()),

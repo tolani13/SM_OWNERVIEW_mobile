@@ -12,6 +12,7 @@ import Routines from "@/pages/Routines_OwnerView_mobile";
 import Competitions from "@/pages/Competitions_OwnerView_mobile";
 import Finance from "@/pages/Finance_OwnerView_mobile";
 import Announcements from "@/pages/Announcements_OwnerView_mobile";
+import Messages from "@/pages/Messages_OwnerView_mobile";
 import StudioSettings from "@/pages/StudioSettings_OwnerView_mobile";
 import ParentPolicies from "@/pages/ParentPolicies";
 import RecitalListPage from "@/pages/recitals/RecitalListPage";
@@ -28,6 +29,7 @@ function Router() {
       <Route path="/recitals" component={RecitalListPage} />
       <Route path="/recitals/:id" component={RecitalEditorPage} />
       <Route path="/finance" component={Finance} />
+      <Route path="/messages" component={Messages} />
       <Route path="/policies" component={ParentPolicies} />
       <Route path="/announcements" component={Announcements} />
       <Route path="/settings" component={StudioSettings} />

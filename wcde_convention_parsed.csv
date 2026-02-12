@@ -1,0 +1,42 @@
+class_name,instructor,room,day,start_time,end_time,duration,style,division,age_range,level,is_audition_phrase,raw_text
+Ballet,Tiffany Billings,Mini,Saturday,7:45,8:45,60,Ballet,Mini,,All Levels,False,Ballet | Tiffany Billings
+Industry Jazz,Scott Myrick,Junior,Saturday,7:45,8:45,60,Jazz,Junior,,All Levels,False,Industry Jazz | Scott Myrick
+Contemporary,Will Johnston,Teen/Senior,Saturday,7:45,8:45,60,Contemporary,Teen/Senior,,All Levels,False,Contemporary | Will Johnston
+Tap,Nick Bowman,Mini,Saturday,8:50,9:50,60,Tap,Mini,,All Levels,False,Tap | Nick Bowman
+Ballet,Tiffany Billings,Junior,Saturday,8:50,9:50,60,Ballet,Junior,,All Levels,False,Ballet | Tiffany Billings
+Jazz,Aika Doone,Teen/Senior,Saturday,8:50,9:50,60,Jazz,Teen/Senior,,All Levels,False,Jazz | Aika Doone
+Battle Rock,Manoukian,Breakout Ballroom,Saturday,8:50,9:50,60,Hip Hop,Breakout,,All Levels,False,Battle Rock | Manoukian
+Industry Jazz,Scott Myrick,Mini,Saturday,9:55,10:55,60,Jazz,Mini,,All Levels,False,Industry Jazz | Scott Myrick
+Contemporary,Kim Wolfe,Junior,Saturday,9:55,10:55,60,Contemporary,Junior,,All Levels,False,Contemporary | Kim Wolfe
+Tap,Nick Bowman,Teen/Senior,Saturday,9:55,10:55,60,Tap,Teen/Senior,,All Levels,False,Tap | Nick Bowman
+Contemporary,Will Johnston,Mini,Saturday,11:25,12:25,60,Contemporary,Mini,,All Levels,False,Contemporary | Will Johnston
+Tap,Nick Bowman,Junior,Saturday,11:25,12:25,60,Tap,Junior,,All Levels,False,Tap | Nick Bowman
+Contemporary,Kim Wolfe,Teen/Senior,Saturday,11:25,12:25,60,Contemporary,Teen/Senior,,All Levels,False,Contemporary | Kim Wolfe
+Get In Formation (Jr),Billings,Breakout Ballroom,Saturday,11:25,12:25,60,,Breakout,,All Levels,False,Get In Formation (Jr) | Billings
+Jazz,Aika Doone,Mini,Saturday,12:30,1:15,45,Jazz,Mini,,All Levels,False,Jazz | Aika Doone
+Hip-Hop,Gev Manoukian,Junior,Saturday,12:30,1:15,45,Hip Hop,Junior,,All Levels,False,Hip-Hop | Gev Manoukian
+Industry Jazz,Scott Myrick,Teen/Senior,Saturday,12:30,1:15,45,Jazz,Teen/Senior,,All Levels,False,Industry Jazz | Scott Myrick
+Contemporary,Kim Wolfe,Mini,Sunday,7:30,8:15,45,Contemporary,Mini,,All Levels,False,Contemporary | Kim Wolfe
+Jazz,Aika Doone,Junior,Sunday,7:30,8:15,45,Jazz,Junior,,All Levels,False,Jazz | Aika Doone
+Ballet,Tiffany Billings,Teen/Senior,Sunday,7:30,8:15,45,Ballet,Teen/Senior,,All Levels,False,Ballet | Tiffany Billings
+Ballet,Tiffany Billings,Mini,Sunday,8:20,9:20,60,Ballet,Mini,,All Levels,False,Ballet | Tiffany Billings
+Industry Jazz,Scott Myrick,Junior,Sunday,8:20,9:20,60,Jazz,Junior,,All Levels,False,Industry Jazz | Scott Myrick
+Hip-Hop,Gev Manoukian,Teen/Senior,Sunday,8:20,9:20,60,Hip Hop,Teen/Senior,,All Levels,False,Hip-Hop | Gev Manoukian
+Advanced Tap,Bowman,Breakout Ballroom,Sunday,8:20,9:20,60,Tap,Breakout,,All Levels,False,Advanced Tap | Bowman
+Tap,Nick Bowman,Mini,Sunday,9:25,10:25,60,Tap,Mini,,All Levels,False,Tap | Nick Bowman
+Contemporary,Kim Wolfe,Junior,Sunday,9:25,10:25,60,Contemporary,Junior,,All Levels,False,Contemporary | Kim Wolfe
+Contemporary,Will Johnston,Teen/Senior,Sunday,9:25,10:25,60,Contemporary,Teen/Senior,,All Levels,False,Contemporary | Will Johnston
+Audition Class (16+),TBD,Breakout Ballroom,Sunday,9:25,10:25,60,Audition,Breakout,,All Levels,True,Audition Class (16+)
+Audition Class (6-9),TBD,Mini,Sunday,10:30,12:00,90,Audition,Mini,,All Levels,True,Audition Class (6-9)
+Audition Class (10-12),TBD,Junior,Sunday,10:30,12:00,90,Audition,Junior,,All Levels,True,Audition Class (10-12)
+Audition Class (13-15),TBD,Teen/Senior,Sunday,10:30,12:00,90,Audition,Teen/Senior,,All Levels,True,Audition Class (13-15)
+Contemporary,Will Johnston,Breakout Ballroom,Sunday,10:30,12:00,90,Contemporary,Breakout,,All Levels,False,Contemporary | Will Johnston
+Hip-Hop,Gev Manoukian,Mini,Sunday,12:30,1:30,60,Hip Hop,Mini,,All Levels,False,Hip-Hop | Gev Manoukian
+Contemporary,Will Johnston,Junior,Sunday,12:30,1:30,60,Contemporary,Junior,,All Levels,False,Contemporary | Will Johnston
+Contemporary,Kim Wolfe,Teen/Senior,Sunday,12:30,1:30,60,Contemporary,Teen/Senior,,All Levels,False,Contemporary | Kim Wolfe
+Floorwork Foundations,Doone,Breakout Ballroom,Sunday,12:30,1:30,60,Open,Breakout,,All Levels,False,Floorwork Foundations | Doone
+Jazz,Aika Doone,Mini,Sunday,1:35,2:35,60,Jazz,Mini,,All Levels,False,Jazz | Aika Doone
+Hip-Hop,Gev Manoukian,Junior,Sunday,1:35,2:35,60,Hip Hop,Junior,,All Levels,False,Hip-Hop | Gev Manoukian
+Industry Jazz,Scott Myrick,Teen/Senior,Sunday,1:35,2:35,60,Jazz,Teen/Senior,,All Levels,False,Industry Jazz | Scott Myrick
+Get In Formation,Tiffany Billings,Breakout Ballroom,Saturday,11:25,12:25,60,,Breakout,,All Levels,False,"Get In Formation — Tiffany Billings — (Jr. Aged Workshop) Step into the spotlight with former Radio City Rockette Tiffany Billings! In this high- energy class designed just for juniors, dancers will explore the exciting world of precision dance. From straight lines to sharp formations, you’ll dive into the foundations of ensemble work and signature Rockette-style technique. Get ready for toe taps, team work, and of course—eye high kicks!"
+Beyond the Basics,Nick Bowman,Breakout Ballroom,Sunday,8:20,9:20,60,,Breakout,,All Levels,False,"Beyond the Basics — Nick Bowman — Own the stage and deliver your steps with clarity, power, and purpose. This class focuses on advanced vocabulary, rhythmic precision and weight transfer strategies—elements that build the kind of confidence that drives a stage presence defined by technical excellence. Lace them up and get ready to meet the challenge."

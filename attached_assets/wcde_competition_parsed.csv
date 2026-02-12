@@ -1,0 +1,323 @@
+entry_num,dance_name,division,style,group_size,studio,time
+1,Party In The U S,Mini,Jazz,Solo,Broadway South A Dance,8:00
+2,Buzz,Mini,Jazz,Solo,Broadway South Dance,8:02
+3,Little Bitty Pretty,Mini,Jazz,Solo,Revolution Dance One Company,8:04
+4,Wow,Mini,Jazz,Solo,The Pike Road Dance Academy,8:06
+5,Be About It,Mini,Jazz,Solo,"Dance Warehouse, Inc.",8:09
+6,Ooh La La,Mini,Jazz,Solo,Broadway South Dance,8:10
+7,All About Me,Mini,Jazz,Solo,Revolution Dance Company,8:13
+8,Time,Mini,Contemporary,Solo,Broadway South Dance,8:15
+9,Evergreen,Mini,Contemporary,Solo,Broadway South Dance,8:18
+10,Mystery In,Mini,Contemporary,Solo,Lemoine Academy Darkness of Dance,8:21
+11,Constellations,Mini,Lyrical,Solo,Broadway South Dance,8:23
+12,Yellow Brick,Mini,Lyrical,Solo,The Pointe Dance Road Arts,8:26
+13,Flaunt It,Mini,,Solo,Jill Listi Dance Theatre Studio,8:29
+14,Diamonds,Mini,,Solo,elite dance force Theatre,8:34
+15,Big Spender,Mini,Jazz,Duo/Trio,Lemoine Academy of Dance,8:36
+16,Word Up,Mini,Jazz,Duo/Trio,Lemoine Academy of Dance,8:39
+17,Sugar And Spice,Mini,Jazz,Duo/Trio,The Pike Road Dance Academy,8:42
+18,Boots,Mini,Jazz,Duo/Trio,"Dance Connection Center, LLC",8:44
+19,Genesis,Mini,Open,Solo,Broadway South Dance,8:47
+20,Let's Get Loud,Mini,Open,Solo,Broadway South Dance,8:49
+21,River Runs,Mini,Contemporary,Duo/Trio,Lemoine Academy of Dance,8:51
+22,Fabulous,Mini,,Duo/Trio,"Dance Connection Theatre Center, LLC",8:54
+23,Somewhere,Mini,Lyrical,Duo/Trio,elite dance force,8:57
+24,My Kind Of Guy,Junior,Jazz,Solo,Conservatory Of Dance Arts,9:10
+25,Amayzing Mayzie,Junior,Jazz,Solo,Revolution Dance Company,9:12
+26,Bad Mama Jama,Junior,Jazz,Solo,The Pointe Dance Arts,9:15
+27,Diva,Junior,Jazz,Solo,elite dance force,9:17
+28,Yeesh,Junior,Jazz,Solo,Broadway South Dance,9:19
+29,Goosebumps,Junior,Jazz,Solo,Sheffield School of the Dance,9:21
+30,Everybody Wants,Junior,Jazz,Solo,Revolution Dance To Be A Cat Company,9:24
+31,Pink Panther,Junior,Jazz,Solo,Kelly's Studio Of Dance,9:26
+32,Serving,Junior,Jazz,Solo,Revolution Dance Company,9:29
+33,Miss Otis,Junior,Jazz,Solo,Revolution Dance Regrets Company,9:31
+34,Make It Look,Junior,Jazz,Solo,LA Dance Space Easy,9:34
+35,Rinse And,Junior,Jazz,Solo,elite dance force Repeat,9:36
+36,It Girl,Junior,Jazz,Solo,The Pike Road Dance Academy,9:39
+37,Watchugot,Junior,Jazz,Solo,Pembo Cieutat Academy of Dance,9:41
+38,Control,Junior,Jazz,Solo,Kelly's Studio Of Dance,9:44
+39,Perhaps Perhaps,Junior,Jazz,Solo,Revolution Dance Perhaps Company,9:46
+40,Let It All Go,Junior,Contemporary,Solo,Sheffield School of the Dance,9:49
+41,Uncharted,Junior,Contemporary,Solo,Conservatory Of Dance Arts,9:52
+42,Angel By The,Junior,Contemporary,Solo,Revolution Dance Wings Company,9:54
+43,Colourful Leaves,Junior,Contemporary,Solo,Sheffield School of the Dance,9:57
+44,Dont Worry,Junior,Contemporary,Solo,The Pike Road About Me Dance Academy,10:00
+45,I Can Feel It,Junior,Contemporary,Solo,Lemoine Academy of Dance,10:02
+46,Girl And Geese,Junior,Contemporary,Solo,Conservatory Of Dance Arts,10:05
+47,Hallelujah,Junior,Contemporary,Solo,Sheffield School of the Dance,10:07
+48,Moonlit Sky,Junior,Contemporary,Solo,Sheffield School of the Dance,10:10
+49,Dreaming,Junior,Contemporary,Solo,Revolution Dance Company,10:12
+50,Dont Think Twice,Junior,Contemporary,Solo,Conservatory Of Dance Arts,10:15
+51,Jungle,Junior,Contemporary,Solo,Revolution Dance Company,10:17
+52,Sleep,Junior,Contemporary,Solo,Conservatory Of Dance Arts,10:20
+53,Black Out,Junior,Contemporary,Solo,Revolution Dance Company,10:22
+54,Breathe,Junior,Contemporary,Solo,The Pike Road Dance Academy,10:25
+55,When We're,Junior,Contemporary,Solo,elite dance force Older,10:28
+56,Moments Passed,Junior,Contemporary,Solo,Kelly's Studio Of Dance,10:30
+57,Eyes Of A Child,Junior,Contemporary,Solo,Lemoine Academy of Dance,10:33
+58,Daisies,Junior,Contemporary,Duo/Trio,RAVE Dance Connection LLC,10:43
+59,Integral Silence,Junior,Contemporary,Duo/Trio,Conservatory Of Dance Arts,10:45
+60,Girls,Junior,Contemporary,Duo/Trio,Revolution Dance Company,10:48
+61,Rescue,Junior,Lyrical,Solo,Broadway South Dance,10:51
+62,Imagine,Junior,Lyrical,Solo,Jill Listi Dance Studio,10:54
+63,Home,Junior,Lyrical,Solo,Lemoine Academy of Dance,10:56
+64,Crippled Bird,Junior,Lyrical,Solo,RAVE Dance Connection LLC,10:59
+65,new light,Junior,Lyrical,Solo,elite dance force,11:01
+66,1000 Years,Junior,Lyrical,Solo,Broadway South Dance,11:04
+67,Once Upon,Junior,Lyrical,Solo,Jill Listi Dance Another Time Studio,11:06
+68,Hopelessly,Junior,Lyrical,Solo,Kelly's Studio Of Devoted Dance,11:09
+69,Get Happy,Junior,Tap,Solo,Revolution Dance Company,11:12
+70,Brown Eyed Girl,Junior,Tap,Solo,Revolution Dance Company,11:14
+71,Goosebumps,Junior,Tap,Solo,Pembo Cieutat Academy of Dance,11:17
+72,Architect Of The,Junior,Open,Solo,Jill Listi Dance Mind Studio,11:19
+73,Forever Wild,Junior,Open,Solo,Broadway South Dance,11:22
+74,Helium,Junior,Open,Solo,elite dance force,11:24
+75,She Moves,Junior,Open,Solo,Lemoine Academy of Dance,11:27
+76,Apache,Junior,Open,Solo,Jill Listi Dance Studio,11:29
+77,Little Girls,Junior,,Solo,RAVE Dance Theatre Connection LLC,11:32
+78,Gorgeous,Junior,,Solo,Conservatory Of Theatre Dance Arts,11:34
+79,Entertain You,Junior,,Solo,Jill Listi Dance Theatre Studio,11:36
+80,Life Of The Party,Junior,,Solo,Kelly's Studio Of Theatre Dance,11:38
+81,Stuff Like That,Junior,,Solo,Northshore There Theatre Academy of Dance,11:40
+82,Don't You Worry,Junior,Tap,Duo/Trio,Revolution Dance Bout A Thing Company,11:43
+83,Kiki,Junior,Hip Hop,Duo/Trio,Broadway South Dance,11:46
+84,Like This Like,Junior,Jazz,Duo/Trio,Revolution Dance That Company,11:49
+85,Good To Go,Junior,Jazz,Duo/Trio,LA Dance Space,11:52
+86,Work Me Down,Junior,Jazz,Duo/Trio,Kelly's Studio Of Dance,11:54
+87,Above The,Junior,Lyrical,Duo/Trio,Lemoine Academy Clouds of Dance,11:57
+88,Tomorrow,Junior,Lyrical,Duo/Trio,elite dance force,12:00
+89,History Of Love,Teen,Contemporary,Solo,Lemoine Academy of Dance,1:13
+90,Breathe,Teen,Contemporary,Solo,Lemoine Academy of Dance,1:15
+91,End Of The,Teen,Contemporary,Solo,Lemoine Academy World of Dance,1:18
+92,If Only,Teen,Contemporary,Solo,Revolution Dance Company,1:21
+93,Dreaming Awake,Teen,Contemporary,Solo,Lemoine Academy of Dance,1:24
+94,Something Bad,Teen,Contemporary,Solo,Revolution Dance Company,1:26
+95,Train Wreck,Teen,Contemporary,Solo,LA Dance Space,1:29
+96,River Of Woe,Teen,Contemporary,Solo,Lemoine Academy of Dance,1:31
+97,Touch,Teen,Contemporary,Solo,Revolution Dance Company,1:34
+98,How Glad I Am,Teen,Contemporary,Solo,Lemoine Academy of Dance,1:37
+99,Imagine,Teen,Contemporary,Solo,Revolution Dance Company,1:40
+100,White Winter,Teen,Contemporary,Solo,Lemoine Academy of Dance,1:42
+101,Shapeshifter,Teen,Contemporary,Solo,Revolution Dance Company,1:45
+102,Who I Am Now,Teen,Contemporary,Solo,The Pointe Dance Arts,1:48
+103,Astronaut,Teen,Contemporary,Solo,Revolution Dance Company,1:50
+104,Tipping Point,Teen,Contemporary,Solo,Sheffield School of the Dance,1:53
+105,Who You Are,Teen,Contemporary,Solo,Revolution Dance Company,1:56
+106,Flame Of,Teen,Contemporary,Solo,Sheffield School of Farewell the Dance,1:58
+107,Resurgence,Teen,Contemporary,Solo,The Pointe Dance Arts,2:01
+108,Wild Horses,Teen,Contemporary,Solo,Revolution Dance Company,2:04
+109,Super Trooper,Teen,Contemporary,Solo,elite dance force,2:07
+110,Monsoon,Teen,Contemporary,Solo,Revolution Dance Company,2:09
+111,Wait For Your,Teen,Contemporary,Solo,Broadway South Love Dance,2:12
+112,Dreams,Teen,Contemporary,Solo,RAVE Dance Connection LLC,2:14
+113,Wait for You,Teen,Contemporary,Solo,Revolution Dance Company,2:17
+114,Angel,Teen,Contemporary,Solo,Conservatory Of Dance Arts,2:20
+115,Sakura,Teen,Contemporary,Solo,Revolution Dance Company,2:22
+116,Soon,Teen,Contemporary,Solo,Lemoine Academy of Dance,2:25
+117,Start Again,Teen,Contemporary,Solo,Revolution Dance Company,2:28
+118,Energy,Teen,Jazz,Solo,Revolution Dance Company,2:38
+119,Tango,Teen,Jazz,Solo,Jill Listi Dance Studio,2:40
+120,Bette Davis Eyes,Teen,Jazz,Solo,Kelly's Studio Of Dance,2:43
+121,Valerie,Teen,Jazz,Solo,"Dance Warehouse, Inc.",2:45
+122,Man's World,Teen,Jazz,Solo,Northshore Academy of Dance,2:48
+123,Paint It Black,Teen,Jazz,Solo,Revolution Dance Company,2:50
+124,What I Was,Teen,Lyrical,Solo,Broadway South Made For Dance,2:53
+125,Flowers,Teen,Lyrical,Solo,LA Dance Space,2:56
+126,What The World,Teen,Lyrical,Solo,"Dance Warehouse, Needs Now Inc.",2:59
+127,Can't Help Falling,Teen,Lyrical,Solo,Jill Listi Dance In Love Studio,3:02
+128,You Are The,Teen,Lyrical,Solo,LA Dance Space Reason,3:04
+129,Sunrise,Teen,Lyrical,Solo,Jill Listi Dance Studio,3:06
+130,La Vie En Rose,Teen,Tap,Solo,Revolution Dance Company,3:08
+131,Walkin On,Teen,Tap,Solo,Revolution Dance Company,3:11
+132,What a,Teen,Tap,Solo,Revolution Dance Wonderful World Company,3:14
+133,That Man,Teen,,Solo,Pembo Cieutat Theatre Academy of Dance,3:17
+134,Play Dead,Teen,Open,Solo,elite dance force,3:19
+135,That's Life,Teen,Open,Solo,"Dance Connection Center, LLC",3:22
+136,You Don't Own,Teen,Contemporary,Duo/Trio,"Dance Connection Me Center, LLC",3:24
+137,Truth,Teen,Lyrical,Duo/Trio,"Dance Connection Center, LLC",3:27
+138,Roses,Teen,Lyrical,Duo/Trio,LA Dance Space,3:30
+139,Beat It,Teen,Tap,Duo/Trio,Revolution Dance Company,3:33
+140,Summer Holiday,Teen,Open,Duo/Trio,Pembo Cieutat Academy of Dance,3:36
+141,Balancing Act,Teen,Open,Duo/Trio,RAVE Dance Connection LLC,3:38
+142,Solitude,Teen,Open,Duo/Trio,elite dance force,3:41
+143,On Your Side,Teen,Open,Duo/Trio,Broadway South Dance,3:44
+144,Trouble,Teen,,Duo/Trio,LA Dance Space Theatre,3:47
+145,Keep You Safe,Teen,Lyrical,Duo/Trio,LA Dance Space COMPETITION DINNER BREAK: 45 Minutes - Set for Senior Age Division,3:50
+146,Slowly,Senior,Contemporary,Solo,Lemoine Academy of Dance,4:38
+147,Something,Senior,Contemporary,Solo,Lemoine Academy of Dance,4:40
+148,Back To The,Senior,Contemporary,Solo,Sheffield School of Start the Dance,4:43
+149,Stupid,Senior,Contemporary,Solo,elite dance force,4:46
+150,In The Corner,Senior,Contemporary,Solo,Conservatory Of Dance Arts,4:48
+151,The End Of Love,Senior,Contemporary,Solo,LA Dance Space,4:51
+152,Timshel,Senior,Contemporary,Solo,Northshore Academy of Dance,4:53
+153,Solid Ground,Senior,Contemporary,Solo,Northshore Academy of Dance,4:56
+154,Violence,Senior,Contemporary,Solo,"Dance Warehouse, Inc.",4:59
+155,Cellophane,Senior,Contemporary,Solo,Revolution Dance Company,5:01
+156,Ode To Love,Senior,Contemporary,Solo,Revolution Dance Lost Company,5:04
+157,Awakening,Senior,Contemporary,Solo,Sheffield School of the Dance,5:07
+158,Home With You,Senior,Contemporary,Solo,Jill Listi Dance Studio,5:10
+159,All I Want,Senior,Contemporary,Solo,Northshore Academy of Dance,5:12
+160,Presence,Senior,Contemporary,Solo,Revolution Dance Practice Company,5:15
+161,Because Of Me,Senior,Contemporary,Solo,elite dance force,5:18
+162,I'd Rather Go,Senior,Contemporary,Solo,Northshore Blind Academy of Dance,5:21
+163,Here It Is,Senior,Contemporary,Solo,"Dance Warehouse, Inc.",5:23
+164,This One's For,Senior,Contemporary,Solo,Revolution Dance You Company,5:26
+165,Soft Version,Senior,Contemporary,Solo,Broadway South Dance,5:29
+166,Blackout,Senior,Contemporary,Solo,Northshore Academy of Dance,5:32
+167,Why,Senior,Contemporary,Solo,The Pointe Dance Arts,5:35
+168,Small Things,Senior,Contemporary,Solo,"Dance Connection Center, LLC",5:37
+169,To Be Loved,Senior,Contemporary,Solo,Northshore Academy of Dance,5:40
+170,Bell Bottom,Senior,Contemporary,Solo,Lemoine Academy Blues of Dance,5:43
+171,The Mountain Is,Senior,Contemporary,Solo,Broadway South You Dance,5:46
+172,Before My Time,Senior,Contemporary,Solo,Northshore Academy of Dance,5:48
+173,Corps,Senior,Contemporary,Solo,Broadway South Dance,5:51
+174,I Must Walk,Senior,Contemporary,Solo,Broadway South Away Dance,5:54
+175,Daisies,Senior,Contemporary,Solo,"Dance Connection Center, LLC",5:57
+176,Landslide,Senior,Contemporary,Solo,Revolution Dance Company,5:59
+177,Shake the Frost,Senior,Contemporary,Solo,Bishop Dance,6:02
+178,Rescue,Senior,Contemporary,Solo,LA Dance Space,6:04
+179,Life Vest,Senior,Contemporary,Solo,Lemoine Academy of Dance,6:07
+180,Over Soon,Senior,Contemporary,Solo,Bishop Dance,6:10
+181,Wherever I May,Senior,Contemporary,Solo,"Dance Connection Center, LLC",6:12
+182,Exile,Senior,Contemporary,Solo,Revolution Dance Company,6:15
+183,What I Can Do,Senior,,Duo/Trio,elite dance force,6:25
+184,The Journey,Senior,Open,Duo/Trio,"Dance Connection Center, LLC",6:27
+185,Let It Be Hope,Senior,Lyrical,Duo/Trio,LA Dance Space,6:30
+186,Find Me,Senior,Lyrical,Duo/Trio,Northshore Academy of Dance,6:33
+187,Be Italian,Senior,Jazz,Duo/Trio,LA Dance Space,6:36
+188,Diamonds Are,Senior,Jazz,Solo,Revolution Dance Forever Company,6:39
+189,Am I the One,Senior,Jazz,Solo,Bishop Dance,6:42
+190,Spooky,Senior,Jazz,Solo,"Dance Connection Center, LLC",6:44
+191,Mississippi,Senior,Jazz,Solo,Jill Listi Dance Studio,6:46
+192,Man in the Mirror,Senior,Jazz,Solo,Bishop Dance,6:49
+193,Save,Senior,Jazz,Solo,Jill Listi Dance Studio,6:51
+194,That's Life,Senior,Jazz,Solo,Revolution Dance Company,6:53
+195,Love Ridden,Senior,Jazz,Solo,Jill Listi Dance Studio,6:56
+196,Start Again,Senior,Lyrical,Solo,"Dance Warehouse, Inc.",6:58
+197,Burning Room,Senior,Lyrical,Solo,"Dance Connection Center, LLC",7:00
+198,Must Have Been,Senior,Lyrical,Solo,Bishop Dance Love,7:03
+199,Chemtrails,Senior,Lyrical,Solo,"Dance Connection Center, LLC",7:05
+200,Mary Magdalene,Senior,Lyrical,Solo,Jill Listi Dance Studio,7:07
+201,Dream A Little,Senior,Lyrical,Solo,"Dance Connection Dream Center, LLC",7:10
+202,Breathe,Senior,Lyrical,Solo,LA Dance Space,7:13
+203,Sunburn,Senior,Lyrical,Solo,"Dance Connection Center, LLC",7:16
+204,The Letting Go,Senior,Lyrical,Solo,Sheffield School of the Dance,7:18
+205,Chibi,Senior,Open,Solo,Northshore Academy of Dance,7:21
+206,Endangered,Senior,Open,Solo,Bishop Dance Species,7:23
+207,No More I Love,Senior,Open,Solo,Evolve Studio For You's The Arts,7:25
+208,Can't Take My,Senior,Open,Solo,"Dance Connection Eyes Off Of You Center, LLC",7:28
+209,Loved By You,Senior,Open,Solo,elite dance force,7:30
+210,Roxie,Senior,,Solo,elite dance force Theatre,7:32
+211,Lola,Senior,,Solo,Broadway South Theatre Dance,7:34
+212,How You'll Be,Senior,Contemporary,Duo/Trio,LA Dance Space Remembered,7:47
+213,Good Goodbye,Senior,Contemporary,Duo/Trio,"Dance Connection Center, LLC",7:50
+214,Medicine,Senior,Contemporary,Duo/Trio,Northshore Academy of Dance,7:53
+215,Walking Far,Senior,Contemporary,Duo/Trio,Lemoine Academy of Dance,7:57
+216,Embers,Senior,Contemporary,Duo/Trio,LA Dance Space,8:00
+217,Hold Tight,Senior,Contemporary,Duo/Trio,"Dance Connection Center, LLC",8:03
+218,Dueling Banjos,Junior,Open,,Large Revolution Dance Group Company,2:30
+219,Bring Me Home,Mini,Lyrical,,Large Broadway South Group Dance,2:33
+220,Highs And Lows,Mini,Jazz,Production,Lemoine Academy of Dance,2:36
+221,Fergalicious,Junior,Hip Hop,,Large The Pointe Dance Group Arts,2:39
+222,Nearly Morning,Junior,Contemporary,,Large Lemoine Academy Group of Dance,2:42
+223,Bigger Then Sky,Junior,Contemporary,,Small elite dance force Group,2:46
+224,Paper Airplanes,Junior,Open,,Small Pembo Cieutat Group Academy of Dance,2:48
+225,Bow Down,Junior,Hip Hop,,"Large Dance Connection Group Center, LLC",2:52
+226,Yo Yo Disco,Junior,Jazz,,Small Jill Listi Dance Group Studio,2:55
+227,Way Out,Junior,Contemporary,,Small Northshore Group Academy of Dance,2:58
+228,If This Is Love,Junior,Lyrical,,Large Revolution Dance Group Company,3:00
+229,Microphone,Mini,Jazz,,Large Broadway South Group Dance,3:04
+230,In Other Words,Junior,Contemporary,,Small Lemoine Academy Group of Dance,3:07
+231,If I Didn't Have,Junior,Contemporary,,Large The Pointe Dance You Group Arts,3:10
+232,Move,Mini,Jazz,,Large Lemoine Academy Group of Dance,3:13
+233,When You're,Mini,Tap,,Small Revolution Dance Smiling Group Company,3:16
+234,That's Life,Junior,Contemporary,,Small Lemoine Academy Group of Dance,3:18
+235,Open Hands,Junior,Lyrical,,Small elite dance force Group,3:22
+236,Love Me,Junior,Contemporary,,Small Lemoine Academy Group of Dance,3:24
+237,Watch Me Work,Junior,Jazz,,Small Pembo Cieutat Group Academy of Dance,3:28
+238,Run The World,Junior,Tap,,Large Revolution Dance Group Company,3:30
+239,Take A Sip,Junior,,Line,Broadway South Theatre Dance,3:34
+240,Simply The Best,Junior,Open,,Large Lemoine Academy Group of Dance,3:38
+241,Saturday Night's,Mini,Jazz,,Large The Pointe Dance Alright Group Arts,3:41
+242,This Year's Love,Junior,Lyrical,,Small Lemoine Academy Group of Dance,3:43
+243,Arms Of An,Junior,Lyrical,,Small Jill Listi Dance Angel Group Studio,3:46
+244,Dog Days,Mini,Lyrical,,Small Lemoine Academy Group of Dance,3:50
+245,Le Jazz Hot,Junior,,,Musical Small Northshore Theatre Group Academy of Dance,3:53
+246,Who I Am,Junior,Lyrical,,"Small Dance Warehouse, Group Inc.",3:56
+247,Hide & Seek,Junior,Contemporary,,"Small Dance Connection Group Center, LLC",3:58
+248,Supercalifragilisti,Junior,,,Musical Large Revolution Dance cexpialidocious Theatre Group Company,4:01
+249,Heaven I Know,Junior,Contemporary,,Small Broadway South Group Dance,4:14
+250,MIA,Junior,Contemporary,,Small Revolution Dance Group Company,4:17
+251,Fabulous,Mini,Jazz,,Small The Pointe Dance Group Arts,4:19
+252,Groove Is In The,Junior,Jazz,,Small The Pointe Dance Heart Group Arts,4:22
+253,Watch This,Mini,Jazz,,Small Jill Listi Dance Group Studio,4:25
+254,Ay Carumba,Mini,,,Musical Small elite dance force Theatre Group,4:30
+255,Hound Dog,Mini,Jazz,,Large Lemoine Academy Group of Dance,4:33
+256,See It Now,Mini,Lyrical,,Small Broadway South Group Dance,4:35
+257,Girlz,Junior,Jazz,,"Small Dance Warehouse, Group Inc.",4:38
+258,Dream Lover,Mini,Jazz,,"Small Dance Warehouse, Group Inc.",4:41
+259,We'll Be,Junior,Contemporary,,Small Revolution Dance Overcome Group Company,4:43
+260,Girls Night Out,Mini,Jazz,,Large Broadway South Group Dance,4:46
+261,Get To It,Junior,Jazz,,Small elite dance force Group,4:49
+262,We Begin,Junior,Lyrical,,Small Broadway South Group Dance,4:52
+263,Up,Teen,Hip Hop,Line,Broadway South Dance,6:05
+264,Jungle,Teen,Hip Hop,,Large The Pointe Dance Group Arts,6:09
+265,SexyBack,Teen,Jazz,,Large Revolution Dance Group Company,6:12
+266,Don't Mean A,Teen,Jazz,,"Large Dance Warehouse, Thing Group Inc.",6:15
+267,Swing,Teen,Jazz,,Large Northshore Group Academy of Dance,6:19
+268,Busy in the Lab,Teen,Hip Hop,Production,Jill Listi Dance Studio,6:22
+269,Reppin 985,Teen,Hip Hop,Production,Lemoine Academy of Dance,6:30
+270,Zombie,Teen,Open,,Small elite dance force Group,6:34
+271,Moderation,Senior,Jazz,,Small LA Dance Space Group,6:36
+272,Short Skirt Long,Teen,Jazz,,"Small Dance Connection Jacket Group Center, LLC",6:40
+273,Ghost Town,Teen,Lyrical,,Large Broadway South Group Dance,6:42
+274,Good To Mama,Teen,,,Musical Large Revolution Dance Theatre Group Company,6:45
+275,Motown,Teen,Jazz,Line,"Dance Warehouse, Inc.",6:49
+276,Glide,Teen,Open,,Large Northshore Group Academy of Dance,6:54
+277,The Way That,Teen,Jazz,Production,The Pointe Dance You Love Me Arts,6:57
+278,Punk Rockher,Teen,Jazz,Production,Jill Listi Dance Studio,7:01
+279,To Love Another,Senior,Contemporary,,Small Lemoine Academy Group of Dance,7:06
+280,Are you Ready,Teen,Open,,Large elite dance force Group,7:10
+281,The Boxer,Teen,Contemporary,,Small Broadway South Group Dance,7:13
+282,Moon River,Teen,Lyrical,,Small LA Dance Space Group,7:16
+283,Will You,Senior,Contemporary,,"Large Dance Connection Group Center, LLC",7:20
+284,Get Free,Senior,Contemporary,,Large Revolution Dance Group Company,7:23
+285,Bang,Teen,Hip Hop,Line,"Dance Warehouse, Inc.",7:26
+286,Uptown Girl,Teen,,,Musical Large Northshore Theatre Group Academy of Dance,7:29
+287,You Just Might,Teen,Open,Production,Broadway South Get It Dance,7:33
+288,Ramalama,Teen,Jazz,,Small Jill Listi Dance Group Studio,7:37
+289,New York New,Teen,,Line,The Pointe Dance York Theatre Arts,7:40
+290,Kissing You,Teen,Contemporary,,Large Lemoine Academy Group of Dance,7:45
+291,Siren,Senior,Jazz,,Small Jill Listi Dance Group Studio,7:49
+292,Could've Been,Senior,Contemporary,,Small elite dance force You,7:55
+293,Hit The Road,Teen,Open,,Small elite dance force Jack Group,8:07
+294,Smoke And,Teen,Open,,Small Broadway South Mirrors Group Dance,8:10
+295,It Don't Mean A,Teen,Tap,Line,Revolution Dance Thing Company,8:13
+296,Adios,Senior,Jazz,,"Small Dance Warehouse, Group Inc.",8:17
+297,Adios,Senior,Contemporary,,Large Northshore Group Academy of Dance,8:20
+298,Canned Heat,Teen,Jazz,,"Small Dance Warehouse, Group Inc.",8:24
+299,Black Friday,Senior,Contemporary,,Small The Pointe Dance Group Arts,8:27
+300,When It's Cold,Senior,Contemporary,,Small Lemoine Academy Group of Dance,8:29
+301,Looking Too,Teen,Contemporary,,Small Northshore Closely Group Academy of Dance,8:33
+302,Birdflu,Teen,Open,,Small Jill Listi Dance Group Studio,8:36
+303,Skeleton,Senior,Lyrical,,Small Jill Listi Dance Group Studio,8:39
+304,What's Going On,Teen,Contemporary,,Large Broadway South Group Dance,8:42
+305,Torch,Senior,Open,,Small Revolution Dance Group Company,8:46
+306,Someone Like,Senior,Contemporary,,Large Northshore You Group Academy of Dance,8:48
+307,Hyperballad,Teen,Open,,Small Revolution Dance Group Company,8:52
+308,We'll Be Fine,Teen,Contemporary,,"Small Dance Warehouse, Group Inc.",8:56
+309,Caught Up In A,Senior,Contemporary,,"Small Dance Warehouse, Dream Group Inc.",8:58
+310,After Party,Teen,,,Fusion Large Broadway South Group Dance,9:01
+311,Hold Back The,Teen,Contemporary,,Large The Pointe Dance River Group Arts,9:05
+312,In Ruins,Teen,Open,Line,Lemoine Academy of Dance,9:08
+313,River Deep,Teen,Jazz,,Small LA Dance Space Group,9:11
+314,Stop The World,Teen,Lyrical,,"Small Dance Connection Group Center, LLC",9:14
+315,Inertia,Senior,Contemporary,,Small Revolution Dance Group Company,9:17
+316,Follow Me,Teen,Open,,Small Broadway South Group Dance,9:20
+317,Please Forgive,Teen,Contemporary,,Small Revolution Dance My Ugly Group Company,9:23
+318,Juro Que,Senior,Open,,Large Northshore Group Academy of Dance,9:26
+319,Wicked Games,Senior,Contemporary,,Small LA Dance Space Group,9:39
+320,Tulsa Time,Senior,Open,,"Small Dance Connection Group Center, LLC",9:43
+321,Face In A Crowd,Senior,Contemporary,,Small Northshore Group Academy of Dance,9:46
+322,Houdini,Teen,Jazz,,Large Broadway South Group Dance,9:49

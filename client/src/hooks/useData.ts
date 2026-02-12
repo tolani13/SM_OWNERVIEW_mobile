@@ -14,6 +14,15 @@ import type {
   Fee,
   InsertFee,
   InsertAnnouncement,
+  Message,
+  InsertMessage,
+  ChatThread,
+  InsertChatThread,
+  ChatThreadParticipant,
+  InsertChatThreadParticipant,
+  ChatMessage,
+  InsertChatMessage,
+  ChatMessageRead,
   InsertCompetitionRegistration,
   StudioSettings,
   InsertStudioSettings,
@@ -641,6 +650,228 @@ export function useDeleteAnnouncement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["announcements"] });
     },
+  });
+}
+
+// Messages
+export function useMessages() {
+  return useQuery({
+    queryKey: ["messages"],
+    queryFn: async () => {
+      const res = await fetch('/api/messages');
+      if (!res.ok) throw new Error('Failed to fetch messages');
+      return res.json() as Promise<Message[]>;
+    }
+  });
+}
+
+export function useCreateMessage() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: InsertMessage) => {
+      const res = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) throw new Error('Failed to create message');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["messages"] });
+    },
+  });
+}
+
+export function useUpdateMessage() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<InsertMessage> }) => {
+      const res = await fetch(`/api/messages/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) throw new Error('Failed to update message');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["messages"] });
+    },
+  });
+}
+
+export function useDeleteMessage() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/messages/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete message');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["messages"] });
+    },
+  });
+}
+
+// Chat Threads
+export type ChatActorContext = {
+  id: string;
+  name: string;
+  role: "owner" | "staff" | "parent";
+};
+
+export type NewThreadParticipantInput = {
+  participantId: string;
+  participantName: string;
+  participantRole: "owner" | "staff" | "parent";
+  authorized?: boolean;
+};
+
+export type NewChatThreadInput = {
+  title: string;
+  type?: "direct_parent_staff" | "compchat" | "group_broadcast";
+  staffOnlyBroadcast?: boolean;
+  isTimeSensitive?: boolean;
+  expiresAt?: string | null;
+  participants?: NewThreadParticipantInput[];
+};
+
+function actorHeaders(actor?: ChatActorContext): HeadersInit {
+  if (!actor) return { "Content-Type": "application/json" };
+  return {
+    "Content-Type": "application/json",
+    "x-user-id": actor.id,
+    "x-user-name": actor.name,
+    "x-user-role": actor.role,
+  };
+}
+
+export function useChatThreads(participantId?: string, role?: string) {
+  return useQuery({
+    queryKey: ["chatThreads", participantId, role],
+    queryFn: async () => {
+      const qs = new URLSearchParams();
+      if (participantId) qs.set("participantId", participantId);
+      if (role) qs.set("role", role);
+      const res = await fetch(`/api/chat/threads${qs.toString() ? `?${qs.toString()}` : ""}`);
+      if (!res.ok) throw new Error("Failed to fetch chat threads");
+      return res.json() as Promise<ChatThread[]>;
+    },
+  });
+}
+
+export function useCreateChatThread() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      data,
+      actor,
+    }: {
+      data: NewChatThreadInput;
+      actor?: ChatActorContext;
+    }) => {
+      const res = await fetch("/api/chat/threads", {
+        method: "POST",
+        headers: actorHeaders(actor),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json() as Promise<ChatThread>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chatThreads"] });
+    },
+  });
+}
+
+export function useChatThreadMessages(threadId?: string) {
+  return useQuery({
+    queryKey: ["chatThreadMessages", threadId],
+    queryFn: async () => {
+      const res = await fetch(`/api/chat/threads/${threadId}/messages`);
+      if (!res.ok) throw new Error("Failed to fetch thread messages");
+      return res.json() as Promise<ChatMessage[]>;
+    },
+    enabled: !!threadId,
+    placeholderData: [],
+  });
+}
+
+export function useCreateChatMessage() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      threadId,
+      data,
+      actor,
+    }: {
+      threadId: string;
+      data: InsertChatMessage;
+      actor?: ChatActorContext;
+    }) => {
+      const res = await fetch(`/api/chat/threads/${threadId}/messages`, {
+        method: "POST",
+        headers: actorHeaders(actor),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json() as Promise<ChatMessage>;
+    },
+    onSuccess: (_created, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["chatThreadMessages", variables.threadId] });
+      queryClient.invalidateQueries({ queryKey: ["chatThreads"] });
+    },
+  });
+}
+
+export function useMarkChatMessageRead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      messageId,
+      reader,
+    }: {
+      messageId: string;
+      reader?: { readerId?: string; readerName?: string; readerRole?: string };
+    }) => {
+      const res = await fetch(`/api/chat/messages/${messageId}/read`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(reader || {}),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json() as Promise<ChatMessageRead>;
+    },
+    onSuccess: (_read, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["chatMessageReads", variables.messageId] });
+    },
+  });
+}
+
+export function useChatMessageReads(messageId?: string) {
+  return useQuery({
+    queryKey: ["chatMessageReads", messageId],
+    queryFn: async () => {
+      const res = await fetch(`/api/chat/messages/${messageId}/reads`);
+      if (!res.ok) throw new Error("Failed to fetch read receipts");
+      return res.json() as Promise<ChatMessageRead[]>;
+    },
+    enabled: !!messageId,
+    placeholderData: [],
+  });
+}
+
+export function useChatThreadReadSummary(threadId?: string) {
+  return useQuery({
+    queryKey: ["chatThreadReadSummary", threadId],
+    queryFn: async () => {
+      const res = await fetch(`/api/chat/threads/${threadId}/read-summary`);
+      if (!res.ok) throw new Error("Failed to fetch thread read summary");
+      return res.json() as Promise<Record<string, { count: number; readers: string[] }>>;
+    },
+    enabled: !!threadId,
+    placeholderData: {},
   });
 }
 

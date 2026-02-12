@@ -7,6 +7,7 @@ import {
   Trophy, 
   DollarSign, 
   Megaphone,
+  MessageSquare,
   Settings,
   FileText,
   Theater
@@ -22,6 +23,7 @@ const NAV_ITEMS = [
   { label: "Competitions", icon: Trophy, href: "/competitions" },
   { label: "Recitals", icon: Theater, href: "/recitals" },
   { label: "Finance", icon: DollarSign, href: "/finance" },
+  { label: "Messages", icon: MessageSquare, href: "/messages" },
   { label: "Policies", icon: FileText, href: "/policies" },
   { label: "Announcements", icon: Megaphone, href: "/announcements" },
   { label: "Settings", icon: Settings, href: "/settings" },

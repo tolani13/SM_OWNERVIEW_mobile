@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CalendarDays, MapPin, Edit2, CheckCircle2, Plus, Users, DollarSign, Loader2, Trash2 } from "lucide-react";
 import { CompetitionRunSheet } from "@/components/CompetitionRunSheet";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, type ChangeEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -27,8 +27,9 @@ import {
   useGenerateCompetitionFees,
   useFees
 } from "@/hooks/useData";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Competition, ConventionClass, InsertConventionClass, Routine, Dancer } from "@server/schema";
+import { toast } from "react-hot-toast";
 
 const DEFAULT_FEE_STRUCTURE = {
   solo: "0",
@@ -41,6 +42,7 @@ const DEFAULT_FEE_STRUCTURE = {
 };
 
 export default function Competitions() {
+    const queryClient = useQueryClient();
     const { data: competitions = [], isLoading: competitionsLoading } = useCompetitions();
     const { data: conventionClasses = [], isLoading: conventionClassesLoading } = useConventionClasses();
     const { data: routines = [], isLoading: routinesLoading } = useRoutines();
@@ -53,6 +55,8 @@ export default function Competitions() {
 
     const [selectedCompId, setSelectedCompId] = useState<string | null>(null);
     const [isAddCompOpen, setIsAddCompOpen] = useState(false);
+    const conventionPdfInputRef = useRef<HTMLInputElement>(null);
+    const [isImportingConventionPdf, setIsImportingConventionPdf] = useState(false);
     
     // Form state for new competition
     const [newCompName, setNewCompName] = useState("");
@@ -138,6 +142,42 @@ export default function Competitions() {
             room: "Ballroom A",
             level: "All Levels"
         });
+    };
+
+    const handleConventionPdfUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file || !selectedCompId) return;
+
+        setIsImportingConventionPdf(true);
+        const formData = new FormData();
+        formData.append("pdf", file);
+        formData.append("type", "convention");
+
+        try {
+            const response = await fetch(`/api/competitions/${selectedCompId}/parse-pdf`, {
+                method: "POST",
+                body: formData,
+            });
+
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result.error || "Failed to import convention PDF");
+            }
+
+            queryClient.invalidateQueries({ queryKey: ["conventionClasses"] });
+            queryClient.invalidateQueries({ queryKey: ["conventionClasses", selectedCompId] });
+
+            toast.success(`Convention classes imported: ${result.savedCount || result.totalParsed || 0} saved.`);
+
+            if (result.warnings?.length) {
+                result.warnings.forEach((warning: string) => toast(warning, { icon: "⚠️" }));
+            }
+        } catch (error: any) {
+            toast.error(error.message || "Failed to import convention PDF");
+        } finally {
+            setIsImportingConventionPdf(false);
+            event.target.value = "";
+        }
     };
 
     if (competitionsLoading || conventionClassesLoading || routinesLoading || dancersLoading) {
@@ -336,8 +376,30 @@ export default function Competitions() {
                                     </TabsContent>
 
                                     <TabsContent value="convention" className="flex-1 overflow-hidden p-0 m-0">
-                                        <div className="p-4 border-b bg-gray-50 flex justify-end">
-                                            <Button size="sm" onClick={addConventionClass} className="bg-primary text-white">
+                                        <div className="p-4 border-b bg-gray-50 flex items-center justify-between gap-3">
+                                            <input
+                                                ref={conventionPdfInputRef}
+                                                type="file"
+                                                accept=".pdf"
+                                                onChange={handleConventionPdfUpload}
+                                                className="hidden"
+                                            />
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                disabled={isImportingConventionPdf || !selectedCompId}
+                                                onClick={() => conventionPdfInputRef.current?.click()}
+                                            >
+                                                {isImportingConventionPdf ? (
+                                                    <>
+                                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                        Importing...
+                                                    </>
+                                                ) : (
+                                                    "Import Convention PDF"
+                                                )}
+                                            </Button>
+                                            <Button size="sm" onClick={addConventionClass} className="bg-primary text-white" disabled={isImportingConventionPdf}>
                                                 <Plus className="w-4 h-4 mr-2" /> Add Class
                                             </Button>
                                         </div>

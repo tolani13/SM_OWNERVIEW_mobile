@@ -5,6 +5,10 @@
 
 import type { Express, Request, Response } from "express";
 import multer from "multer";
+import { promises as fs } from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+import { spawn } from "node:child_process";
 import { PDFParser } from "./pdf-parser/index";
 import { storage } from "./storage";
 import type { ParsedRunSlot, ParsedConventionClass } from "./pdf-parser/types";
@@ -27,6 +31,327 @@ const upload = multer({
 
 const pdfParser = new PDFParser();
 
+type PythonParsedConventionRow = {
+  class_name?: string;
+  instructor?: string;
+  room?: string;
+  day?: string;
+  start_time?: string;
+  end_time?: string;
+  time?: string;
+  track?: string;
+  teacher?: string;
+  duration?: string | number;
+  style?: string;
+  division?: string;
+  age_range?: string;
+  level?: string;
+  is_audition_phrase?: string | boolean | number;
+  raw_text?: string;
+  class_raw?: string;
+};
+
+type PythonConventionParserVendor = "wcde" | "velocity";
+
+const CONVENTION_PARSER_CONFIG: Record<
+  PythonConventionParserVendor,
+  {
+    scriptPath: string;
+    functionName: string;
+    tempPrefix: string;
+    companyLabel: string;
+  }
+> = {
+  wcde: {
+    scriptPath: "parse_wcde_convention.py",
+    functionName: "parse_wcde_convention",
+    tempPrefix: "wcde-convention-",
+    companyLabel: "WCDE",
+  },
+  velocity: {
+    scriptPath: "parse_velocity_convention.py",
+    functionName: "parse_velocity_convention",
+    tempPrefix: "velocity-convention-",
+    companyLabel: "Velocity",
+  },
+};
+
+function cleanString(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  return String(value).replace(/\s+/g, " ").trim();
+}
+
+function parseDuration(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const num = Number(value);
+  return Number.isFinite(num) ? Math.round(num) : null;
+}
+
+function parseBooleanish(value: unknown): boolean {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value !== 0;
+  const normalized = cleanString(value).toLowerCase();
+  return normalized === "true" || normalized === "1" || normalized === "yes";
+}
+
+function detectConventionParserVendor(
+  competitionName: string,
+  originalFileName?: string,
+): PythonConventionParserVendor {
+  const normalizedCompetition = cleanString(competitionName).toLowerCase();
+  const normalizedFileName = cleanString(originalFileName).toLowerCase();
+  if (
+    normalizedCompetition.includes("velocity") ||
+    normalizedFileName.includes("velocity") ||
+    normalizedFileName.includes("concord")
+  ) {
+    return "velocity";
+  }
+  return "wcde";
+}
+
+function resolveConventionParserOverride(raw: unknown): PythonConventionParserVendor | null {
+  const normalized = cleanString(raw).toLowerCase();
+  if (normalized === "velocity") return "velocity";
+  if (normalized === "wcde") return "wcde";
+  return null;
+}
+
+function getConventionParserCandidates(
+  competitionName: string,
+  originalFileName: string,
+  parserOverride: PythonConventionParserVendor | null,
+): PythonConventionParserVendor[] {
+  if (parserOverride) return [parserOverride];
+  const detected = detectConventionParserVendor(competitionName, originalFileName);
+  const fallback: PythonConventionParserVendor = detected === "wcde" ? "velocity" : "wcde";
+  return [detected, fallback];
+}
+
+function inferConventionStyle(className: string): string | null {
+  const normalized = cleanString(className).toLowerCase().replace(/-/g, " ");
+  if (!normalized) return null;
+
+  if (normalized.includes("hip hop")) return "Hip Hop";
+  if (normalized.includes("musical")) return "Musical Theatre";
+  if (normalized.includes("contemporary")) return "Contemporary";
+  if (normalized.includes("lyrical")) return "Lyrical";
+  if (normalized.includes("jazz")) return "Jazz";
+  if (normalized.includes("tap")) return "Tap";
+  if (normalized.includes("ballet")) return "Ballet";
+  if (normalized.includes("acro")) return "Acro";
+  if (normalized.includes("open")) return "Open";
+  return null;
+}
+
+function parseTimeToMinutes(value: string): number | null {
+  const text = cleanString(value).toUpperCase();
+  if (!text) return null;
+
+  const match = text.match(/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i);
+  if (!match) return null;
+
+  let hour = Number(match[1]);
+  const minute = Number(match[2]);
+  const meridiem = match[3]?.toUpperCase();
+
+  if (!Number.isFinite(hour) || !Number.isFinite(minute) || minute < 0 || minute > 59) {
+    return null;
+  }
+
+  if (meridiem) {
+    if (hour < 1 || hour > 12) return null;
+    if (hour === 12) hour = 0;
+    if (meridiem === "PM") hour += 12;
+  } else if (hour < 0 || hour > 23) {
+    return null;
+  }
+
+  return hour * 60 + minute;
+}
+
+function minutesToHHMM(totalMinutes: number): string {
+  const normalized = ((Math.round(totalMinutes) % (24 * 60)) + (24 * 60)) % (24 * 60);
+  const hour = Math.floor(normalized / 60);
+  const minute = normalized % 60;
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
+function normalizeTime(value: unknown): string {
+  const cleaned = cleanString(value);
+  if (!cleaned) return "";
+
+  const minutes = parseTimeToMinutes(cleaned);
+  if (minutes === null) return cleaned;
+  return minutesToHHMM(minutes);
+}
+
+function deriveEndTimeAndDuration(
+  startTime: string,
+  explicitEndTime: string,
+  durationCandidate: number | null,
+): { endTime: string; duration: number | null } {
+  const startMinutes = parseTimeToMinutes(startTime);
+  const explicitEndMinutes = parseTimeToMinutes(explicitEndTime);
+
+  if (startMinutes !== null && explicitEndMinutes !== null) {
+    let duration = explicitEndMinutes - startMinutes;
+    if (duration <= 0) duration += 12 * 60;
+    return {
+      endTime: minutesToHHMM(startMinutes + duration),
+      duration,
+    };
+  }
+
+  if (startMinutes !== null && durationCandidate !== null && durationCandidate > 0) {
+    return {
+      endTime: minutesToHHMM(startMinutes + durationCandidate),
+      duration: durationCandidate,
+    };
+  }
+
+  if (startMinutes !== null) {
+    const fallbackDuration = 60;
+    return {
+      endTime: minutesToHHMM(startMinutes + fallbackDuration),
+      duration: durationCandidate,
+    };
+  }
+
+  if (explicitEndTime) {
+    return {
+      endTime: explicitEndTime,
+      duration: durationCandidate,
+    };
+  }
+
+  return {
+    endTime: "",
+    duration: durationCandidate,
+  };
+}
+
+function runPython(args: string[]): Promise<{ stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    const child = spawn("python", args, {
+      cwd: process.cwd(),
+      windowsHide: true,
+    });
+
+    let stdout = "";
+    let stderr = "";
+
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk.toString();
+    });
+
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+
+    child.on("error", (error) => {
+      reject(new Error(`Failed to start Python: ${error.message}`));
+    });
+
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve({ stdout, stderr });
+        return;
+      }
+      const details = (stderr || stdout).trim();
+      reject(new Error(details || `Python exited with code ${code}`));
+    });
+  });
+}
+
+async function extractConventionClassesWithPython(
+  pdfBuffer: Buffer,
+  parserVendor: PythonConventionParserVendor,
+): Promise<InsertConventionClass[]> {
+  const parserConfig = CONVENTION_PARSER_CONFIG[parserVendor];
+  const parserScriptPath = path.join(process.cwd(), parserConfig.scriptPath);
+
+  try {
+    await fs.access(parserScriptPath);
+  } catch {
+    throw new Error(`Python parser script ${parserConfig.scriptPath} was not found in the project root.`);
+  }
+
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), parserConfig.tempPrefix));
+  const tempPdfPath = path.join(tempDir, "upload.pdf");
+
+  try {
+    await fs.writeFile(tempPdfPath, pdfBuffer);
+
+    const moduleName = path.parse(parserConfig.scriptPath).name;
+
+    const pythonCode = [
+      "import sys",
+      `from ${moduleName} import ${parserConfig.functionName}`,
+      `df = ${parserConfig.functionName}(sys.argv[1]).fillna('')`,
+      "print(df.to_json(orient='records'))",
+    ].join("\n");
+
+    const { stdout } = await runPython(["-c", pythonCode, tempPdfPath]);
+    const output = stdout.trim();
+
+    if (!output) {
+      throw new Error("Python convention parser returned no output.");
+    }
+
+    let parsedRows: PythonParsedConventionRow[] = [];
+    try {
+      const json = JSON.parse(output);
+      if (!Array.isArray(json)) {
+        throw new Error("Parser output is not an array.");
+      }
+      parsedRows = json as PythonParsedConventionRow[];
+    } catch (error) {
+      throw new Error(`Failed to parse Python output as JSON: ${(error as Error).message}`);
+    }
+
+    return parsedRows
+      .map((row) => {
+        const className = cleanString(row.class_name) || cleanString(row.style);
+        const startTime = normalizeTime(row.start_time || row.time);
+        const explicitEndTime = normalizeTime(row.end_time);
+        const durationCandidate = parseDuration(row.duration);
+        const { endTime, duration } = deriveEndTimeAndDuration(startTime, explicitEndTime, durationCandidate);
+
+        const styleCandidate = cleanString(row.style);
+        const inferredStyle = styleCandidate && styleCandidate !== className
+          ? styleCandidate
+          : inferConventionStyle(className);
+
+        const divisionCandidate = cleanString(row.division) || cleanString(row.track);
+        const roomCandidate = cleanString(row.room) || cleanString(row.track);
+        const rawText = cleanString(row.raw_text) || cleanString(row.class_raw);
+
+        return {
+          competitionId: "", // Set at route level
+          className,
+          instructor: cleanString(row.instructor) || cleanString(row.teacher) || "TBD",
+          room: roomCandidate || "Main Ballroom",
+          day: cleanString(row.day) || "Saturday",
+          startTime,
+          endTime,
+          duration,
+          style: inferredStyle || null,
+          division: divisionCandidate || null,
+          ageRange: cleanString(row.age_range) || null,
+          level: cleanString(row.level) || "All Levels",
+          isAuditionPhrase: parseBooleanish(row.is_audition_phrase) || className.toLowerCase().includes("audition"),
+          rawText: rawText || null,
+        };
+      })
+      .filter((row) => row.className && row.startTime && row.endTime);
+  } finally {
+    await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {
+      // Ignore temp cleanup failures
+    });
+  }
+}
+
 export function registerPDFParserRoutes(app: Express): void {
   
   // ========== UPLOAD AND PARSE PDF ==========
@@ -44,6 +369,68 @@ export function registerPDFParserRoutes(app: Express): void {
       const competition = await storage.getCompetition(competitionId);
       if (!competition) {
         return res.status(404).json({ error: "Competition not found" });
+      }
+
+      // Convention classes: force Python parser path (same pattern as run-sheet)
+      if (String(type || "").toLowerCase() === "convention") {
+        const parserOverride =
+          resolveConventionParserOverride(req.body?.parser) ||
+          resolveConventionParserOverride(req.query?.parser);
+        const parserCandidates = getConventionParserCandidates(
+          competition.name,
+          file.originalname,
+          parserOverride,
+        );
+
+        let parserVendor: PythonConventionParserVendor | null = null;
+        let parsedClasses: InsertConventionClass[] | null = null;
+        const parserErrors: string[] = [];
+
+        for (const candidate of parserCandidates) {
+          try {
+            parsedClasses = await extractConventionClassesWithPython(file.buffer, candidate);
+            parserVendor = candidate;
+            break;
+          } catch (error: any) {
+            parserErrors.push(`[${candidate}] ${error?.message || String(error)}`);
+          }
+        }
+
+        if (!parserVendor || !parsedClasses) {
+          throw new Error(parserErrors.join(" | ") || "All convention parsers failed.");
+        }
+
+        const parserConfig = CONVENTION_PARSER_CONFIG[parserVendor];
+        const usedFallback = !parserOverride && parserCandidates.length > 1 && parserVendor !== parserCandidates[0];
+
+        // Replace existing convention classes for this competition on each import.
+        await storage.deleteConventionClassesByCompetition(competitionId);
+
+        const dbData: InsertConventionClass[] = parsedClasses.map((cls) => ({
+          ...cls,
+          competitionId,
+        }));
+
+        const saved = await storage.createConventionClassesBulk(dbData);
+
+        return res.status(201).json({
+          success: true,
+          type: "convention",
+          company: parserConfig.companyLabel,
+          parser: "python",
+          parserVendor,
+          savedCount: saved.length,
+          totalParsed: parsedClasses.length,
+          warnings: [
+            ...(usedFallback ? [`Primary parser failed; imported with ${parserConfig.companyLabel} parser.`] : []),
+            ...(saved.length === 0 ? [`${parserConfig.companyLabel} parser returned no convention classes.`] : []),
+          ],
+          metadata: {
+            methodUsed: "python",
+            parserVendor,
+            fileName: file.originalname,
+          },
+        });
       }
 
       // Parse PDF
