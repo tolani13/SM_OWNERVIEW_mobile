@@ -15,8 +15,28 @@ import type {
   InsertStudioClass,
   InsertPracticeBooking,
   InsertAnnouncement,
+  InsertMessage,
+  InsertChatThread,
+  InsertChatThreadParticipant,
+  InsertChatMessage,
+  InsertChatMessageRead,
   InsertFee,
 } from "./schema";
+
+type ActorRole = "owner" | "staff" | "parent";
+
+function getActor(req: any): { id: string; name: string; role: ActorRole } {
+  const role = (req.headers["x-user-role"] || "owner") as ActorRole;
+  return {
+    id: (req.headers["x-user-id"] as string) || "owner-1",
+    name: (req.headers["x-user-name"] as string) || "Studio Owner",
+    role: ["owner", "staff", "parent"].includes(role) ? role : "owner",
+  };
+}
+
+function isStudioStaff(role: string): boolean {
+  return role === "owner" || role === "staff";
+}
 
 export async function registerRoutes(
   httpServer: Server,
@@ -693,6 +713,284 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("Delete announcement error:", error);
       res.status(500).json({ error: "Failed to delete announcement" });
+    }
+  });
+
+  // ========== MESSAGES ==========
+  app.get("/api/messages", async (_req, res) => {
+    try {
+      const allMessages = await storage.getMessages();
+      res.json(allMessages);
+    } catch (error: any) {
+      console.error("Get messages error:", error);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
+  app.post("/api/messages", async (req, res) => {
+    try {
+      const message = await storage.createMessage(req.body as InsertMessage);
+      res.status(201).json(message);
+    } catch (error: any) {
+      console.error("Create message error:", error);
+      res.status(400).json({ error: error?.message || "Invalid message data" });
+    }
+  });
+
+  app.patch("/api/messages/:id", async (req, res) => {
+    try {
+      const message = await storage.updateMessage(req.params.id, req.body);
+      if (!message) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+      res.json(message);
+    } catch (error: any) {
+      console.error("Update message error:", error);
+      res.status(400).json({ error: "Failed to update message" });
+    }
+  });
+
+  app.delete("/api/messages/:id", async (req, res) => {
+    try {
+      await storage.deleteMessage(req.params.id);
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Delete message error:", error);
+      res.status(500).json({ error: "Failed to delete message" });
+    }
+  });
+
+  // ========== CHAT THREADS ==========
+  app.get("/api/chat/threads", async (req, res) => {
+    try {
+      const participantId = req.query.participantId as string | undefined;
+      const role = (req.query.role as string | undefined) || "owner";
+      const allThreads = await storage.getChatThreads();
+
+      if (!participantId) {
+        return res.json(allThreads);
+      }
+
+      const visible: typeof allThreads = [];
+      for (const thread of allThreads) {
+        const participants = await storage.getChatThreadParticipants(thread.id);
+        const isParticipant = participants.some((p) => p.participantId === participantId && p.authorized);
+        if (isParticipant || isStudioStaff(role)) {
+          visible.push(thread);
+        }
+      }
+
+      res.json(visible);
+    } catch (error: any) {
+      console.error("Get chat threads error:", error);
+      res.status(500).json({ error: "Failed to fetch chat threads" });
+    }
+  });
+
+  app.get("/api/chat/threads/:id", async (req, res) => {
+    try {
+      const thread = await storage.getChatThread(req.params.id);
+      if (!thread) return res.status(404).json({ error: "Thread not found" });
+      const participants = await storage.getChatThreadParticipants(thread.id);
+      res.json({ thread, participants });
+    } catch (error: any) {
+      console.error("Get chat thread detail error:", error);
+      res.status(500).json({ error: "Failed to fetch chat thread" });
+    }
+  });
+
+  app.post("/api/chat/threads", async (req, res) => {
+    try {
+      const actor = getActor(req);
+      const payload = req.body as InsertChatThread & {
+        participants?: InsertChatThreadParticipant[];
+      };
+
+      if (!payload.title?.trim()) {
+        return res.status(400).json({ error: "Thread title is required" });
+      }
+
+      const requestedType = payload.type || "direct_parent_staff";
+      const staffOnlyBroadcast = !!payload.staffOnlyBroadcast || requestedType === "compchat";
+      if (staffOnlyBroadcast && !isStudioStaff(actor.role)) {
+        return res.status(403).json({ error: "Only studio staff can create staff broadcasts" });
+      }
+
+      const thread = await storage.createChatThread({
+        title: payload.title.trim(),
+        type: requestedType,
+        createdById: actor.id,
+        createdByName: actor.name,
+        createdByRole: actor.role,
+        staffOnlyBroadcast,
+        isTimeSensitive: !!payload.isTimeSensitive,
+        expiresAt: payload.expiresAt || null,
+        active: true,
+      });
+
+      await storage.addChatThreadParticipant({
+        threadId: thread.id,
+        participantId: actor.id,
+        participantName: actor.name,
+        participantRole: actor.role,
+        authorized: true,
+      });
+
+      for (const participant of payload.participants || []) {
+        const existing = await storage.getChatThreadParticipant(thread.id, participant.participantId);
+        if (!existing) {
+          await storage.addChatThreadParticipant({
+            threadId: thread.id,
+            participantId: participant.participantId,
+            participantName: participant.participantName,
+            participantRole: participant.participantRole,
+            authorized: participant.authorized ?? true,
+          });
+        }
+      }
+
+      res.status(201).json(thread);
+    } catch (error: any) {
+      console.error("Create chat thread error:", error);
+      res.status(400).json({ error: error?.message || "Failed to create thread" });
+    }
+  });
+
+  app.post("/api/chat/threads/:id/participants", async (req, res) => {
+    try {
+      const actor = getActor(req);
+      if (!isStudioStaff(actor.role)) {
+        return res.status(403).json({ error: "Only studio staff can authorize participants" });
+      }
+
+      const thread = await storage.getChatThread(req.params.id);
+      if (!thread) return res.status(404).json({ error: "Thread not found" });
+
+      const participant = req.body as InsertChatThreadParticipant;
+      if (!participant.participantId || !participant.participantName || !participant.participantRole) {
+        return res.status(400).json({ error: "participantId, participantName, participantRole are required" });
+      }
+
+      const existing = await storage.getChatThreadParticipant(thread.id, participant.participantId);
+      if (existing) return res.json(existing);
+
+      const created = await storage.addChatThreadParticipant({
+        threadId: thread.id,
+        participantId: participant.participantId,
+        participantName: participant.participantName,
+        participantRole: participant.participantRole,
+        authorized: participant.authorized ?? true,
+      });
+
+      res.status(201).json(created);
+    } catch (error: any) {
+      console.error("Add chat participant error:", error);
+      res.status(400).json({ error: error?.message || "Failed to add participant" });
+    }
+  });
+
+  app.get("/api/chat/threads/:id/messages", async (req, res) => {
+    try {
+      const thread = await storage.getChatThread(req.params.id);
+      if (!thread) return res.status(404).json({ error: "Thread not found" });
+      const allMessages = await storage.getChatMessages(thread.id);
+      res.json(allMessages);
+    } catch (error: any) {
+      console.error("Get chat messages error:", error);
+      res.status(500).json({ error: "Failed to fetch thread messages" });
+    }
+  });
+
+  app.post("/api/chat/threads/:id/messages", async (req, res) => {
+    try {
+      const actor = getActor(req);
+      const thread = await storage.getChatThread(req.params.id);
+      if (!thread) return res.status(404).json({ error: "Thread not found" });
+
+      const participant = await storage.getChatThreadParticipant(thread.id, actor.id);
+      if (!participant && !isStudioStaff(actor.role)) {
+        return res.status(403).json({ error: "Not authorized in this thread" });
+      }
+
+      if (participant && !participant.authorized) {
+        return res.status(403).json({ error: "Participant is not authorized" });
+      }
+
+      const payload = req.body as InsertChatMessage;
+      if (!payload.body?.trim()) {
+        return res.status(400).json({ error: "Message body is required" });
+      }
+
+      const isStaffBroadcast = !!payload.isStaffBroadcast;
+      if (isStaffBroadcast && !isStudioStaff(actor.role)) {
+        return res.status(403).json({ error: "Only staff can send broadcasts" });
+      }
+
+      const message = await storage.createChatMessage({
+        threadId: thread.id,
+        senderId: actor.id,
+        senderName: actor.name,
+        senderRole: actor.role,
+        body: payload.body.trim(),
+        isStaffBroadcast,
+      });
+
+      await storage.updateChatThread(thread.id, {});
+
+      res.status(201).json(message);
+    } catch (error: any) {
+      console.error("Create chat message error:", error);
+      res.status(400).json({ error: error?.message || "Failed to create thread message" });
+    }
+  });
+
+  app.post("/api/chat/messages/:id/read", async (req, res) => {
+    try {
+      const actor = getActor(req);
+      const payload = req.body as Partial<InsertChatMessageRead>;
+      const read = await storage.markChatMessageRead({
+        messageId: req.params.id,
+        readerId: payload.readerId || actor.id,
+        readerName: payload.readerName || actor.name,
+        readerRole: payload.readerRole || actor.role,
+      });
+      res.status(201).json(read);
+    } catch (error: any) {
+      console.error("Mark message read error:", error);
+      res.status(400).json({ error: error?.message || "Failed to mark read" });
+    }
+  });
+
+  app.get("/api/chat/messages/:id/reads", async (req, res) => {
+    try {
+      const reads = await storage.getChatMessageReads(req.params.id);
+      res.json(reads);
+    } catch (error: any) {
+      console.error("Get message reads error:", error);
+      res.status(500).json({ error: "Failed to fetch reads" });
+    }
+  });
+
+  app.get("/api/chat/threads/:id/read-summary", async (req, res) => {
+    try {
+      const thread = await storage.getChatThread(req.params.id);
+      if (!thread) return res.status(404).json({ error: "Thread not found" });
+
+      const messages = await storage.getChatMessages(thread.id);
+      const readSummary: Record<string, { count: number; readers: string[] }> = {};
+
+      for (const message of messages) {
+        const reads = await storage.getChatMessageReads(message.id);
+        readSummary[message.id] = {
+          count: reads.length,
+          readers: reads.map((r) => `${r.readerName} (${r.readerRole})`),
+        };
+      }
+
+      res.json(readSummary);
+    } catch (error: any) {
+      console.error("Get read summary error:", error);
+      res.status(500).json({ error: "Failed to fetch read summary" });
     }
   });
 

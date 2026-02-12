@@ -12,6 +12,7 @@
     "check": "tsc",
     "seed:demo": "tsx script/seed-demo.ts",
     "test:pdf:smoke": "tsx test_wcde_parser.ts",
+    "test:pdf:competition": "tsx server/scripts/testCompetitionPdfParser.ts",
     "db:push": "drizzle-kit push"
   },
   "dependencies": {

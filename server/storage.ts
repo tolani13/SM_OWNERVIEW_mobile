@@ -1,6 +1,6 @@
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
-import { eq, and } from "drizzle-orm";
+import { eq, and, asc } from "drizzle-orm";
 import {
   dancers,
   teachers,
@@ -13,6 +13,11 @@ import {
   studioClasses,
   practiceBookings,
   announcements,
+  messages,
+  chatThreads,
+  chatThreadParticipants,
+  chatMessages,
+  chatMessageReads,
   fees,
   type Dancer,
   type InsertDancer,
@@ -36,6 +41,16 @@ import {
   type InsertPracticeBooking,
   type Announcement,
   type InsertAnnouncement,
+  type Message,
+  type InsertMessage,
+  type ChatThread,
+  type InsertChatThread,
+  type ChatThreadParticipant,
+  type InsertChatThreadParticipant,
+  type ChatMessage,
+  type InsertChatMessage,
+  type ChatMessageRead,
+  type InsertChatMessageRead,
   type Fee,
   type InsertFee,
 } from "./schema";
@@ -244,6 +259,102 @@ export class Storage {
 
   async deleteAnnouncement(id: string): Promise<void> {
     await this.db.delete(announcements).where(eq(announcements.id, id));
+  }
+
+  // ========== MESSAGES ==========
+  async getMessages(): Promise<Message[]> {
+    return await this.db.select().from(messages);
+  }
+
+  async createMessage(data: InsertMessage): Promise<Message> {
+    const [message] = await this.db.insert(messages).values(data).returning();
+    return message;
+  }
+
+  async updateMessage(id: string, data: Partial<InsertMessage>): Promise<Message | undefined> {
+    const [message] = await this.db.update(messages).set(data).where(eq(messages.id, id)).returning();
+    return message;
+  }
+
+  async deleteMessage(id: string): Promise<void> {
+    await this.db.delete(messages).where(eq(messages.id, id));
+  }
+
+  // ========== CHAT THREADS ==========
+  async getChatThreads(): Promise<ChatThread[]> {
+    return await this.db.select().from(chatThreads).where(eq(chatThreads.active, true)).orderBy(asc(chatThreads.createdAt));
+  }
+
+  async getChatThread(id: string): Promise<ChatThread | undefined> {
+    const [thread] = await this.db.select().from(chatThreads).where(eq(chatThreads.id, id));
+    return thread;
+  }
+
+  async createChatThread(data: InsertChatThread): Promise<ChatThread> {
+    const [thread] = await this.db.insert(chatThreads).values(data).returning();
+    return thread;
+  }
+
+  async updateChatThread(id: string, data: Partial<InsertChatThread>): Promise<ChatThread | undefined> {
+    const [thread] = await this.db
+      .update(chatThreads)
+      .set({ ...data, updatedAt: new Date() as any })
+      .where(eq(chatThreads.id, id))
+      .returning();
+    return thread;
+  }
+
+  async getChatThreadParticipants(threadId: string): Promise<ChatThreadParticipant[]> {
+    return await this.db
+      .select()
+      .from(chatThreadParticipants)
+      .where(eq(chatThreadParticipants.threadId, threadId));
+  }
+
+  async getChatThreadParticipant(threadId: string, participantId: string): Promise<ChatThreadParticipant | undefined> {
+    const [participant] = await this.db
+      .select()
+      .from(chatThreadParticipants)
+      .where(
+        and(
+          eq(chatThreadParticipants.threadId, threadId),
+          eq(chatThreadParticipants.participantId, participantId),
+        ),
+      );
+    return participant;
+  }
+
+  async addChatThreadParticipant(data: InsertChatThreadParticipant): Promise<ChatThreadParticipant> {
+    const [participant] = await this.db.insert(chatThreadParticipants).values(data).returning();
+    return participant;
+  }
+
+  async getChatMessages(threadId: string): Promise<ChatMessage[]> {
+    return await this.db.select().from(chatMessages).where(eq(chatMessages.threadId, threadId)).orderBy(asc(chatMessages.createdAt));
+  }
+
+  async createChatMessage(data: InsertChatMessage): Promise<ChatMessage> {
+    const [message] = await this.db.insert(chatMessages).values(data).returning();
+    return message;
+  }
+
+  async getChatMessageReads(messageId: string): Promise<ChatMessageRead[]> {
+    return await this.db.select().from(chatMessageReads).where(eq(chatMessageReads.messageId, messageId));
+  }
+
+  async getChatMessageRead(messageId: string, readerId: string): Promise<ChatMessageRead | undefined> {
+    const [read] = await this.db
+      .select()
+      .from(chatMessageReads)
+      .where(and(eq(chatMessageReads.messageId, messageId), eq(chatMessageReads.readerId, readerId)));
+    return read;
+  }
+
+  async markChatMessageRead(data: InsertChatMessageRead): Promise<ChatMessageRead> {
+    const existing = await this.getChatMessageRead(data.messageId, data.readerId);
+    if (existing) return existing;
+    const [read] = await this.db.insert(chatMessageReads).values(data).returning();
+    return read;
   }
 
   // ========== FEES ==========
