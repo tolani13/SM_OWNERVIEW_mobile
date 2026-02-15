@@ -71,7 +71,22 @@ app.use((req, res, next) => {
   });
 
   if (process.env.NODE_ENV === "production") {
-    serveStatic(app);
+    try {
+      serveStatic(app);
+    } catch (error) {
+      log(
+        `static assets not found; running API-only mode (${(error as Error).message})`,
+        "express",
+      );
+
+      app.get("/", (_req, res) => {
+        res.json({
+          service: "studio-maestro-api",
+          status: "ok",
+          mode: "api-only",
+        });
+      });
+    }
   } else {
     const { setupVite } = await import("./vite");
     await setupVite(httpServer, app);

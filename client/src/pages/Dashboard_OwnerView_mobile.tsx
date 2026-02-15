@@ -10,13 +10,22 @@ import {
   Megaphone
 } from "lucide-react";
 import { Link } from "wouter";
-import { useDancers, useRoutines, useCompetitions, useFees } from "@/hooks/useData";
+import {
+  useDancers,
+  useRoutines,
+  useCompetitions,
+  useFees,
+  useStudioClasses,
+  usePracticeBookings,
+} from "@/hooks/useData";
 
 export default function Dashboard() {
   const { data: dancers = [], isLoading: dancersLoading } = useDancers();
   const { data: routines = [], isLoading: routinesLoading } = useRoutines();
   const { data: competitions = [], isLoading: competitionsLoading } = useCompetitions();
   const { data: fees = [], isLoading: feesLoading } = useFees();
+  const { data: studioClasses = [], isLoading: studioClassesLoading } = useStudioClasses();
+  const { data: practiceBookings = [], isLoading: practiceBookingsLoading } = usePracticeBookings();
 
   const activeDancers = dancers.filter(d => d.status === "Active").length;
   const activeRoutines = routines.length;
@@ -27,7 +36,71 @@ export default function Dashboard() {
     .filter(f => f.type === "Tuition")
     .reduce((sum, f) => sum + parseFloat(f.amount || "0"), 0);
 
-  if (dancersLoading || routinesLoading || competitionsLoading || feesLoading) {
+  const now = new Date();
+  const todayWeekday = now.toLocaleDateString("en-US", { weekday: "long" });
+  const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+  const formatTime = (time?: string) => {
+    if (!time) return "TBD";
+    const [hour, minute] = time.split(":").map(Number);
+    if (Number.isNaN(hour) || Number.isNaN(minute)) return time;
+    const date = new Date();
+    date.setHours(hour, minute, 0, 0);
+    return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  };
+
+  const getDurationMinutes = (start?: string, end?: string) => {
+    if (!start || !end) return null;
+    const [startHour, startMinute] = start.split(":").map(Number);
+    const [endHour, endMinute] = end.split(":").map(Number);
+    if ([startHour, startMinute, endHour, endMinute].some(Number.isNaN)) return null;
+    const startTotal = startHour * 60 + startMinute;
+    const endTotal = endHour * 60 + endMinute;
+    const diff = endTotal - startTotal;
+    return diff > 0 ? diff : null;
+  };
+
+  const isPrivateOrSoloBooking = (booking: { title?: string | null; purpose?: string | null; room?: string | null }) => {
+    const haystack = [booking.title, booking.purpose, booking.room]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes("private") || haystack.includes("solo");
+  };
+
+  const todaysClasses = studioClasses
+    .filter((cls) => cls.day === todayWeekday)
+    .sort((a, b) => a.time.localeCompare(b.time));
+
+  const todaysBookings = practiceBookings
+    .filter((booking) => booking.date === todayIso)
+    .sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+  const todaysPrivateInstruction = todaysBookings.filter(isPrivateOrSoloBooking);
+  const bookingsToDisplay = todaysPrivateInstruction.length > 0 ? todaysPrivateInstruction : todaysBookings;
+
+  const resolveDancerId = (booking: { bookedBy?: string | null } & Record<string, unknown>) => {
+    const directDancerId = typeof booking.dancerId === "string" ? booking.dancerId : null;
+    if (directDancerId) return directDancerId;
+
+    const bookedBy = (booking.bookedBy || "").trim().toLowerCase();
+    if (!bookedBy) return null;
+
+    const matchedDancer = dancers.find(
+      (dancer) => `${dancer.firstName} ${dancer.lastName}`.trim().toLowerCase() === bookedBy,
+    );
+
+    return matchedDancer?.id ?? null;
+  };
+
+  if (
+    dancersLoading ||
+    routinesLoading ||
+    competitionsLoading ||
+    feesLoading ||
+    studioClassesLoading ||
+    practiceBookingsLoading
+  ) {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">
@@ -149,13 +222,33 @@ export default function Dashboard() {
               <CardTitle className="font-display">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4">
-               <Link href="/studio">
-                <button className="relative flex flex-col items-center justify-center w-full h-32 bg-white rounded-xl shadow-sm border border-gray-100 hover:border-primary/50 transition-all text-center gap-2 overflow-hidden group">
-                    <div className="absolute top-0 left-0 w-full h-2 bg-primary origin-left group-hover:scale-x-105 transition-transform" />
-                    <CalendarDays className="w-6 h-6 text-primary mt-2" />
-                    <span className="font-medium text-sm">Book Studio Space</span>
-                </button>
-               </Link>
+               <div className="relative flex flex-col w-full min-h-32 bg-white rounded-xl shadow-sm border border-gray-100 p-3 gap-2 overflow-hidden">
+                  <div className="absolute top-0 left-0 w-full h-2 bg-primary" />
+                  <div className="flex items-center gap-2 mt-2">
+                    <CalendarDays className="w-5 h-5 text-primary" />
+                    <span className="font-medium text-sm">Private Instruction</span>
+                  </div>
+                  <div className="space-y-1 text-xs text-muted-foreground">
+                    {bookingsToDisplay.length === 0 ? (
+                      <p>No private instruction bookings today.</p>
+                    ) : (
+                      bookingsToDisplay.slice(0, 3).map((booking) => {
+                        const duration = getDurationMinutes(booking.startTime, booking.endTime);
+                        const dancerId = resolveDancerId(booking as Record<string, unknown> & { bookedBy?: string | null });
+                        return (
+                          <div key={booking.id} className="rounded-md bg-secondary/30 p-2">
+                            <p className="font-medium text-foreground truncate">Booked by: {booking.bookedBy}</p>
+                            <p className="truncate">Dancer ID: {dancerId || "Not linked"}</p>
+                            <p>
+                              {formatTime(booking.startTime)} - {formatTime(booking.endTime)}
+                              {duration ? ` (${duration}m)` : ""}
+                            </p>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+               </div>
                <Link href="/announcements">
                 <button className="relative flex flex-col items-center justify-center w-full h-32 bg-white rounded-xl shadow-sm border border-gray-100 hover:border-primary/50 transition-all text-center gap-2 overflow-hidden group">
                     <div className="absolute top-0 left-0 w-full h-2 bg-primary origin-left group-hover:scale-x-105 transition-transform" />
@@ -163,13 +256,25 @@ export default function Dashboard() {
                     <span className="font-medium text-sm">Post Announcement</span>
                 </button>
                </Link>
-               <Link href="/dancers">
-                <button className="relative flex flex-col items-center justify-center w-full h-32 bg-white rounded-xl shadow-sm border border-gray-100 hover:border-primary/50 transition-all text-center gap-2 overflow-hidden group">
-                    <div className="absolute top-0 left-0 w-full h-2 bg-primary origin-left group-hover:scale-x-105 transition-transform" />
-                    <Users className="w-6 h-6 text-primary mt-2" />
-                    <span className="font-medium text-sm">Add New Dancer</span>
-                </button>
-               </Link>
+               <div className="relative flex flex-col w-full min-h-32 bg-white rounded-xl shadow-sm border border-gray-100 p-3 gap-2 overflow-hidden">
+                  <div className="absolute top-0 left-0 w-full h-2 bg-primary" />
+                  <div className="flex items-center gap-2 mt-2">
+                    <Users className="w-5 h-5 text-primary" />
+                    <span className="font-medium text-sm">Today&apos;s Classes</span>
+                  </div>
+                  <div className="space-y-1 text-xs text-muted-foreground">
+                    {todaysClasses.length === 0 ? (
+                      <p>No classes scheduled today.</p>
+                    ) : (
+                      todaysClasses.slice(0, 3).map((studioClass) => (
+                        <div key={studioClass.id} className="rounded-md bg-secondary/30 p-2">
+                          <p className="font-medium text-foreground truncate">{studioClass.name}</p>
+                          <p>{formatTime(studioClass.time)}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+               </div>
                 <Link href="/routines">
                 <button className="relative flex flex-col items-center justify-center w-full h-32 bg-white rounded-xl shadow-sm border border-gray-100 hover:border-primary/50 transition-all text-center gap-2 overflow-hidden group">
                     <div className="absolute top-0 left-0 w-full h-2 bg-primary origin-left group-hover:scale-x-105 transition-transform" />
