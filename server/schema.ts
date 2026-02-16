@@ -1,4 +1,13 @@
-import { pgTable, text, integer, boolean, timestamp, json } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  integer,
+  boolean,
+  timestamp,
+  json,
+  numeric,
+  pgEnum,
+} from "drizzle-orm/pg-core";
 import { createId } from "@paralleldrive/cuid2";
 import { relations } from "drizzle-orm";
 
@@ -200,8 +209,12 @@ export type ConventionClass = typeof conventionClasses.$inferSelect;
 export type InsertConventionClass = typeof conventionClasses.$inferInsert;
 
 // ========== STUDIO CLASSES ==========
+export const classProgramTypeEnum = pgEnum("class_program_type", ["REC", "COMP", "BOTH"]);
+
 export const studioClasses = pgTable("studio_classes", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
+
+  // Legacy/current UI fields (kept for backward compatibility)
   name: text("name").notNull(),
   level: text("level").notNull(),
   day: text("day").notNull(),
@@ -209,7 +222,29 @@ export const studioClasses = pgTable("studio_classes", {
   type: text("type").default("Weekly"),
   description: text("description"),
   cost: text("cost"),
+
+  // Canonical class schedule fields
+  className: text("class_name").notNull().default(""),
+  ageGroupLabel: text("age_group_label").notNull().default("All Ages"),
+  minAge: integer("min_age"),
+  maxAge: integer("max_age"),
+  sessionLabel: text("session_label").notNull().default("2025–2026"),
+  startDate: text("start_date").notNull().default("2025-09-02"),
+  dayOfWeek: text("day_of_week").notNull().default(""),
+  startTime: text("start_time").notNull().default(""),
+  endTime: text("end_time").notNull().default(""),
+  room: text("room").notNull().default("Main"),
+
+  // Teacher linkage
   teacherId: text("teacher_id").references(() => teachers.id),
+  teacherName: text("teacher_name"),
+
+  // Capacity + tuition + program tagging
+  spotsLeft: integer("spots_left").notNull().default(0),
+  tuitionMonthly: numeric("tuition_monthly", { precision: 8, scale: 2 }).notNull().default("0"),
+  programType: classProgramTypeEnum("program_type").notNull().default("REC"),
+  isCompetition: boolean("is_competition").notNull().default(false),
+
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 

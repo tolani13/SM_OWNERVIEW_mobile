@@ -1,8 +1,6 @@
 import type {
-  AgeRange,
   BillingActivity,
   BillingSummary,
-  ClassListing,
   Contact,
   Policy,
   PolicyAgreement,
@@ -149,40 +147,3 @@ export const parentContacts: Contact[] = [
   },
 ];
 
-export const parentAgeRanges: AgeRange[] = [
-  { id: "ar-1", studentName: "Aria Monroe", ageLabel: "10 yrs" },
-  { id: "ar-2", studentName: "Zoey Patel", ageLabel: "11 yrs" },
-];
-
-export const parentClassListings: ClassListing[] = [
-  {
-    id: "cl-1",
-    className: "Jazz Tech",
-    forLabel: "Ages 9–12",
-    sessionLabel: "2025–26 Season",
-    scheduleWhen: "Mon 5:30–6:15 PM",
-    where: "Studio A",
-    withTeacher: "Jade Cole",
-    tuition: 125,
-  },
-  {
-    id: "cl-2",
-    className: "Ballet Foundations",
-    forLabel: "Ages 8–11",
-    sessionLabel: "2025–26 Season",
-    scheduleWhen: "Wed 4:45–5:30 PM",
-    where: "Studio B",
-    withTeacher: "Miles Turner",
-    tuition: 115,
-  },
-  {
-    id: "cl-3",
-    className: "Hip Hop Crew",
-    forLabel: "Ages 10–13",
-    sessionLabel: "2025–26 Season",
-    scheduleWhen: "Thu 6:00–6:45 PM",
-    where: "Studio C",
-    withTeacher: "Miles Turner",
-    tuition: 130,
-  },
-];

@@ -1,12 +1,13 @@
 import { Layout } from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Clock, MapPin, User, Calendar as CalendarIcon, Search, Star, CheckCircle2, XCircle, Edit2, Upload, DollarSign, Calendar, Loader2, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { ClassSummaryCard } from "@/components/ClassSummaryCard";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -21,6 +22,7 @@ import {
   useTeachers, 
   useCreateTeacher, 
   useUpdateTeacher, 
+  useDeleteTeacher,
   usePracticeBookings, 
   useCreatePracticeBooking, 
   useUpdatePracticeBooking,
@@ -31,6 +33,67 @@ import type { StudioClass, Teacher, PracticeBooking, InsertStudioClass, InsertTe
 import { toast } from "react-hot-toast";
 
 const LEVEL_OPTIONS = ["Mini", "Junior", "Teen", "Senior", "All Levels"];
+const PROGRAM_TYPE_OPTIONS = ["REC", "COMP", "BOTH"] as const;
+
+function formatTime12Hour(timeValue?: string | null): string {
+  if (!timeValue) return "";
+
+  const raw = timeValue.trim();
+  if (!raw) return "";
+
+  // Already 12-hour-ish
+  if (/\b(am|pm)\b/i.test(raw)) {
+    return raw.toUpperCase().replace(/\s+/g, " ");
+  }
+
+  // 24-hour HH:mm[:ss]
+  const match = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (!match) return raw;
+
+  const hour24 = Number(match[1]);
+  const minute = match[2];
+  if (!Number.isFinite(hour24) || hour24 < 0 || hour24 > 23) return raw;
+
+  const period = hour24 >= 12 ? "PM" : "AM";
+  const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
+  return `${hour12}:${minute} ${period}`;
+}
+
+function formatTuitionLabel(value: unknown, fallbackCost?: string | null): string {
+  const parsed =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+        ? Number(value.replace(/[^0-9.-]/g, ""))
+        : Number.NaN;
+
+  if (Number.isFinite(parsed)) {
+    return `$${parsed.toFixed(2)} / month`;
+  }
+
+  const costLabel = (fallbackCost || "").trim();
+  if (!costLabel) return "$0.00 / month";
+
+  return /\/month/i.test(costLabel) ? costLabel : `${costLabel} / month`;
+}
+
+function formatAgeRangeLabel(cls: StudioClass): string {
+  if (typeof cls.minAge === "number" && typeof cls.maxAge === "number") {
+    return `Ages ${cls.minAge}–${cls.maxAge}`;
+  }
+
+  const raw = (cls.ageGroupLabel || cls.level || "All Ages").trim();
+  if (!raw) return "All Ages";
+  if (/^ages?/i.test(raw)) return raw;
+  if (/^all\s+levels$/i.test(raw)) return "All Ages";
+  return raw;
+}
+
+function formatSeasonLabel(value?: string | null): string {
+  const raw = (value || "").trim();
+  if (!raw) return "2025–26 Season";
+  return /season/i.test(raw) ? raw : `${raw} Season`;
+}
 
 export default function Studio() {
   const { data: classes = [], isLoading: classesLoading } = useStudioClasses();
@@ -39,9 +102,25 @@ export default function Studio() {
   const { data: competitions = [], isLoading: competitionsLoading } = useCompetitions();
 
   const getTeacherName = (teacherId: string | null | undefined) => {
-    if (!teacherId) return "Unknown";
+    if (!teacherId) return "Unassigned";
     const teacher = teachers.find(t => t.id === teacherId);
-    return teacher ? `${teacher.firstName} ${teacher.lastName}` : "Unknown";
+    return teacher ? `${teacher.firstName} ${teacher.lastName}` : "Unassigned";
+  };
+
+  const getWhenLabel = (cls: StudioClass) => {
+    const dayLabel = cls.dayOfWeek || cls.day || "TBD";
+    const startLabel = formatTime12Hour(cls.startTime || cls.time);
+    const endLabel = formatTime12Hour(cls.endTime);
+
+    if (startLabel && endLabel && startLabel !== endLabel) {
+      return `${dayLabel} ${startLabel}–${endLabel}`;
+    }
+
+    if (startLabel) {
+      return `${dayLabel} ${startLabel}`;
+    }
+
+    return dayLabel;
   };
   
   const createStudioClass = useCreateStudioClass();
@@ -49,6 +128,7 @@ export default function Studio() {
   const deleteStudioClass = useDeleteStudioClass();
   const createTeacher = useCreateTeacher();
   const updateTeacher = useUpdateTeacher();
+  const deleteTeacher = useDeleteTeacher();
   const createPracticeBooking = useCreatePracticeBooking();
   const updatePracticeBooking = useUpdatePracticeBooking();
   const deletePracticeBooking = useDeletePracticeBooking();
@@ -63,12 +143,18 @@ export default function Studio() {
   const [scheduleWeekOffset, setScheduleWeekOffset] = useState(0); // 0 = current week, 1 = next week, etc.
 
   // Delete confirmation states
-  const [deleteConfirm, setDeleteConfirm] = useState<{type: 'class' | 'booking', id: string, name: string} | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{type: 'class' | 'booking' | 'teacher', id: string, name: string} | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-  const [newClass, setNewClass] = useState<Partial<InsertStudioClass>>({ type: "Weekly", level: "All Levels" });
+  const [newClass, setNewClass] = useState<Partial<InsertStudioClass>>({
+    type: "Weekly",
+    level: "All Levels",
+    programType: "REC",
+    spotsLeft: 0,
+    tuitionMonthly: "0.00",
+  });
   const [selectedLevels, setSelectedLevels] = useState<string[]>(["All Levels"]);
   const [newTeacher, setNewTeacher] = useState<Partial<InsertTeacher & {avatarFile?: File}>>({ isAvailableForSolo: false });
   const [newBooking, setNewBooking] = useState<Partial<InsertPracticeBooking>>({});
@@ -122,37 +208,63 @@ export default function Studio() {
     setIsSavingClass(true);
     
     try {
+      const normalizedProgramType =
+        newClass.programType && PROGRAM_TYPE_OPTIONS.includes(newClass.programType as (typeof PROGRAM_TYPE_OPTIONS)[number])
+          ? (newClass.programType as (typeof PROGRAM_TYPE_OPTIONS)[number])
+          : "REC";
+      const normalizedTuitionMonthly = (() => {
+        const raw = (newClass.tuitionMonthly ?? newClass.cost ?? "0").toString();
+        const parsed = Number(raw.replace(/[^0-9.-]/g, ""));
+        return Number.isFinite(parsed) ? parsed.toFixed(2) : "0.00";
+      })();
+      const normalizedSpotsLeft =
+        typeof newClass.spotsLeft === "number"
+          ? newClass.spotsLeft
+          : parseInt((newClass.spotsLeft as unknown as string) || "0", 10) || 0;
+      const classPayload = {
+        name: newClass.name!,
+        className: newClass.name!,
+        day: newClass.day!,
+        dayOfWeek: newClass.day!,
+        time: newClass.time!,
+        startTime: newClass.time!,
+        endTime: newClass.endTime || newClass.time!,
+        level: levelString,
+        ageGroupLabel: levelString,
+        type: newClass.type || "Weekly",
+        description: newClass.description || "",
+        cost: newClass.cost || (normalizedTuitionMonthly ? `$${normalizedTuitionMonthly}/month` : ""),
+        tuitionMonthly: normalizedTuitionMonthly,
+        spotsLeft: normalizedSpotsLeft,
+        programType: normalizedProgramType,
+        isCompetition: normalizedProgramType !== "REC",
+        teacherId: newClass.teacherId || null,
+        room: newClass.room || "Main",
+        sessionLabel: newClass.sessionLabel || "2025–2026",
+        startDate: newClass.startDate || "2025-09-02",
+        minAge: newClass.minAge ?? null,
+        maxAge: newClass.maxAge ?? null,
+      };
+
       if (editingClassId) {
         await updateStudioClass.mutateAsync({
           id: editingClassId,
-          data: {
-            name: newClass.name!,
-            day: newClass.day!,
-            time: newClass.time!,
-            level: levelString,
-            type: newClass.type || "Weekly",
-            description: newClass.description || "",
-            cost: newClass.cost || "",
-            teacherId: newClass.teacherId || null
-          }
+          data: classPayload,
         });
         toast.success("Class updated successfully!");
         setEditingClassId(null);
       } else {
-        await createStudioClass.mutateAsync({
-          name: newClass.name!,
-          day: newClass.day!,
-          time: newClass.time!,
-          level: levelString,
-          type: newClass.type || "Weekly",
-          description: newClass.description || "",
-          cost: newClass.cost || "",
-          teacherId: newClass.teacherId || null
-        });
+        await createStudioClass.mutateAsync(classPayload);
         toast.success("Class created successfully!");
       }
       setIsAddClassOpen(false);
-      setNewClass({ type: "Weekly", level: "All Levels" });
+      setNewClass({
+        type: "Weekly",
+        level: "All Levels",
+        programType: "REC",
+        spotsLeft: 0,
+        tuitionMonthly: "0.00",
+      });
       setSelectedLevels(["All Levels"]);
     } catch (error: any) {
       console.error("Error saving class:", error);
@@ -185,6 +297,14 @@ export default function Studio() {
       if (deleteConfirm.type === 'class') {
         await deleteStudioClass.mutateAsync(deleteConfirm.id);
         toast.success('Class deleted successfully!');
+      } else if (deleteConfirm.type === 'teacher') {
+        const result = await deleteTeacher.mutateAsync(deleteConfirm.id) as { detachedClasses?: number } | null;
+        const detached = result?.detachedClasses || 0;
+        if (detached > 0) {
+          toast.success(`Teacher deleted. ${detached} class${detached === 1 ? '' : 'es'} set to Unassigned.`);
+        } else {
+          toast.success('Teacher deleted successfully!');
+        }
       } else if (deleteConfirm.type === 'booking') {
         await deletePracticeBooking.mutateAsync(deleteConfirm.id);
         toast.success('Booking deleted successfully!');
@@ -292,6 +412,17 @@ export default function Studio() {
     });
     setEditingTeacherId(teacher.id);
     setIsAddTeacherOpen(true);
+  };
+
+  const handleDeleteTeacher = (teacherId: string) => {
+    const teacher = teachers.find(t => t.id === teacherId);
+    if (!teacher) return;
+
+    setDeleteConfirm({
+      type: 'teacher',
+      id: teacherId,
+      name: `${teacher.firstName} ${teacher.lastName}`,
+    });
   };
 
   const handleAddBooking = async () => {
@@ -457,6 +588,48 @@ export default function Studio() {
                       </Select>
                     </div>
 
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Program Type</Label>
+                        <Select
+                          value={(newClass.programType as string) || "REC"}
+                          onValueChange={(v) =>
+                            setNewClass({
+                              ...newClass,
+                              programType: v as "REC" | "COMP" | "BOTH",
+                              isCompetition: v !== "REC",
+                            })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {PROGRAM_TYPE_OPTIONS.map((programType) => (
+                              <SelectItem key={programType} value={programType}>
+                                {programType}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Spots Left</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={newClass.spotsLeft ?? 0}
+                          onChange={(e) =>
+                            setNewClass({
+                              ...newClass,
+                              spotsLeft: parseInt(e.target.value || "0", 10),
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
+
                     <div className="space-y-2">
                       <Label>Levels</Label>
                       <div className="flex flex-wrap gap-2">
@@ -509,6 +682,23 @@ export default function Studio() {
                       />
                     </div>
 
+                    <div className="space-y-2">
+                      <Label>Tuition Monthly</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min={0}
+                        placeholder="e.g. 68.25"
+                        value={newClass.tuitionMonthly?.toString() || ""}
+                        onChange={(e) =>
+                          setNewClass({
+                            ...newClass,
+                            tuitionMonthly: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+
                     <Button 
                       className="w-full" 
                       onClick={handleAddClass}
@@ -531,40 +721,26 @@ export default function Studio() {
 
             <div className="grid md:grid-cols-2 gap-4">
               {weeklyClasses.map(cls => (
-                <Card key={cls.id} className="border-l-4 border-l-primary">
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-lg">{cls.name}</CardTitle>
-                        <CardDescription className="mt-1">
-                          {cls.day} at {cls.time}
-                        </CardDescription>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="sm" onClick={() => openEditClass(cls)} aria-label={`Edit ${cls.name}`}>
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDeleteClass(cls.id)} aria-label={`Delete ${cls.name}`}>
-                          <Trash2 className="w-4 h-4 text-red-500" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <User className="w-4 h-4" />
-                      {getTeacherName(cls.teacherId)}
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {cls.level.split(", ").map(lvl => (
-                        <Badge key={lvl} variant="secondary" className="text-xs">{lvl}</Badge>
-                      ))}
-                    </div>
-                    {cls.cost && (
-                      <div className="text-sm font-medium text-primary">{cls.cost}</div>
-                    )}
-                  </CardContent>
-                </Card>
+                <ClassSummaryCard
+                  key={cls.id}
+                  title={cls.className || cls.name}
+                  ageRangeLabel={formatAgeRangeLabel(cls)}
+                  seasonLabel={formatSeasonLabel(cls.sessionLabel)}
+                  whenLabel={getWhenLabel(cls)}
+                  whereLabel={cls.room || "Main"}
+                  teacherName={cls.teacherName || getTeacherName(cls.teacherId)}
+                  tuitionLabel={formatTuitionLabel(cls.tuitionMonthly, cls.cost)}
+                  actions={(
+                    <>
+                      <Button variant="ghost" size="sm" onClick={() => openEditClass(cls)} aria-label={`Edit ${cls.name}`}>
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleDeleteClass(cls.id)} aria-label={`Delete ${cls.name}`}>
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </Button>
+                    </>
+                  )}
+                />
               ))}
             </div>
 
@@ -572,31 +748,27 @@ export default function Studio() {
               <h2 className="text-xl font-semibold">Special Events</h2>
               <div className="grid md:grid-cols-2 gap-4">
                 {specialEvents.map(evt => (
-                  <Card key={evt.id} className="border-l-4 border-l-orange-400">
-                    <CardHeader className="pb-3">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle className="text-lg">{evt.name}</CardTitle>
-                          <CardDescription className="mt-1">
-                            {evt.day} at {evt.time}
-                          </CardDescription>
-                        </div>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="sm" onClick={() => openEditClass(evt)} aria-label={`Edit ${evt.name}`}>
-                            <Edit2 className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleDeleteClass(evt.id)} aria-label={`Delete ${evt.name}`}>
-                            <Trash2 className="w-4 h-4 text-red-500" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      {evt.description && (
-                        <p className="text-sm text-muted-foreground">{evt.description}</p>
-                      )}
-                    </CardContent>
-                  </Card>
+                  <ClassSummaryCard
+                    key={evt.id}
+                    title={evt.className || evt.name}
+                    ageRangeLabel={formatAgeRangeLabel(evt)}
+                    seasonLabel={formatSeasonLabel(evt.sessionLabel)}
+                    whenLabel={getWhenLabel(evt)}
+                    whereLabel={evt.room || "Main"}
+                    teacherName={evt.teacherName || getTeacherName(evt.teacherId)}
+                    tuitionLabel={formatTuitionLabel(evt.tuitionMonthly, evt.cost)}
+                    actions={(
+                      <>
+                        <Button variant="ghost" size="sm" onClick={() => openEditClass(evt)} aria-label={`Edit ${evt.name}`}>
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleDeleteClass(evt.id)} aria-label={`Delete ${evt.name}`}>
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </Button>
+                      </>
+                    )}
+                    className="border-l-orange-400"
+                  />
                 ))}
               </div>
             </div>
@@ -766,6 +938,15 @@ export default function Studio() {
                         >
                           <Edit2 className="w-4 h-4 mr-2" /> Edit
                         </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600 border-red-200 hover:bg-red-50"
+                          onClick={() => handleDeleteTeacher(teacher.id)}
+                          aria-label={`Delete ${teacher.firstName} ${teacher.lastName}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
@@ -884,7 +1065,7 @@ export default function Studio() {
                           </div>
                           <div className="flex items-center gap-1">
                             <Clock className="w-4 h-4" />
-                            {booking.startTime} - {booking.endTime}
+                            {formatTime12Hour(booking.startTime)} - {formatTime12Hour(booking.endTime)}
                           </div>
                           <div className="flex items-center gap-1">
                             <MapPin className="w-4 h-4" />

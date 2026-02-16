@@ -3,13 +3,12 @@ import { Layout } from "@/components/Layout";
 import {
   parentBillingActivity,
   parentBillingSummary,
-  parentClassListings,
   parentContacts,
   parentPolicies,
   parentPolicyAgreements,
 } from "@/lib/parentPortalMock";
 import type { ContactRole, Policy, PolicyAgreement, PolicyType } from "@/types/parentPortal";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PolicyCard } from "@/components/PolicyCard";
 import {
@@ -84,7 +83,7 @@ export default function ParentPolicies() {
         <div className="space-y-3">
           <h1 className="text-3xl font-display font-bold text-black">Policies</h1>
           <p className="text-black/80">
-            Parent portal information (policies, billing, contacts, and classes) is consolidated here.
+            Parent portal information (policies, billing, and contacts) is consolidated here.
           </p>
         </div>
 
@@ -107,12 +106,6 @@ export default function ParentPolicies() {
               className="rounded-lg border border-transparent px-4 py-2 text-black transition-colors data-[state=active]:border-coral data-[state=active]:bg-coral/10 data-[state=active]:text-coral"
             >
               Contacts
-            </TabsTrigger>
-            <TabsTrigger
-              value="classes"
-              className="rounded-lg border border-transparent px-4 py-2 text-black transition-colors data-[state=active]:border-coral data-[state=active]:bg-coral/10 data-[state=active]:text-coral"
-            >
-              Classes
             </TabsTrigger>
           </TabsList>
 
@@ -245,25 +238,6 @@ export default function ParentPolicies() {
                 </Table>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="classes" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              {parentClassListings.map((item) => (
-                <Card key={item.id} className="bg-white shadow-md border border-slate-200 border-l-4 border-l-primary">
-                  <CardHeader>
-                    <CardTitle className="text-lg text-black">{item.className}</CardTitle>
-                    <p className="text-sm text-black/80">{item.forLabel} · {item.sessionLabel}</p>
-                  </CardHeader>
-                  <CardContent className="space-y-2 text-sm text-black">
-                    <div><span className="font-medium text-black">When:</span> {item.scheduleWhen}</div>
-                    <div><span className="font-medium text-black">Where:</span> {item.where}</div>
-                    <div><span className="font-medium text-black">Teacher:</span> {item.withTeacher}</div>
-                    <div><span className="font-medium text-black">Tuition:</span> {currency(item.tuition)} / month</div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
           </TabsContent>
         </Tabs>
 

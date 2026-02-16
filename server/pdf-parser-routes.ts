@@ -51,7 +51,7 @@ type PythonParsedConventionRow = {
   class_raw?: string;
 };
 
-type PythonConventionParserVendor = "wcde" | "velocity";
+type PythonConventionParserVendor = "wcde" | "velocity" | "nycda";
 
 const CONVENTION_PARSER_CONFIG: Record<
   PythonConventionParserVendor,
@@ -73,6 +73,12 @@ const CONVENTION_PARSER_CONFIG: Record<
     functionName: "parse_velocity_convention",
     tempPrefix: "velocity-convention-",
     companyLabel: "Velocity",
+  },
+  nycda: {
+    scriptPath: "parse_nycda_convention.py",
+    functionName: "parse_nycda_convention",
+    tempPrefix: "nycda-convention-",
+    companyLabel: "NYCDA",
   },
 };
 
@@ -107,6 +113,15 @@ function detectConventionParserVendor(
   ) {
     return "velocity";
   }
+
+  if (
+    normalizedCompetition.includes("nycda") ||
+    normalizedCompetition.includes("new york city dance alliance") ||
+    normalizedFileName.includes("nycda")
+  ) {
+    return "nycda";
+  }
+
   return "wcde";
 }
 
@@ -114,6 +129,11 @@ function resolveConventionParserOverride(raw: unknown): PythonConventionParserVe
   const normalized = cleanString(raw).toLowerCase();
   if (normalized === "velocity") return "velocity";
   if (normalized === "wcde") return "wcde";
+  if (
+    normalized === "nycda" ||
+    normalized === "new york city dance alliance" ||
+    normalized === "new-york-city-dance-alliance"
+  ) return "nycda";
   return null;
 }
 
@@ -124,8 +144,13 @@ function getConventionParserCandidates(
 ): PythonConventionParserVendor[] {
   if (parserOverride) return [parserOverride];
   const detected = detectConventionParserVendor(competitionName, originalFileName);
-  const fallback: PythonConventionParserVendor = detected === "wcde" ? "velocity" : "wcde";
-  return [detected, fallback];
+  const fallbackOrder: PythonConventionParserVendor[] =
+    detected === "nycda"
+      ? ["nycda", "velocity", "wcde"]
+      : detected === "velocity"
+        ? ["velocity", "wcde", "nycda"]
+        : ["wcde", "velocity", "nycda"];
+  return fallbackOrder;
 }
 
 function inferConventionStyle(className: string): string | null {
@@ -402,6 +427,7 @@ export function registerPDFParserRoutes(app: Express): void {
 
         const parserConfig = CONVENTION_PARSER_CONFIG[parserVendor];
         const usedFallback = !parserOverride && parserCandidates.length > 1 && parserVendor !== parserCandidates[0];
+        const parserRequested = parserOverride ?? "auto";
 
         // Replace existing convention classes for this competition on each import.
         await storage.deleteConventionClassesByCompetition(competitionId);
@@ -419,6 +445,7 @@ export function registerPDFParserRoutes(app: Express): void {
           company: parserConfig.companyLabel,
           parser: "python",
           parserVendor,
+          parserRequested,
           savedCount: saved.length,
           totalParsed: parsedClasses.length,
           warnings: [
@@ -428,6 +455,7 @@ export function registerPDFParserRoutes(app: Express): void {
           metadata: {
             methodUsed: "python",
             parserVendor,
+            parserRequested,
             fileName: file.originalname,
           },
         });
