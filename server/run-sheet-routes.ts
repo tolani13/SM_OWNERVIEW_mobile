@@ -32,6 +32,7 @@ type PythonParsedCompetitionRow = {
   entry_num?: string;
   dance_name?: string;
   routine_name?: string;
+  day?: string;
   category?: string;
   division?: string;
   style?: string;
@@ -242,27 +243,64 @@ function extractDayFromDate(raw: string): string | null {
   const normalized = cleanString(raw);
   if (!normalized) return null;
 
-  const match = normalized.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (!match) return null;
+  const usMatch = normalized.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (usMatch) {
+    const month = Number(usMatch[1]);
+    const day = Number(usMatch[2]);
+    const year = Number(usMatch[3]);
+    if (!Number.isFinite(month) || !Number.isFinite(day) || !Number.isFinite(year)) {
+      return null;
+    }
 
-  const month = Number(match[1]);
-  const day = Number(match[2]);
-  const year = Number(match[3]);
-  if (!Number.isFinite(month) || !Number.isFinite(day) || !Number.isFinite(year)) {
-    return null;
+    const date = new Date(year, month - 1, day);
+    if (
+      Number.isNaN(date.getTime()) ||
+      date.getFullYear() !== year ||
+      date.getMonth() !== month - 1 ||
+      date.getDate() !== day
+    ) {
+      return null;
+    }
+
+    return date.toLocaleDateString("en-US", { weekday: "long" });
   }
 
-  const date = new Date(year, month - 1, day);
-  if (
-    Number.isNaN(date.getTime()) ||
-    date.getFullYear() !== year ||
-    date.getMonth() !== month - 1 ||
-    date.getDate() !== day
-  ) {
-    return null;
+  const isoMatch = normalized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (isoMatch) {
+    const year = Number(isoMatch[1]);
+    const month = Number(isoMatch[2]);
+    const day = Number(isoMatch[3]);
+    if (!Number.isFinite(month) || !Number.isFinite(day) || !Number.isFinite(year)) {
+      return null;
+    }
+
+    const date = new Date(year, month - 1, day);
+    if (
+      Number.isNaN(date.getTime()) ||
+      date.getFullYear() !== year ||
+      date.getMonth() !== month - 1 ||
+      date.getDate() !== day
+    ) {
+      return null;
+    }
+
+    return date.toLocaleDateString("en-US", { weekday: "long" });
   }
 
-  return date.toLocaleDateString("en-US", { weekday: "long" });
+  if (/[A-Za-z]/.test(normalized)) {
+    const parsed = new Date(normalized);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toLocaleDateString("en-US", { weekday: "long" });
+    }
+  }
+
+  return null;
+}
+
+function normalizeDayLabel(raw: string): string | null {
+  const normalized = cleanString(raw);
+  if (!normalized) return null;
+  return extractDayFromText(normalized) || extractDayFromDate(normalized);
 }
 
 function runPython(args: string[]): Promise<{ stdout: string; stderr: string }> {
@@ -356,8 +394,10 @@ async function extractRunSheetWithPython(
         const segmentDate = cleanString(row.segment_date);
         const segmentStage = cleanString(row.segment_stage);
         const choreographer = cleanString(row.choreographer);
+        const explicitDay = cleanString(row.day);
 
         const derivedDay =
+          normalizeDayLabel(explicitDay) ||
           extractDayFromText(segmentHeader) ||
           extractDayFromText(rawPerformanceTime) ||
           extractDayFromDate(segmentDate) ||
@@ -392,7 +432,7 @@ async function extractRunSheetWithPython(
           groupSize: cleanString(row.group_size) || inferGroupSizeFromCategory(category) || "Unknown",
           studioName: cleanString(row.studio) || "Unknown Studio",
           performanceTime: extractPerformanceTime(rawPerformanceTime) || "TBD",
-          day: derivedDay,
+          day: derivedDay || null,
           notes: notes.length ? notes.join(" | ") : null,
           placement: null,
           award: null,
@@ -473,6 +513,7 @@ export function registerRunSheetRoutes(app: Express): void {
 
       const parserConfig = RUN_SHEET_PARSER_CONFIG[parserVendor];
       const usedFallback = !parserOverride && parserCandidates.length > 1 && parserVendor !== parserCandidates[0];
+      const parserRequested = parserOverride ?? "auto";
 
       // Always use the Python parser for run-sheet imports.
       const entries = extractedEntries.map((entry) => ({
@@ -484,8 +525,9 @@ export function registerRunSheetRoutes(app: Express): void {
         success: true,
         parser: 'python',
         parserVendor,
+        parserRequested,
         company: parserConfig.companyLabel,
-        modeRequested: parserVendor,
+        modeRequested: parserRequested,
         entries,
         warnings: [
           ...(usedFallback ? [`Primary parser failed; imported with ${parserConfig.companyLabel} parser.`] : []),

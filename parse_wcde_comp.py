@@ -57,6 +57,51 @@ GROUP_SIZE_TOKENS = [
     "Trio",
 ]
 
+DAY_NAMES = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+]
+
+
+def extract_day_label(text: str):
+    normalized = clean_cell(text)
+    if not normalized:
+        return ""
+
+    # Treat as a day header only when the row *starts* with a day label.
+    # This avoids false positives like routine names containing "Friday".
+    match = re.match(
+        r"^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b",
+        normalized,
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        return ""
+
+    token = match.group(1).lower()
+    day_map = {
+        "mon": "Monday",
+        "monday": "Monday",
+        "tue": "Tuesday",
+        "tuesday": "Tuesday",
+        "wed": "Wednesday",
+        "wednesday": "Wednesday",
+        "thu": "Thursday",
+        "thursday": "Thursday",
+        "fri": "Friday",
+        "friday": "Friday",
+        "sat": "Saturday",
+        "saturday": "Saturday",
+        "sun": "Sunday",
+        "sunday": "Sunday",
+    }
+    return day_map.get(token, "")
+
 
 def normalize_header_row(row):
     cleaned = [clean_cell(v) for v in row]
@@ -185,6 +230,7 @@ def parse_single_cell_entry_line(line_text):
     return {
         "entry_num": entry_num,
         "dance_name": dance_name,
+        "day": "",
         "division": clean_cell(div_token),
         "style": clean_cell(style),
         "group_size": clean_cell(group_size),
@@ -206,6 +252,7 @@ def parse_wcde_comp(pdf_path: str) -> pd.DataFrame:
 
     all_rows = []
     active_header = None
+    current_day = ""
     found_tables = False
     found_matching_header = False
 
@@ -235,6 +282,13 @@ def parse_wcde_comp(pdf_path: str) -> pd.DataFrame:
                         found_matching_header = True
                         continue
 
+                    row_text = " ".join(normalized_row)
+                    detected_day = extract_day_label(row_text)
+                    if detected_day:
+                        current_day = detected_day
+                        # Day heading row is context, not an entry row
+                        continue
+
                     if active_header is None:
                         continue
 
@@ -242,6 +296,7 @@ def parse_wcde_comp(pdf_path: str) -> pd.DataFrame:
                     if len(normalized_row) == 1:
                         parsed = parse_single_cell_entry_line(normalized_row[0])
                         if parsed is not None:
+                            parsed["day"] = current_day
                             all_rows.append(parsed)
                         continue
 
@@ -250,6 +305,8 @@ def parse_wcde_comp(pdf_path: str) -> pd.DataFrame:
                     if length <= 0:
                         continue
                     record = {active_header[i]: normalized_row[i] for i in range(length)}
+                    if current_day and "day" not in record:
+                        record["day"] = current_day
                     all_rows.append(record)
 
     if not found_tables:
@@ -289,6 +346,7 @@ def parse_wcde_comp(pdf_path: str) -> pd.DataFrame:
     desired_order = [
         "entry_num",
         "dance_name",
+        "day",
         "division",
         "style",
         "group_size",

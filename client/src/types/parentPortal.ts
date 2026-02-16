@@ -53,19 +53,3 @@ export interface Contact {
   homePhone?: string;
 }
 
-export interface AgeRange {
-  id: string;
-  studentName: string;
-  ageLabel: string;
-}
-
-export interface ClassListing {
-  id: string;
-  className: string;
-  forLabel: string;
-  sessionLabel: string;
-  scheduleWhen: string;
-  where: string;
-  withTeacher: string;
-  tuition: number;
-}

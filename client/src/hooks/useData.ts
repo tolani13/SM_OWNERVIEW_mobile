@@ -153,6 +153,21 @@ export function useUpdateTeacher() {
   });
 }
 
+export function useDeleteTeacher() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/teachers/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete teacher');
+      return res.json().catch(() => null);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["teachers"] });
+      queryClient.invalidateQueries({ queryKey: ["studioClasses"] });
+    },
+  });
+}
+
 // Routines
 export function useRoutines() {
   return useQuery({

@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Star, FileText, Edit2, Upload, Plus, Trash2, Save, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "react-hot-toast";
@@ -27,15 +28,22 @@ interface RunSheetEntry {
   studioName: string;
   performanceTime: string;
   day?: string;
+  stage?: string;
   notes?: string;
   placement?: string;
   award?: string;
 }
 
+type PersistableRunSheetEntry = Omit<RunSheetEntry, "stage">;
+
 interface CompetitionRunSheetProps {
   competitionId: string;
   homeStudioName: string; // e.g., "Studio Maestro"
 }
+
+type RunSheetParserChoice = "auto" | "wcde" | "velocity" | "hollywood_vibe";
+type ConventionParserChoice = "auto" | "wcde" | "velocity" | "nycda";
+type ImportTypeChoice = "runsheet" | "convention";
 
 export function CompetitionRunSheet({ competitionId, homeStudioName }: CompetitionRunSheetProps) {
   const queryClient = useQueryClient();
@@ -46,11 +54,21 @@ export function CompetitionRunSheet({ competitionId, homeStudioName }: Competiti
   const [detailsModalEntry, setDetailsModalEntry] = useState<RunSheetEntry | null>(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [importTypeChoice, setImportTypeChoice] = useState<ImportTypeChoice>("runsheet");
+  const [runSheetParserChoice, setRunSheetParserChoice] = useState<RunSheetParserChoice>("auto");
+  const [conventionParserChoice, setConventionParserChoice] = useState<ConventionParserChoice>("auto");
   const [lastImportMeta, setLastImportMeta] = useState<{
-    parser?: string;
-    modeRequested?: string;
+    importType?: "runsheet" | "convention";
+    parserRequested?: string;
+    parserUsed?: string;
+    company?: string;
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const toPersistableEntry = (entry: RunSheetEntry): PersistableRunSheetEntry => {
+    const { stage: _stage, ...persistable } = entry;
+    return persistable;
+  };
 
   // Load existing run sheet on mount or competition change
   useEffect(() => {
@@ -76,6 +94,7 @@ export function CompetitionRunSheet({ competitionId, homeStudioName }: Competiti
     if (!file) return;
 
     setPendingFile(file);
+    setImportTypeChoice("runsheet");
     setImportDialogOpen(true);
 
     // Reset input so selecting the same file again still fires onChange
@@ -90,6 +109,10 @@ export function CompetitionRunSheet({ competitionId, homeStudioName }: Competiti
     setIsLoading(true);
     const formData = new FormData();
     formData.append("pdf", pendingFile);
+    const requestedParser = type === "runsheet" ? runSheetParserChoice : conventionParserChoice;
+    if (requestedParser !== "auto") {
+      formData.append("parser", requestedParser);
+    }
 
     try {
       if (type === "runsheet") {
@@ -109,12 +132,16 @@ export function CompetitionRunSheet({ competitionId, homeStudioName }: Competiti
         // Show extracted entries for review (not saved yet)
         setEntries(result.entries);
         setLastImportMeta({
-          parser: result.parser || "python",
-          modeRequested: result.modeRequested || "python",
+          importType: "runsheet",
+          parserRequested: requestedParser,
+          parserUsed: result.parserVendor || result.company || result.parser || "python",
+          company: result.company || undefined,
         });
         queryClient.invalidateQueries({ queryKey: ["run-sheet", competitionId] });
 
-        toast.success(`Run sheet extracted: ${result.entries.length} entries (${result.parser || "python"} parser). Review and save.`);
+        toast.success(
+          `Run sheet extracted: ${result.entries.length} entries (${result.company || result.parserVendor || "auto"} parser). Review and save.`,
+        );
 
         if (result.warnings && result.warnings.length > 0) {
           result.warnings.forEach((warning: string) => toast(warning, { icon: "⚠️" }));
@@ -133,10 +160,18 @@ export function CompetitionRunSheet({ competitionId, homeStudioName }: Competiti
         }
 
         const result = await response.json();
+        setLastImportMeta({
+          importType: "convention",
+          parserRequested: requestedParser,
+          parserUsed: result.parserVendor || result.company || result.parser || "python",
+          company: result.company || undefined,
+        });
         queryClient.invalidateQueries({ queryKey: ["conventionClasses"] });
         queryClient.invalidateQueries({ queryKey: ["conventionClasses", competitionId] });
 
-        toast.success(`Convention classes imported: ${result.savedCount || result.totalParsed || 0} saved.`);
+        toast.success(
+          `Convention classes imported: ${result.savedCount || result.totalParsed || 0} saved (${result.company || result.parserVendor || "auto"} parser).`,
+        );
 
         if (result.warnings && result.warnings.length > 0) {
           result.warnings.forEach((warning: string) => toast(warning, { icon: "⚠️" }));
@@ -162,7 +197,7 @@ export function CompetitionRunSheet({ competitionId, homeStudioName }: Competiti
       const response = await fetch(`/api/competitions/${competitionId}/run-sheet`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entries })
+        body: JSON.stringify({ entries: entries.map(toPersistableEntry) })
       });
 
       if (!response.ok) {
@@ -182,10 +217,11 @@ export function CompetitionRunSheet({ competitionId, homeStudioName }: Competiti
 
   const handleUpdateEntry = async (id: string, updates: Partial<RunSheetEntry>) => {
     try {
+      const { stage: _stage, ...persistableUpdates } = updates;
       const response = await fetch(`/api/run-sheet/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updates)
+        body: JSON.stringify(persistableUpdates)
       });
 
       if (!response.ok) throw new Error("Failed to update entry");
@@ -221,7 +257,8 @@ export function CompetitionRunSheet({ competitionId, homeStudioName }: Competiti
       groupSize: "Solo",
       studioName: homeStudioName,
       performanceTime: "10:00",
-      day: "Friday"
+      day: "Friday",
+      stage: "Main Stage",
     };
     setEntries(prev => [...prev, newEntry]);
   };
@@ -293,8 +330,9 @@ export function CompetitionRunSheet({ competitionId, homeStudioName }: Competiti
 
       {lastImportMeta && (
         <div className="p-3 rounded-lg border bg-amber-50 text-sm text-amber-900 flex flex-wrap gap-3 items-center">
-          <span><strong>Import mode:</strong> {lastImportMeta.modeRequested || "python"}</span>
-          <span><strong>Parser:</strong> {lastImportMeta.parser || "python"}</span>
+          <span><strong>Type:</strong> {lastImportMeta.importType || "runsheet"}</span>
+          <span><strong>Requested parser:</strong> {lastImportMeta.parserRequested || "auto"}</span>
+          <span><strong>Used parser:</strong> {lastImportMeta.parserUsed || "python"}</span>
           <span className="text-amber-700">Please review extracted rows before saving.</span>
         </div>
       )}
@@ -310,10 +348,11 @@ export function CompetitionRunSheet({ competitionId, homeStudioName }: Competiti
           </Button>
         </div>
       ) : (
-        <div className="border rounded-lg overflow-hidden bg-[#FAF8F3]">
+        <div className="border rounded-lg overflow-hidden bg-[#FAF8F3] max-h-[62vh] overflow-y-auto">
           <table className="w-full text-sm">
-            <thead className="bg-[#F5F1E8] border-b-2 border-[#E8E2D5]">
+            <thead className="bg-[#F5F1E8] border-b-2 border-[#E8E2D5] sticky top-0 z-20">
               <tr>
+                <th className="p-3 text-left font-semibold text-gray-700">Day</th>
                 <th className="p-3 text-left font-semibold text-gray-700">Time</th>
                 <th className="p-3 text-left font-semibold text-gray-700">Stage</th>
                 <th className="p-3 text-center font-semibold text-gray-700">#</th>
@@ -336,6 +375,27 @@ export function CompetitionRunSheet({ competitionId, homeStudioName }: Competiti
                       isHome && "bg-[#FFF9F0]"
                     )}
                   >
+                    {/* Day */}
+                    <td className="p-3 w-[120px]">
+                      {isEditing ? (
+                        <Select
+                          value={entry.day || ""}
+                          onValueChange={(value) => handleUpdateLocalEntry(index, { day: value })}
+                        >
+                          <SelectTrigger className="h-8 w-full bg-white text-xs">
+                            <SelectValue placeholder="Day" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Friday">Friday</SelectItem>
+                            <SelectItem value="Saturday">Saturday</SelectItem>
+                            <SelectItem value="Sunday">Sunday</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <span className="text-gray-700 font-medium">{entry.day || "—"}</span>
+                      )}
+                    </td>
+
                     {/* Time */}
                     <td className="p-3 font-medium text-[#D97706] w-[80px]">
                       {isEditing ? (
@@ -354,13 +414,13 @@ export function CompetitionRunSheet({ competitionId, homeStudioName }: Competiti
                     <td className="p-3 w-[100px]">
                       {isEditing ? (
                         <Input
-                          value={entry.day || ""}
-                          onChange={e => handleUpdateLocalEntry(index, { day: e.target.value })}
+                          value={entry.stage || ""}
+                          onChange={e => handleUpdateLocalEntry(index, { stage: e.target.value })}
                           className="h-8 w-full bg-white"
                           placeholder="Main"
                         />
                       ) : (
-                        <span className="text-gray-600">{entry.day || "-"}</span>
+                        <span className="text-gray-600">{entry.stage || "Main"}</span>
                       )}
                     </td>
 
@@ -605,22 +665,69 @@ export function CompetitionRunSheet({ competitionId, homeStudioName }: Competiti
           </DialogHeader>
 
           <div className="space-y-3 pt-2">
+            <div className="space-y-2 rounded-lg border p-3">
+              <Label className="text-xs uppercase text-muted-foreground">Import Type</Label>
+              <Select
+                value={importTypeChoice}
+                onValueChange={(value) => setImportTypeChoice(value as ImportTypeChoice)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="runsheet">Competition Run Sheet</SelectItem>
+                  <SelectItem value="convention">Convention Classes</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2 rounded-lg border p-3">
+              <Label className="text-xs uppercase text-muted-foreground">Parser</Label>
+
+              {importTypeChoice === "runsheet" ? (
+                <Select
+                  value={runSheetParserChoice}
+                  onValueChange={(value) => setRunSheetParserChoice(value as RunSheetParserChoice)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Auto detect</SelectItem>
+                    <SelectItem value="wcde">WCDE</SelectItem>
+                    <SelectItem value="velocity">Velocity</SelectItem>
+                    <SelectItem value="hollywood_vibe">Hollywood Vibe</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Select
+                  value={conventionParserChoice}
+                  onValueChange={(value) => setConventionParserChoice(value as ConventionParserChoice)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Auto detect</SelectItem>
+                    <SelectItem value="wcde">WCDE</SelectItem>
+                    <SelectItem value="velocity">Velocity</SelectItem>
+                    <SelectItem value="nycda">NYCDA</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
             <Button
-              className="w-full justify-start"
-              variant="outline"
+              className="w-full"
               disabled={isLoading}
-              onClick={() => handleImportByType("runsheet")}
+              onClick={() => handleImportByType(importTypeChoice)}
             >
-              Competition Run Sheet (Python Parser)
+              {isLoading ? "Importing..." : "Confirm & Import"}
             </Button>
-            <Button
-              className="w-full justify-start"
-              variant="outline"
-              disabled={isLoading}
-              onClick={() => handleImportByType("convention")}
-            >
-              Convention Classes (usually 2–3 pages)
-            </Button>
+
+            <p className="text-xs text-muted-foreground">
+              After choosing type and parser, click <strong>Confirm & Import</strong>.
+            </p>
           </div>
         </DialogContent>
       </Dialog>

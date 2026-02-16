@@ -1,0 +1,482 @@
+﻿block_date,entry_num,routine_name,time,category,studio,performers
+,,JUNIOR/PRETEEN SOLO & DUO/TRIO + TEEN DUO/TRIO COMPETITION,,,,
+,1,The Way You Look,11:00 AM,Junior Solo Jazz,"SpotLite Dance Studio, LLC (K)",Performers: Addison Baxter
+,2,I'm A Lady,11:02 AM,Junior Solo Jazz,The Dance Centre (O),Performers: Aj Adair
+,3,Debut,11:05 AM,Junior Solo Jazz,"SpotLite Dance Studio, LLC (K)",Performers: Amiya Henry
+,4,Hit the Road Jack,11:08 AM,Junior Solo Jazz,Jills Studio of Dance (E),Performers: Hinsley Tankersley
+,5,Locomotion,11:11 AM,Junior Solo Jazz,"SpotLite Dance Studio, LLC (K)",Performers: Ayla Miller
+,6,Dangerous,11:14 AM,Junior Solo Jazz,Modern Conceptions of Dance (H),Performers: Evie Lacoste
+,7,Fever,11:17 AM,Junior Solo Jazz,"SpotLite Dance Studio, LLC (K)",Performers: Peyton Byrd
+,8,Be Italian,11:19 AM,Junior Solo Jazz,"SpotLite Dance Studio, LLC (K)",Performers: Charlee Bartholetti
+,9,Covergirl,11:22 AM,Junior Solo Jazz,Verve Dance Company (R),Performers: Journee Hagler
+,10,Seven Nation,11:25 AM,Junior Solo Jazz,"SpotLite Dance Studio, LLC (K)",Performers: Sutton Burney
+,11,Get To It,11:28 AM,Junior Solo Jazz,"SpotLite Dance Studio, LLC (K)",Performers: Brooke Peery
+,12,Aergia,11:31 AM,Junior Solo Contemporary,The Dance Centre (O),Performers: Margaret Whitfield
+,13,Angel By The Wings,11:34 AM,Junior Solo Contemporary,Tari’s School of Dance (M),Performers: Elizabeth St. Pierre
+,14,Enter One,11:36 AM,Junior Solo Contemporary,"SpotLite Dance Studio, LLC (K)",Performers: Austyn Pratt
+,15,Wish,11:39 AM,Junior Solo Contemporary,The Dance Centre (O),Performers: Evie Chandler
+,16,Lonely,11:42 AM,Junior Solo Contemporary,Tari’s School of Dance (M),Performers: Penelope Muller
+,17,Steps,11:45 AM,Junior Solo Contemporary,Young Artist Space (T),Performers: Emery Lee
+,18,Spanish Rose,11:48 AM,Junior Solo Musical Theatre,The Dance Centre (O),Performers: Ellie Cardwell
+,19,Le Jazz Hot,11:51 AM,Junior Solo Musical Theatre,Taylor's Dance Company (N),Performers: Benton Brown
+,20,Supercali,11:53 AM,Junior Solo Musical Theatre,The Dance Centre (O),Performers: Anna Kerch
+,21,Fly,11:56 AM,Junior Solo Lyrical,Jills Studio of Dance (E),Performers: Madison Tankersley
+,22,Tomorrow,11:59 AM,Junior Solo Lyrical,Tari’s School of Dance (M),Performers: Sophie Gwin
+,23,Supernova,12:02 PM,Junior Solo Lyrical,The Dance Centre (O),Performers: Isla Norton
+,24,The Dance,12:05 PM,Junior Solo Lyrical,"SpotLite Dance Studio, LLC (K)",Performers: Annalee Davis
+,25,Can't Let Go,12:08 PM,Junior Solo Lyrical,Verve Dance Company (R),Performers: Layla Morris
+,26,Flying Solo,12:10 PM,Junior Solo Lyrical,The Dance Centre (O),Performers: Spencer Grace Swann
+,27,Yours,12:13 PM,Junior Solo Lyrical,Young Artist Space (T),Performers: Nova Jones
+,29,Here Comes The Sun,12:19 PM,Junior Solo Lyrical,The Dance Centre (O),Performers: Harper Louise Karrh
+,30,Forever Young,12:22 PM,Junior Solo Lyrical,Machita Dance Company (F),Performers: Reese Comeaux
+,31,Hold On Tight,12:25 PM,Junior Solo Open/Acro,Verve Dance Company (R),Performers: Juliet Midgett
+,32,Last Breath,12:27 PM,Junior Solo Open/Acro,Dothan School of Dance (B),Performers: Malone King
+,33,Human,12:30 PM,Junior Solo Open/Acro,Verve Dance Company (R),Performers: Vivienne Midgett
+,34,Uninvited,12:33 PM,Junior Solo Open/Acro,Tari’s School of Dance (M),Performers: Colette Gwin
+,35,Rising Sun,12:36 PM,Junior Solo Open/Acro,Verve Dance Company (R),Performers: Gemma Wolkers
+,36,Creator,12:39 PM,Pre-Teen Solo Jazz,Evolve Studio for the Arts (C),Performers: Alia Johnson
+,37,Hey Hi Hello,12:42 PM,Pre-Teen Solo Jazz,Vestavia Dance (S),Performers: Addison Shonesy
+,38,Gaga,12:44 PM,Pre-Teen Solo Jazz,Verve Dance Company (R),Performers: Emma Paul
+,39,Iconic,12:47 PM,Pre-Teen Solo Jazz,Dothan School of Dance (B),Performers: Elise Field
+,40,So Much Betta,12:50 PM,Pre-Teen Solo Jazz,"SpotLite Dance Studio, LLC (K)",Performers: Amaya Miller
+,41,Wow,12:53 PM,Pre-Teen Solo Jazz,Machita Dance Company (F),Performers: Haddie Templet
+,42,Vogue,12:56 PM,Pre-Teen Solo Jazz,Taylor's Dance Company (N),Performers: Lucie Werner
+,43,Dem Beats,12:59 PM,Pre-Teen Solo Jazz,Verve Dance Company (R),Performers: Eastynn Perkins
+,44,Chosen,1:01 PM,Pre-Teen Solo Contemporary,The Dance Centre (O),Performers: Annie Cardwell
+,45,My Manic And I,1:04 PM,Pre-Teen Solo Contemporary,Infinity Dance (U),Performers: Scarlett Olson
+,46,Neglected Space,1:07 PM,Pre-Teen Solo Contemporary,Machita Dance Company (F),Performers: Callie Carriere
+,47,Unravel,1:10 PM,Pre-Teen Solo Contemporary,The Dance Centre (O),Performers: Paige Feller
+,48,Melodrama,1:13 PM,Pre-Teen Solo Contemporary,"SpotLite Dance Studio, LLC (K)",Performers: Emma Kate Caires
+,49,Are We There Yet,1:16 PM,Pre-Teen Solo Contemporary,Evolve Studio for the Arts (C),Performers: Abby Ross Bentley
+,50,Gravity,1:18 PM,Pre-Teen Solo Contemporary,Verve Dance Company (R),Performers: Georgia Hepler
+,51,Come Crashing In,1:21 PM,Pre-Teen Solo Contemporary,The Dance Centre (O),Performers: Eliza Finison
+,52,Sequence,1:24 PM,Pre-Teen Solo Contemporary,The Merge (Q),Performers: Sarah Blady
+,53,Don't Take The Money,1:27 PM,Pre-Teen Solo Contemporary,"SpotLite Dance Studio, LLC (K)",Performers: Savannah Millar
+,54,New York New York,1:30 PM,Pre-Teen Solo Contemporary,The Dance Centre (O),Performers: Cece Hanley
+,55,Magic of the Night,1:33 PM,Pre-Teen Solo Contemporary,Dothan School of Dance (B),Performers: Isla Pflugner
+,56,Skinny Love,1:35 PM,Pre-Teen Solo Contemporary,Southern Dance Precision (J),Performers: Kinsley Solomon
+,57,Freezing Point,1:38 PM,Pre-Teen Solo Contemporary,"SpotLite Dance Studio, LLC (K)",Performers: Charlotte Watters
+,58,Dream,1:41 PM,Pre-Teen Solo Contemporary,Dothan School of Dance (B),Performers: Emelyn Alley
+,59,I Stand Alone,1:44 PM,Pre-Teen Solo Contemporary,Evolve Studio for the Arts (C),Performers: Lauryn Simmons
+,60,Breathe,1:47 PM,Pre-Teen Solo Contemporary,Young Artist Space (T),Performers: Emery Mcewen
+,61,Again And Again,1:50 PM,Pre-Teen Solo Contemporary,The Dance Centre (O),Performers: Sarah Nelle Lasseter
+,62,Uncanny,1:52 PM,Pre-Teen Solo Contemporary,Dothan School of Dance (B),Performers: Vivienne Shillabeer
+,63,In The Wake,1:55 PM,Pre-Teen Solo Contemporary,Machita Dance Company (F),Performers: Merrin Overall
+,64,Roots That Are My Own,1:58 PM,Pre-Teen Solo Contemporary,The Dance Centre (O),Performers: Neva Jane Reardon
+,65,All I Want,2:01 PM,Pre-Teen Solo Contemporary,Verve Dance Company (R),Performers: Charlie Wolkers
+,66,The Guardian,2:04 PM,Pre-Teen Solo Contemporary,The Dance Centre (O),Performers: Collier Cannon
+,67,Viola,2:07 PM,Pre-Teen Solo Tap,Southern Dance Precision (J),Performers: Hazel Gaddy
+,68,The Lighty In The Fridge,2:09 PM,Pre-Teen Solo Musical Theatre,The Dance Centre (O),Performers: Avery Bordner
+,69,Someone,2:12 PM,Pre-Teen Solo Lyrical,The Dance Centre (O),Performers: Emily Lewis
+,70,Scars,2:15 PM,Pre-Teen Solo Lyrical,Evolve Studio for the Arts (C),Performers: Ava Gilbert
+,71,Unhinged,2:18 PM,Pre-Teen Solo Lyrical,The Dance Centre (O),Performers: Elizabeth Whitfield
+,72,Can't Catch Me Now,2:21 PM,Pre-Teen Solo Lyrical,Southern Dance Precision (J),Performers: Evie Gaddy
+,73,Blue Skies,2:24 PM,Pre-Teen Solo Lyrical,The Dance Centre (O),Performers: Gabby Mcdonald
+,74,I Will Always Love You,2:26 PM,Pre-Teen Solo Lyrical,Jills Studio of Dance (E),Performers: Mary Ellen Schmidt
+,75,Sailing Again,2:29 PM,Pre-Teen Solo Lyrical,The Dance Centre (O),Performers: Carolyne Hawkins
+,76,Home,2:32 PM,Pre-Teen Solo Lyrical,Heidi Knight School of Dance (D),Performers: Bayleigh Elizabeth Harris
+,77,Something Like This,2:35 PM,Pre-Teen Solo Lyrical,The Dance Centre (O),Performers: Rachel Guin
+,78,Smile,2:38 PM,Pre-Teen Solo Lyrical,"SpotLite Dance Studio, LLC (K)",Performers: Olivia Mulligan
+,79,Once Upon Another Time,2:41 PM,Pre-Teen Solo Lyrical,The Dance Centre (O),Performers: Mary Ellis Jamison
+,80,Look Out,2:43 PM,Pre-Teen Solo Open/Acro,Verve Dance Company (R),Performers: Lucy Curtis
+,81,The Garden,2:46 PM,Pre-Teen Solo Open/Acro,Evolve Studio for the Arts (C),Performers: Baylor Robbins
+,82,Anneal Me,2:49 PM,Pre-Teen Solo Open/Acro,Machita Dance Company (F),Performers: Wren Anderson
+,83,Resistance,2:52 PM,Pre-Teen Solo Open/Acro,Dothan School of Dance (B),Performers: Emery Steensland
+,84,River,2:55 PM,Pre-Teen Solo Open/Acro,Verve Dance Company (R),Performers: Scarlett Hastings
+,85,Throwback Love,2:58 PM,Junior Duo/Trio Jazz,Vestavia Dance (S),"Performers: Maeve Campbell, Millie Croom, Annie Hamilton"
+,86,One Way Or Another,3:01 PM,Junior Duo/Trio Jazz,Taylor's Dance Company (N),"Performers: Benton Brown, Brantleigh Culligan, Lucie Werner"
+,87,The Wolves,3:04 PM,Junior Duo/Trio Contemporary,Young Artist Space (T),"Performers: Nova Jones, Emery Lee"
+,88,Landslide,3:07 PM,Junior Duo/Trio Contemporary,Evolve Studio for the Arts (C),"Performers: Auri Jenkins, Baylor Robbins"
+,89,New System,3:10 PM,Pre-Teen Duo/Trio Contemporary,The Dance Centre (O),"Performers: Eliza Finison, Cece Hanley, Sarah Nelle Lasseter"
+,90,Mutual Dreaming,3:13 PM,Pre-Teen Duo/Trio Contemporary,Evolve Studio for the Arts (C),"Performers: Alia Johnson, Lauryn Simmons"
+,91,Oh What A Beautiful Mornin',3:16 PM,Pre-Teen Duo/Trio Musical Theatre,The Dance Centre (O),"Performers: Avery Bordner, Paige Feller"
+,92,New Shoes,3:19 PM,Pre-Teen Duo/Trio Musical Theatre,The Dance Centre (O),"Performers: Woodsea Hutchison, Madi James"
+,93,One,3:22 PM,Pre-Teen Duo/Trio Lyrical,The Dance Centre (O),"Performers: Macy Hudson, Neva Jane Reardon"
+,94,Carry You,3:25 PM,Pre-Teen Duo/Trio Lyrical,The Dance Centre (O),"Performers: Mykenzi Brown, Carolyne Hawkins"
+,95,Moderation,3:28 PM,Teen Duo/Trio Jazz,Taylor's Dance Company (N),"Performers: Brantleigh Culligan, Miriam Hanks, Rolley Len Kirk"
+,96,The Grudge,3:31 PM,Teen Duo/Trio Contemporary,Verve Dance Company (R),"Performers: Esme Baquedano, Carly Curtis"
+,97,Is What It Is,3:34 PM,Teen Duo/Trio Contemporary,Evolve Studio for the Arts (C),"Performers: Baylor Robbins, Anna Lynn White"
+,98,Happy Together,3:37 PM,Teen Duo/Trio Open/Acro,"The Dance Company, Inc. (P)","Performers: Caleigh Cooper, Jacob Deken"
+,,JUNIOR/PRETEEN SOLO & DUO/TRIO + TEEN DUO/TRIO AWARDS: 3:45 PM,,,,
+,,TEEN/SENIOR SOLO + SR DUO/TRIO COMPETITION,,,,
+,99,Heartburn,4:15 PM,Teen Solo Jazz,Verve Dance Company (R),Performers: Georgie Osmond
+,100,Hey Hey,4:17 PM,Teen Solo Jazz,Machita Dance Company (F),Performers: Peyton Couvillion
+,101,Looking at Me,4:20 PM,Teen Solo Jazz,"Studio Dance, Inc. (L)",Performers: Aspen Valdez
+,102,Tore My Heart,4:23 PM,Teen Solo Jazz,Verve Dance Company (R),Performers: Carly Curtis
+,103,Feeling Good,4:26 PM,Teen Solo Jazz,Southern Dance Precision (J),Performers: Ava Veal
+,104,It Hit Me,4:29 PM,Teen Solo Jazz,"SpotLite Dance Studio, LLC (K)",Performers: Calleigh Eaton
+,105,Perfect Girl,4:32 PM,Teen Solo Jazz,Verve Dance Company (R),Performers: Kk Broughman
+,106,Kill The Lights,4:34 PM,Teen Solo Jazz,Machita Dance Company (F),Performers: Camille Foreman
+,107,Escapes Within,4:37 PM,Teen Solo Contemporary,"SpotLite Dance Studio, LLC (K)",Performers: Dakota Casteel
+,108,Eshna,4:40 PM,Teen Solo Contemporary,The Dance Centre (O),Performers: Ava Kate Hollyhand
+,109,Shake It Out,4:43 PM,Teen Solo Contemporary,Evolve Studio for the Arts (C),Performers: Annabell Bentley
+,110,Soap,4:46 PM,Teen Solo Contemporary,"SpotLite Dance Studio, LLC (K)",Performers: Jaiden Vickers
+,111,Everywhere I Go,4:49 PM,Teen Solo Contemporary,DanceSouth (A),Performers: Laurel Leathers
+,112,Take me Back,4:51 PM,Teen Solo Contemporary,Vestavia Dance (S),Performers: Luca White
+,113,Pearls,4:54 PM,Teen Solo Contemporary,"SpotLite Dance Studio, LLC (K)",Performers: Addison Jackson
+,114,How To Be,4:57 PM,Teen Solo Contemporary,Evolve Studio for the Arts (C),Performers: Savannah Goodin
+,115,Dance Me To The End,5:00 PM,Teen Solo Contemporary,Dothan School of Dance (B),Performers: Mckenna Silavent
+,116,A Pulse that Lingers,5:03 PM,Teen Solo Contemporary,"SpotLite Dance Studio, LLC (K)",Performers: Kaylin Cutter
+,117,Never Enough,5:06 PM,Teen Solo Contemporary,Vestavia Dance (S),Performers: Abby Comer
+,118,Heavenly Bodies,5:08 PM,Teen Solo Contemporary,"SpotLite Dance Studio, LLC (K)",Performers: Kinlee Sinclair
+,119,The Time Is Now,5:11 PM,Teen Solo Contemporary,Machita Dance Company (F),Performers: Piper Waldrep
+,120,Ride,5:14 PM,Teen Solo Contemporary,"SpotLite Dance Studio, LLC (K)",Performers: Lucy Sutherland
+,121,Choose Me,5:17 PM,Teen Solo Contemporary,Verve Dance Company (R),Performers: Kierlee Stewart
+,122,Shut Up,5:20 PM,Teen Solo Hip Hop,"SpotLite Dance Studio, LLC (K)",Performers: Madelyn Pope
+,123,Some Things We'll Never Know,5:23 PM,Teen Solo Lyrical,The Dance Centre (O),Performers: Marleigh Campbell
+,124,I Wanna Dance With Somebody,5:25 PM,Teen Solo Lyrical,"The Dance Company, Inc. (P)",Performers: Eliza Justice
+,125,Maison,5:28 PM,Teen Solo Lyrical,The Dance Centre (O),Performers: Macy Hudson
+,126,Always,5:31 PM,Teen Solo Lyrical,Young Artist Space (T),Performers: Lily Cait Turner
+,127,Blackout,5:34 PM,Teen Solo Lyrical,The Dance Centre (O),Performers: Brylee Meissner
+,128,One Step Ahead,5:37 PM,Teen Solo Lyrical,Machita Dance Company (F),Performers: Addison Benoit
+,129,If This Is It Now,5:40 PM,Teen Solo Lyrical,The Dance Centre (O),Performers: Annabelle Worrall
+,130,Remedy,5:42 PM,Teen Solo Lyrical,Taylor's Dance Company (N),Performers: Miriam Hanks
+,131,Burning Bridges,5:45 PM,Teen Solo Lyrical,The Dance Centre (O),Performers: Mckenna Hallman
+,132,Closure,5:48 PM,Teen Solo Lyrical,Verve Dance Company (R),Performers: Savannah Hepler
+,133,Over The Rainbow,5:51 PM,Teen Solo Lyrical,The Dance Centre (O),Performers: Lexi Dykes
+,134,Stay,5:54 PM,Teen Solo Lyrical,"The Dance Company, Inc. (P)",Performers: Jacob Deken
+,135,Heavy,5:57 PM,Teen Solo Lyrical,The Dance Centre (O),Performers: Rowan Bordner
+,136,Cradles,5:59 PM,Teen Solo Open/Acro,Young Artist Space (T),Performers: Mallie Rickman
+,137,Complex Monster,6:02 PM,Teen Solo Open/Acro,Verve Dance Company (R),Performers: Savannah Hastings
+,138,Lanterns Lit,6:05 PM,Teen Solo Open/Acro,Young Artist Space (T),Performers: Hilly Dunlap
+,139,Spell on You,6:08 PM,Senior Solo Jazz,Dothan School of Dance (B),Performers: Kaylynn Batemon
+,140,Toxic,6:11 PM,Senior Solo Jazz,"SpotLite Dance Studio, LLC (K)",Performers: Saniyah King
+,141,I Got It,6:14 PM,Senior Solo Jazz,Taylor's Dance Company (N),Performers: Rolley Len Kirk
+,142,Within Becoming,6:16 PM,Senior Solo Contemporary,The Dance Centre (O),Performers: Ellie Boulware
+,143,Death Wish,6:19 PM,Senior Solo Contemporary,Evolve Studio for the Arts (C),Performers: Maddie Escue
+,144,Once Upon Another Time,6:22 PM,Senior Solo Contemporary,Southern Dance Precision (J),Performers: Sarah Jose
+,145,Spine,6:25 PM,Senior Solo Contemporary,The Dance Centre (O),Performers: Ella Phifer
+,146,Colour Me In,6:28 PM,Senior Solo Contemporary,Evolve Studio for the Arts (C),Performers: Abigail Hirota
+,147,Seconds To Spare,6:31 PM,Senior Solo Contemporary,"Studio Dance, Inc. (L)",Performers: Tenley Nash
+,148,Need Me,6:33 PM,Senior Solo Contemporary,"SpotLite Dance Studio, LLC (K)",Performers: Braelynn Cook
+,149,Little Girl Blue,6:36 PM,Senior Solo Contemporary,The Dance Centre (O),Performers: Brooke Welton
+,150,Neglected Space,6:39 PM,Senior Solo Contemporary,Evolve Studio for the Arts (C),Performers: Lilly Dean
+,151,Change,6:42 PM,Senior Solo Contemporary,Jills Studio of Dance (E),Performers: Miriam Graffeo
+,152,Blood on My Hands,6:45 PM,Senior Solo Contemporary,"The Dance Company, Inc. (P)",Performers: Brooklyn Dougherty
+,153,I Count The Teardrops,6:48 PM,Senior Solo Contemporary,The Dance Centre (O),Performers: Kennedy Duffy
+,154,Redemption,6:50 PM,Senior Solo Contemporary,Machita Dance Company (F),Performers: Shelbi Landry
+,155,Why,6:53 PM,Senior Solo Contemporary,Evolve Studio for the Arts (C),Performers: Anna Lynn White
+,156,Death Wish,6:56 PM,Senior Solo Contemporary,Jills Studio of Dance (E),Performers: Addison Murphy
+,157,Candles,6:59 PM,Senior Solo Contemporary,Young Artist Space (T),Performers: Danielle Cockrell
+,158,I Only Want To Be With You,7:02 PM,Senior Solo Contemporary,The Dance Centre (O),Performers: Olivia Fitts
+,159,Unravel,7:05 PM,Senior Solo Contemporary,Dothan School of Dance (B),Performers: Anslee Freeman
+,160,Tragedy,7:07 PM,Senior Solo Contemporary,Machita Dance Company (F),Performers: Annalise Anderson
+,161,Dealt a Losing Hand,7:10 PM,Senior Solo Contemporary,Evolve Studio for the Arts (C),Performers: Otilia Dison
+,162,Wicked Games,7:13 PM,Senior Solo Contemporary,Verve Dance Company (R),Performers: Lorena Diaz
+,163,Beautiful,7:16 PM,Senior Solo Contemporary,"SpotLite Dance Studio, LLC (K)",Performers: Kylie Hunnicutt
+,164,Heaven Is Here,7:19 PM,Senior Solo Contemporary,Jills Studio of Dance (E),Performers: Collier Mclain
+,165,Alles Sehen,7:22 PM,Senior Solo Contemporary,The Dance Centre (O),Performers: Brady Diltz
+,166,Haunted,7:24 PM,Senior Solo Contemporary,Dothan School of Dance (B),Performers: Kennedy Milsapp
+,167,Unrequited,7:27 PM,Senior Solo Contemporary,Machita Dance Company (F),Performers: Nola Adams
+,168,Another Life,7:30 PM,Senior Solo Contemporary,Verve Dance Company (R),Performers: Abby Summerlin
+,169,Bitter Earth,7:33 PM,Senior Solo Contemporary,Young Artist Space (T),Performers: Ally Givens
+,170,A Couple Minutes,7:36 PM,Senior Solo Contemporary,Evolve Studio for the Arts (C),Performers: Trinity Goodin
+,171,Reaching For Cold Hands,7:39 PM,Senior Solo Contemporary,"SpotLite Dance Studio, LLC (K)",Performers: Elisabeth Walters
+,172,Home with You,7:41 PM,Senior Solo Contemporary,Jills Studio of Dance (E),Performers: Brantley Kate Simmons
+,173,Bad Feeling,7:44 PM,Senior Solo Contemporary,The Dance Centre (O),Performers: Cayler Ann Rich
+,174,Secrets,7:47 PM,Senior Solo Contemporary,Verve Dance Company (R),Performers: Esme Baquedano
+,175,Coward,7:50 PM,Senior Solo Contemporary,Machita Dance Company (F),Performers: Avery Vaughn
+,176,The Weight of Thought,7:53 PM,Senior Solo Contemporary,Evolve Studio for the Arts (C),Performers: Gracie Whisnand
+,177,Escaping Storms,7:56 PM,Senior Solo Contemporary,Young Artist Space (T),Performers: Jordyn Donner
+,178,Sinks Like a Stone,7:58 PM,Senior Solo Contemporary,"SpotLite Dance Studio, LLC (K)",Performers: Kallie Schalow
+,179,Void Form,8:01 PM,Senior Solo Contemporary,Verve Dance Company (R),Performers: Bella Rondon
+,180,Where Is My Love,8:04 PM,Senior Solo Contemporary,Tari’s School of Dance (M),Performers: Addison Chustz
+,181,This Is My Life,8:07 PM,Senior Solo Contemporary,Machita Dance Company (F),Performers: Sammie Alleman
+,182,Pool,8:10 PM,Senior Solo Contemporary,Evolve Studio for the Arts (C),Performers: Sariah Benitez
+,183,Caged,8:13 PM,Senior Solo Contemporary,Young Artist Space (T),Performers: Lona Garrison
+,184,Water,8:15 PM,Senior Solo Contemporary,Verve Dance Company (R),Performers: Jade Bryant
+,185,Miss You,8:18 PM,Senior Solo Contemporary,Jills Studio of Dance (E),Performers: Vivian Wiginton
+,186,Time,8:21 PM,Senior Solo Contemporary,"SpotLite Dance Studio, LLC (K)",Performers: Johnny Sica
+,187,Claire Jackson,8:24 PM,Senior Solo Contemporary,Young Artist Space (T),Performers: Claire Jackson
+,188,Gone,8:27 PM,Senior Solo Contemporary,Machita Dance Company (F),Performers: Hannah Templet
+,189,Bankhead,8:30 PM,Senior Solo Contemporary,Verve Dance Company (R),Performers: Mariah Williams
+,190,Where Are You,8:32 PM,Senior Solo Contemporary,DanceSouth (A),Performers: Ryleigh Jane Touchstone
+,191,Billy,8:35 PM,Senior Solo Tap,The Dance Centre (O),Performers: Mackenzie Meissner
+,192,The Pink Panther,8:38 PM,Senior Solo Tap,Renner Dance Company (I),Performers: Sophia Bell
+,193,Buyou,8:41 PM,Senior Solo Hip Hop,"SpotLite Dance Studio, LLC (K)",Performers: Journey Sadler
+,194,Is It,8:44 PM,Senior Solo Hip Hop,"SpotLite Dance Studio, LLC (K)",Performers: Kalina Thephavong
+,195,Superstition,8:47 PM,Senior Solo Jazz Funk,"The Dance Company, Inc. (P)",Performers: Kate Rush
+,196,Is That Alright,8:49 PM,Senior Solo Lyrical,The Dance Centre (O),Performers: Gracie Elder
+,197,In the Sun,8:52 PM,Senior Solo Lyrical,Jills Studio of Dance (E),Performers: Abbie Bender
+,198,Vienna,8:55 PM,Senior Solo Lyrical,Verve Dance Company (R),Performers: Shannon Norris
+,199,Bad Thoughts,8:58 PM,Senior Solo Lyrical,The Dance Centre (O),Performers: Kate Feller
+,200,You Noticed,9:01 PM,Senior Solo Lyrical,"SpotLite Dance Studio, LLC (K)",Performers: Naima Abram
+,201,Voila,9:04 PM,Senior Solo Lyrical,The Dance Centre (O),Performers: Gracie Hawkins
+,202,Desperate,9:06 PM,Senior Solo Lyrical,Dothan School of Dance (B),Performers: Landree Douglas
+,203,My Way,9:09 PM,Senior Solo Lyrical,Jills Studio of Dance (E),Performers: Maddie Laine Callaway
+,204,Steady Now,9:12 PM,Senior Solo Lyrical,The Dance Centre (O),Performers: Sarah Davis Roe
+,205,Takes So Much,9:15 PM,Senior Solo Lyrical,Young Artist Space (T),Performers: Mechesney Martin
+,206,Corner of your Heart,9:18 PM,Senior Solo Lyrical,Dothan School of Dance (B),Performers: Avery Steensland
+,207,Closure,9:21 PM,Senior Solo Lyrical,The Dance Centre (O),Performers: Lydia Smith
+,208,Video Girl,9:23 PM,Senior Solo Open/Acro,Evolve Studio for the Arts (C),Performers: Ariyana Motley
+,209,Tilted,9:26 PM,Senior Solo Open/Acro,Machita Dance Company (F),Performers: Cc Thibodeaux
+,210,San Franciscan Nights,9:29 PM,Senior Solo Open/Acro,"The Dance Company, Inc. (P)",Performers: Bailey Coggin
+,211,Walking & Falling,9:32 PM,Senior Solo Open/Acro,Dothan School of Dance (B),Performers: Emma Grace Dunn
+,212,No More I Love Yous,9:35 PM,Senior Solo Open/Acro,Evolve Studio for the Arts (C),Performers: Payton Harris
+,213,Forgotten,9:38 PM,Senior Solo Open/Acro,Young Artist Space (T),Performers: Haadiya Brooks
+,214,Between Villages,9:40 PM,Senior Solo Open/Acro,Verve Dance Company (R),Performers: Harper Dannelly
+,215,It's A Look,9:43 PM,Senior Duo/Trio Jazz Funk,Verve Dance Company (R),"Performers: Kierlee Stewart, Mariah Williams"
+,216,My Immortal,9:46 PM,Senior Duo/Trio Lyrical,DanceSouth (A),"Performers: Laurel Leathers, Ryleigh Jane Touchstone"
+,217,Dog Days Are Over,9:49 PM,Senior Duo/Trio Jazz,Southern Dance Precision (J),"Performers: Sarah Jose, Ava Veal"
+,218,I Need More,9:52 PM,Senior Duo/Trio Jazz,Machita Dance Company (F),"Performers: Annalise Anderson, Cc Thibodeaux, Avery Vaughn"
+,219,Begin Within,9:55 PM,Senior Duo/Trio Contemporary,The Dance Centre (O),"Performers: Allie Plott, Lydia Smith"
+,220,Come Over,9:58 PM,Senior Duo/Trio Contemporary,Evolve Studio for the Arts (C),"Performers: Sariah Benitez, Payton Harris"
+,221,Retrograde,10:01 PM,Senior Duo/Trio Contemporary,"The Dance Company, Inc. (P)","Performers: Bailey Coggin, Brooklyn Dougherty"
+,222,Violence,10:04 PM,Senior Duo/Trio Contemporary,Young Artist Space (T),"Performers: Danielle Cockrell, Ally Givens"
+,,TEEN/SENIOR SOLO + SR DUO/TRIO AWARDS: 10:15 PM,,,,
+,,MINI/JUNIOR/PRETEEN + TEEN PRODUCTION COMPETITION,,,,
+,223,Proud Mary,2:30 PM,Mini Small Group Jazz,The Dance Centre (O),"Performers: Alden Faught, Eliza-Grace Fowler, Cordelia Howton, Hallie Hudson, Nora Mitchell, Ann Ellis Price, Evie Valasik, Anne Hollis Wilhite"
+,224,Walking on Sunshine,2:33 PM,Mini Solo Jazz,"SpotLite Dance Studio, LLC (K)",Performers: Amelia Baxter
+,225,LOVE,2:35 PM,Mini Solo Jazz,"SpotLite Dance Studio, LLC (K)",Performers: Camilla Hu
+,226,My Boyfriends Back,2:38 PM,Mini Solo Jazz,"SpotLite Dance Studio, LLC (K)",Performers: Haven Ayers
+,227,Like This Like That,2:41 PM,Mini Solo Jazz,Machita Dance Company (F),Performers: Kaitlee Courville
+,228,Mr Big Stuff,2:44 PM,Mini Solo Jazz,"SpotLite Dance Studio, LLC (K)",Performers: Ivory Riley
+,229,Feels So Good,2:47 PM,Mini Solo Jazz,The Dance Centre (O),Performers: Eliza-Grace Fowler
+,230,Hot Hot Hot,2:50 PM,Mini Solo Jazz,"SpotLite Dance Studio, LLC (K)",Performers: Karsen Fanelli
+,231,Car Wash,2:52 PM,Mini Solo Jazz,"SpotLite Dance Studio, LLC (K)",Performers: Kingsley Doss
+,232,Trouble,2:55 PM,Mini Solo Jazz,"SpotLite Dance Studio, LLC (K)",Performers: Reagan Robinson
+,233,Love Me,2:58 PM,Mini Solo Jazz,"SpotLite Dance Studio, LLC (K)",Performers: Teagan Caruso
+,234,Friend Like Me,3:01 PM,Mini Solo Musical Theatre,"SpotLite Dance Studio, LLC (K)",Performers: Evee Bartholetti
+,235,Finally Home,3:04 PM,Mini Solo Lyrical,"SpotLite Dance Studio, LLC (K)",Performers: Avery Jackson
+,236,Over The Rainbow,3:07 PM,Mini Solo Lyrical,"SpotLite Dance Studio, LLC (K)",Performers: Iversyn Mcbryar
+,237,Fabulous,3:09 PM,Mini Duo/Trio Jazz,Machita Dance Company (F),"Performers: Brie Ankeny, Eliska Green, Harlyn Holmes"
+,238,Faith,3:12 PM,Mini Duo/Trio Jazz,Vestavia Dance (S),"Performers: Lucy Hawkins, Anne Allen Leonard, Eloise Stephen"
+,239,We Won't Move,3:15 PM,Junior Line Lyrical,The Dance Centre (O),"Performers: Avery Bordner, Mykenzi Brown, Collier Cannon, Callaway Collins, Lucy Creel, Paige Feller, Charlotte Gattozzi, Rachel Guin, Carolyne Hawkins, Mary Ellis Jamison, Adilynn Kane, Gabby Mcdonald, Isla Norton, Audrey Shah, Alana Shephard, Mary Alston Suther, Margaret Whitfield, Sadler Williams, Sophie Wyatt"
+,240,Shake A Tail Feather,3:19 PM,Mini Large Group Jazz,The Dance Centre (O),"Performers: Bexley Drew Barton, Addie Chris Colson, Emma Claire Hughes, Miles Leigh Johnson, Khoryn Knight, Lena Laney, Callaway Parker, Chappell Robards, Sage Simon, Annie Beth Skelton, Ann Ryan Swann, Stella White"
+,241,Boots,3:22 PM,Mini Small Group Jazz,"SpotLite Dance Studio, LLC (K)","Performers: Cecilia Bacelieri, Evee Bartholetti, Addison Baxter, Kingsley Doss, Camilla Hu, Austyn Pratt, Ivory Riley, Liliana Sullivan"
+,242,Music,3:26 PM,Junior Small Group Jazz,"SpotLite Dance Studio, LLC (K)","Performers: Charlee Bartholetti, Sutton Burney, Peyton Byrd, Emma Kate Caires, Annalee Davis, Amiya Henry, Brooke Peery"
+,243,Funky Town,3:29 PM,Junior Small Group Jazz,Jills Studio of Dance (E),"Performers: Saylor Davis, Hadley Elwell, Molly Gibbons, Delaney Mccolgan, Brexley Mcnew, Brenley Sanders, Jenna Webster"
+,244,Can't Turn You Loose,3:32 PM,Junior Small Group Jazz,Machita Dance Company (F),"Performers: Callie Carriere, Jeanne Deshotel, Merrin Overall, Catherine Sanchez, Evelyn Voorhies"
+,245,Vroom Vroom,3:35 PM,Pre-Teen Production Hip Hop,The Dance Centre (O),"Performers: Madelyn Bobo, Rowan Bordner, Collier Cannon, Louise Cole, Lexi Dykes, Maddie El-Amin, Paige Feller, Eliza Finison, Lucy Garner, Mckenna Hallman, Cece Hanley, Ava Kate Hollyhand, Baylie Holman, Macy Hudson, Kinleigh Hunter, Mary Ellis Jamison, Sarah Nelle Lasseter, Emily Lewis, Emaley John Livingston, Gabby Mcdonald, Neva Jane Reardon, Sunnie Strickland, Elizabeth Whitfield, Sadler Williams, Annabelle Worrall"
+,246,Pump Up The Jam,3:40 PM,Junior Small Group Jazz,Verve Dance Company (R),"Performers: Lucy Curtis, Scarlett Hastings, Juliet Midgett, Vivienne Midgett, Layla Morris, Emma Paul, Charlie Wolkers, Gemma Wolkers"
+,247,Vibe Tribe,3:43 PM,Junior Small Group Jazz,Dothan School of Dance (B),"Performers: Emelyn Alley, Micah Mae Godwin, Malone King, Lola Laye, Vivienne Shillabeer, Emery Steensland"
+,248,Hound Dog,3:46 PM,Junior Small Group Jazz,Jills Studio of Dance (E),"Performers: Malina Alatorre, Clara Fay Savage, Hinsley Tankersley, Madison Tankersley, Quinn Turner"
+,249,Hard Knock Life,3:49 PM,Mini Production Musical Theatre,The Dance Centre (O),"Performers: Aj Adair, Augusta Agee, Maisie Ary, Anne Everett Bailey, Caroline Bobo, Caroline Cannon, Ellie Cardwell, Addie Chris Colson, Evelyn Eads, Madge Ezell, Alden Faught, Eliza-Grace Fowler, Cordelia Howton, Hallie Hudson, Emma Claire Hughes, Hannah Grace Hughes, Mary Kate Hughes, Josie Hunter, Charlotte Jennings, Miles Leigh Johnson, Harper Louise Karrh, Khoryn Knight, Rosie Mcgee, Ridgely Miller, Nora Mitchell, Isla Norton, Olive Parker, Elizabeth Powell, Ann Ellis Price, Betts Robards, Piper Sewell, Evie Shah, Adeline Shields, Tucker Ann Suther, Spencer Grace Swann, Evie Valasik, Margaret Whitfield, Anne Hollis Wilhite, Sloane Wood, Vivian Woolf"
+,250,Look,3:54 PM,Junior Small Group Contemporary,Evolve Studio for the Arts (C),"Performers: Auri Jenkins, Alia Johnson, Baylor Robbins, Lauryn Simmons"
+,251,Jumpin Jack,3:57 PM,Pre-Teen Line Jazz,The Dance Centre (O),"Performers: Avery Bordner, Rowan Bordner, Annie Cardwell, Louise Cole, Lexi Dykes, Maddie El-Amin, Paige Feller, Eliza Finison, Mckenna Hallman, Cece Hanley, Ava Kate Hollyhand, Macy Hudson, Mary Ellis Jamison, Sarah Nelle Lasseter, Emily Lewis, Neva Jane Reardon, Elizabeth Whitfield, Sadler Williams, Annabelle Worrall"
+,252,Wind It Up,4:01 PM,Junior Small Group Jazz,"SpotLite Dance Studio, LLC (K)","Performers: Cecilia Bacelieri, Charlee Bartholetti, Sutton Burney, Peyton Byrd, Annalee Davis, Amiya Henry, Ayla Miller, Brooke Peery, Austyn Pratt"
+,253,You're Gonna Be Okay,4:04 PM,Junior Small Group Lyrical,Machita Dance Company (F),"Performers: Reese Comeaux, Sophia Dove, Gracie Gautreaux, Eva Leblanc, Evie Normand, Kate Vaughn, Evelyn Voorhies"
+,254,Out Of The Woods,4:07 PM,Junior Small Group Lyrical,Verve Dance Company (R),"Performers: Lucy Curtis, Scarlett Hastings, Juliet Midgett, Vivienne Midgett, Layla Morris, Emma Paul, Charlie Wolkers, Gemma Wolkers"
+,255,Road Work,4:10 PM,Junior Large Group Jazz,Dothan School of Dance (B),"Performers: Emelyn Alley, Wellslie Arnold, Elise Field, Micah Mae Godwin, Malone King, Lola Laye, Mia Kathryn Morris, Marla Kate Pattillo, Emma Kate Robinson, Allie Reese Robison, Vivienne Shillabeer, Lilian St. Amant, Emery Steensland, Blayke Williamson"
+,256,Dear Future Husband,4:13 PM,Junior Large Group Jazz,Jills Studio of Dance (E),"Performers: Malina Alatorre, Caroline Andress, Annabelle Carter, Cora Jane Huff, Callianne King, Cora Anne Putt, Emersyn Quinn, Clara Fay Savage, Julia Sayers, Abbott Stolaas, Hinsley Tankersley, Madison Tankersley, Quinn Turner, Julianna York"
+,257,Hyperballad,4:17 PM,Pre-Teen Line Contemporary,The Dance Centre (O),"Performers: Rowan Bordner, Annie Cardwell, Louise Cole, Maddie El-Amin, Paige Feller, Eliza Finison, Mckenna Hallman, Cece Hanley, Ava Kate Hollyhand, Baylie Holman, Macy Hudson, Mary Ellis Jamison, Sarah Nelle Lasseter, Emily Lewis, Neva Jane Reardon, Elizabeth Whitfield, Sadler Williams, Annabelle Worrall"
+,258,River Deep Mountain High,4:20 PM,Junior Line Jazz,The Dance Centre (O),"Performers: Aj Adair, Ellie Cardwell, Anna Wesley Faught, Ellie Higdon, Callie Jennings, Anna Kerch, Ellie Lay, Lucy Lugo, Olive Parker, Annsley Pierce, Abigail Richburg, Harper Sewell, Bella Smith, Carrigan Stewart, Spencer Grace Swann, Margaret Whitfield, Vivian Woolf"
+,259,King Of New York,4:24 PM,Junior Small Group Musical Theatre,The Dance Centre (O),"Performers: Avery Bordner, Collier Cannon, Lucy Creel, Carolyne Hawkins, Gabby Mcdonald, Isla Norton"
+,260,Hopelessly,4:27 PM,Junior Small Group Musical Theatre,Machita Dance Company (F),"Performers: Kaitlee Courville, Ruby Doiron, Gracie Gautreaux, Evie Normand, Gabrielle Sanchez"
+,261,Rock With You,4:30 PM,Pre-Teen Small Group Jazz,"SpotLite Dance Studio, LLC (K)","Performers: Emma Kate Caires, Dakota Casteel, Calleigh Eaton, Savannah Millar, Olivia Mulligan, Madelyn Pope, Kinlee Sinclair, Jaiden Vickers, Charlotte Watters"
+,262,See You Again,4:33 PM,Pre-Teen Small Group Jazz,Evolve Studio for the Arts (C),"Performers: Abby Ross Bentley, Annabell Bentley, Ava Gilbert, Auri Jenkins, Alia Johnson, Baylor Robbins, Lauryn Simmons"
+,263,These Boots Are Made For Walking,4:36 PM,Pre-Teen Small Group Jazz,The Dance Centre (O),"Performers: Annie Cardwell, Paige Feller, Eliza Finison, Cece Hanley, Mary Ellis Jamison, Sarah Nelle Lasseter, Sadler Williams"
+,264,Must Be Love,4:39 PM,Pre-Teen Small Group Jazz,Jills Studio of Dance (E),"Performers: Tori Agee, Lillian Bender, Campbell Conner, Clare Gibbons, Molly Gibbons, Millie Heikkinen, Mary Ellen Schmidt"
+,265,Imma Bee,4:42 PM,Junior Production Hip Hop,The Dance Centre (O),"Performers: Aj Adair, Avery Bordner, Mykenzi Brown, Ellie Cardwell, Evie Chandler, Callaway Collins, Addy Crawford, Anna Katherine Crawford, Lucy Creel, Anna Wesley Faught, Charlotte Gattozzi, Rachel Guin, Carolyne Hawkins, Woodsea Hutchison, Madi James, Adilynn Kane, Anna Kerch, Ellie Lay, Aley Mac Livingston, Lucy Lugo, Isla Norton, Olive Parker, Audrey Shah, Alana Shephard, Bella Smith, Carrigan Stewart, Mary Alston Suther, Spencer Grace Swann, Margaret Whitfield, Vivian Woolf, Sophie Wyatt"
+,266,Black and Gold,4:47 PM,Pre-Teen Small Group Jazz,Young Artist Space (T),"Performers: Hilly Dunlap, Christian Jones, Emery Mcewen, Mallie Rickman, Lily Cait Turner"
+,267,Mama Knows Best,4:50 PM,Junior Line Jazz,The Dance Centre (O),"Performers: Augusta Agee, Maisie Ary, Anne Everett Bailey, Caroline Bobo, Caroline Cannon, Evelyn Eads, Madge Ezell, Hannah Grace Hughes, Mary Kate Hughes, Josie Hunter, Charlotte Jennings, Harper Louise Karrh, Rosie Mcgee, Ridgely Miller, Elizabeth Powell, Betts Robards, Piper Sewell, Evie Shah, Adeline Shields, Tucker Ann Suther, Sloane Wood"
+,268,Here Comes The Sun,4:54 PM,Junior Large Group Ballet/Pointe,Dothan School of Dance (B),"Performers: Emelyn Alley, Wellslie Arnold, Elise Field, Micah Mae Godwin, Malone King, Lola Laye, Mia Kathryn Morris, Marla Kate Pattillo, Emma Kate Robinson, Allie Reese Robison, Vivienne Shillabeer, Lilian St. Amant, Emery Steensland, Blayke Williamson"
+,269,Say Something,4:57 PM,Pre-Teen Line Lyrical,The Dance Centre (O),"Performers: Madelyn Bobo, Rowan Bordner, Annie Cardwell, Louise Cole, Lexi Dykes, Maddie El-Amin, Eliza Finison, Mckenna Hallman, Cece Hanley, Ava Kate Hollyhand, Baylie Holman, Macy Hudson, Sarah Nelle Lasseter, Emily Lewis, Neva Jane Reardon, Elizabeth Whitfield, Annabelle Worrall"
+,270,Beach Girls,5:01 PM,Junior Line Jazz,"SpotLite Dance Studio, LLC (K)","Performers: Haven Ayers, Cecilia Bacelieri, Layla Barry, Charlee Bartholetti, Evee Bartholetti, Addison Baxter, Amelia Baxter, Sutton Burney, Peyton Byrd, Teagan Caruso, Annalee Davis, Kingsley Doss, Karsen Fanelli, Amiya Henry, Camilla Hu, Avery Jackson, Iversyn Mcbryar, Ayla Miller, Olivia Mulligan, Austyn Pratt, Ivory Riley, Reagan Robinson, Liliana Sullivan"
+,271,Shoes,5:04 PM,Junior Line Jazz,Machita Dance Company (F),"Performers: Wren Anderson, Callie Carriere, Reese Comeaux, Kaitlee Courville, Jeanne Deshotel, Ruby Doiron, Sophia Dove, Gracie Gautreaux, Eva Leblanc, Emmalyn Matheny, Evie Normand, Merrin Overall, Catherine Sanchez, Gabrielle Sanchez, Haddie Templet, Kate Vaughn, Evelyn Voorhies"
+,272,Celebration In The Square,5:08 PM,Junior Line Ballet/Pointe,The Dance Centre (O),"Performers: Aj Adair, Avery Bordner, Mykenzi Brown, Collier Cannon, Ellie Cardwell, Paige Feller, Charlotte Gattozzi, Rachel Guin, Carolyne Hawkins, Ellie Higdon, Mary Ellis Jamison, Gabby Mcdonald, Isla Norton, Olive Parker, Carrigan Stewart, Spencer Grace Swann, Margaret Whitfield, Sadler Williams, Vivian Woolf"
+,273,Dream,5:11 PM,Pre-Teen Large Group Lyrical,Jills Studio of Dance (E),"Performers: Tori Agee, Ava Barclift, Layla Bishop, Campbell Conner, Anna Lane Evans, Clare Gibbons, Molly Gibbons, Millie Heikkinen, Lydia Lanwer, Kensington Martin, Alana Putt, Ann Tinsley Sayers, Mary Ellen Schmidt"
+,274,Something In The Orange,5:15 PM,Pre-Teen Small Group Contemporary,Evolve Studio for the Arts (C),"Performers: Abby Ross Bentley, Annabell Bentley, Ava Gilbert, Stella Rohrbeck"
+,275,Carmen Suite,5:18 PM,Teen Production Ballet/Pointe,The Dance Centre (O),"Performers: Rowan Bordner, Ellie Boulware, Marleigh Campbell, Annie Cardwell, Louise Cole, Madeline Dennis, Brady Diltz, Kennedy Duffy, Maddie El-Amin, Gracie Elder, Kate Feller, Eliza Finison, Mckenna Hallman, Cece Hanley, Gracie Hawkins, Ava Kate Hollyhand, Macy Hudson, Sarah Nelle Lasseter, Brylee Meissner, Mackenzie Meissner, Ella Phifer, Allie Plott, Neva Jane Reardon, Cayler Ann Rich, Sarah Davis Roe, Lydia Smith, Brooke Welton, Elizabeth Whitfield"
+,276,Cassandra,5:23 PM,Pre-Teen Small Group Contemporary,Dothan School of Dance (B),"Performers: Isla Pflugner, Noa Shillabeer, Isabella Tran, Elle Wells"
+,277,Dispostion,5:26 PM,Pre-Teen Small Group Contemporary,Young Artist Space (T),"Performers: Hilly Dunlap, Christian Jones, Emery Mcewen, Mallie Rickman, Lily Cait Turner"
+,278,Catch Me,5:29 PM,Pre-Teen Small Group Contemporary,Verve Dance Company (R),"Performers: Lucy Curtis, Scarlett Hastings, Juliet Midgett, Vivienne Midgett, Layla Morris, Bayla Paul, Emma Paul"
+,279,Devil Went Down To Georgia,5:32 PM,Pre-Teen Small Group Contemporary,"SpotLite Dance Studio, LLC (K)","Performers: Emma Kate Caires, Dakota Casteel, Calleigh Eaton, Savannah Millar, Amaya Miller, Olivia Mulligan, Kinlee Sinclair, Charlotte Watters"
+,280,My Year,5:35 PM,Junior Production Tap,The Dance Centre (O),"Performers: Aj Adair, Maisie Ary, Avery Bordner, Collier Cannon, Evie Chandler, Callaway Collins, Lucy Creel, Paige Feller, Rachel Guin, Carolyne Hawkins, Josie Hunter, Woodsea Hutchison, Madi James, Ellie Lay, Lucy Lugo, Gabby Mcdonald, Isla Norton, Olive Parker, Abigail Richburg, Audrey Shah, Alana Shephard, Bella Smith, Carrigan Stewart, Spencer Grace Swann, Sadler Williams, Vivian Woolf"
+,281,Hit Me With Your Best Shot,5:40 PM,Pre-Teen Large Group Jazz,Jills Studio of Dance (E),"Performers: Ava Barclift, Layla Bishop, Campbell Conner, Saylor Davis, Hadley Elwell, Anna Lane Evans, Molly Gibbons, Lydia Lanwer, Kensington Martin, Delaney Mccolgan, Brexley Mcnew, Alana Putt, Brenley Sanders, Mary Ellen Schmidt, Jenna Webster"
+,282,No Me Quitte Pas,5:44 PM,Pre-Teen Small Group Lyrical,The Dance Centre (O),"Performers: Rowan Bordner, Marleigh Campbell, Louise Cole, Maddie El-Amin, Macy Hudson, Brylee Meissner, Neva Jane Reardon"
+,283,Eclipse Of The Heart,5:47 PM,Pre-Teen Small Group Lyrical,Machita Dance Company (F),"Performers: Wren Anderson, Addison Benoit, Callie Carriere, Merrin Overall, Haddie Templet, Piper Waldrep"
+,284,Change Is Gonna Come,5:50 PM,Pre-Teen Small Group Lyrical,Taylor's Dance Company (N),"Performers: Benton Brown, Brantleigh Culligan, Audrey Hettinger, Aria Ogburn, Lucie Werner"
+,285,Six Seven Ate,5:53 PM,Pre-Teen Small Group Hip Hop,Evolve Studio for the Arts (C),"Performers: Abby Ross Bentley, Annabell Bentley, Ava Gilbert, Auri Jenkins, Alia Johnson, Baylor Robbins, Lauryn Simmons"
+,286,Hush Hush,5:56 PM,Junior Line Jazz,The Dance Centre (O),"Performers: Aj Adair, Mykenzi Brown, Collier Cannon, Evie Chandler, Callaway Collins, Addy Crawford, Anna Katherine Crawford, Lucy Creel, Charlotte Gattozzi, Rachel Guin, Carolyne Hawkins, Woodsea Hutchison, Madi James, Adilynn Kane, Aley Mac Livingston, Gabby Mcdonald, Isla Norton, Audrey Shah, Alana Shephard, Mary Alston Suther, Sophie Wyatt"
+,287,Grease,6:00 PM,Pre-Teen Production Open/Acro,Jills Studio of Dance (E),"Performers: Caroline Andress, Ava Barclift, Lillian Bender, Layla Bishop, Annabelle Carter, Campbell Conner, Tenley Davenport, Saylor Davis, Hadley Elwell, Anna Lane Evans, Clare Gibbons, Millie Heikkinen, Cora Jane Huff, Callianne King, Lydia Lanwer, Kensington Martin, Delaney Mccolgan, Brexley Mcnew, Pippa Mcnew, Alana Putt, Cora Anne Putt, Emersyn Quinn, Margot Roberts, Elsie-Kate Robison, Brenley Sanders, Ann Tinsley Sayers, Julia Sayers, Mary Ellen Schmidt, Abbott Stolaas, Hinsley Tankersley, Madison Tankersley, Quinn Turner, Jenna Webster, Julianna York"
+,288,Breakaway,6:05 PM,Pre-Teen Large Group Contemporary,The Dance Centre (O),"Performers: Annie Cardwell, Louise Cole, Maddie El-Amin, Eliza Finison, Cece Hanley, Macy Hudson, Mary Ellis Jamison, Sarah Nelle Lasseter, Neva Jane Reardon, Sadler Williams"
+,289,Trolley Song,6:08 PM,Pre-Teen Small Group Musical Theatre,Southern Dance Precision (J),"Performers: Evie Gaddy, Maggie Rodvelt, Ella Third, Dessa Williams"
+,290,Party,6:11 PM,Teen Production Jazz,"SpotLite Dance Studio, LLC (K)","Performers: Naima Abram, Haven Ayers, Cecilia Bacelieri, Layla Barry, Charlee Bartholetti, Evee Bartholetti, Amelia Baxter, Sutton Burney, Peyton Byrd, Emma Kate Caires, Teagan Caruso, Dakota Casteel, Braelynn Cook, Kaylin Cutter, Annalee Davis, Ava Ezell, Karsen Fanelli, Amiya Henry, Kylie Hunnicutt, Addison Jackson, Avery Jackson, Saniyah King, Iversyn Mcbryar, Aliya Miller, Amaya Miller, Ayla Miller, Olivia Mulligan, Brooke Peery, Austyn Pratt, Ivory Riley, Reagan Robinson, Journey Sadler, Kallie Schalow, Johnny Sica, Liliana Sullivan, Lucy Sutherland, Kalina Thephavong, Elisabeth Walters, Charlotte Watters"
+,291,In My Headphones,6:16 PM,Teen Production Open/Acro,Machita Dance Company (F),"Performers: Nola Adams, Sammie Alleman, Annalise Anderson, Wren Anderson, Addison Benoit, Caroline Bonin, Bryleigh Butler, Callie Carriere, Reese Comeaux, Kaitlee Courville, Peyton Couvillion, Jeanne Deshotel, Ruby Doiron, Sophia Dove, Camille Foreman, Gracie Gautreaux, Mary Clare Gautreaux, Shelbi Landry, Eva Leblanc, Emmalyn Matheny, Evie Normand, Merrin Overall, Catherine Sanchez, Gabrielle Sanchez, Haddie Templet, Hannah Templet, Cc Thibodeaux, Avery Vaughn, Kate Vaughn, Evelyn Voorhies, Piper Waldrep"
+,292,Making A Man,6:21 PM,Junior Production Musical Theatre,The Dance Centre (O),"Performers: Avery Bordner, Mykenzi Brown, Collier Cannon, Evie Chandler, Callaway Collins, Addy Crawford, Anna Katherine Crawford, Lucy Creel, Anna Wesley Faught, Charlotte Gattozzi, Rachel Guin, Carolyne Hawkins, Ellie Higdon, Woodsea Hutchison, Charli Ingram, Madi James, Callie Jennings, Adilynn Kane, Anna Kerch, Ellie Lay, Aley Mac Livingston, Lucy Lugo, Gabby Mcdonald, Annsley Pierce, Abigail Richburg, Harper Sewell, Audrey Shah, Alana Shephard, Bella Smith, Carrigan Stewart, Mary Alston Suther, Sophie Wyatt"
+,293,Somethin' Funky,6:26 PM,Teen Production Hip Hop,Jills Studio of Dance (E),"Performers: Tori Agee, Ava Barclift, Lillian Bender, Ava Benton, Layla Bishop, Allie Clark, Anna Clayton, Campbell Conner, Saylor Davis, Hadley Elwell, Anna Lane Evans, Clare Gibbons, Sarah Grace Gignilliat, Elaina Haley, Millie Heikkinen, Addison Killian, Lydia Lanwer, Kensington Martin, Delaney Mccolgan, Brexley Mcnew, Bailey Osborne, Alana Putt, Brenley Sanders, Ann Tinsley Sayers, Abbott Stolaas, Paulina Ward, Olivia Warr, Jenna Webster, Peyton Wilkerson"
+,294,Mad TeaDC Party,6:31 PM,Teen Production Musical Theatre,The Dance Centre (O),"Performers: Madelyn Bobo, Rowan Bordner, Ellie Boulware, Marleigh Campbell, Annie Cardwell, Louise Cole, Madeline Dennis, Brady Diltz, Kennedy Duffy, Lexi Dykes, Maddie El-Amin, Gracie Elder, Kate Feller, Paige Feller, Eliza Finison, Olivia Fitts, Lucy Garner, Mckenna Hallman, Cece Hanley, Gracie Hawkins, Ava Kate Hollyhand, Baylie Holman, Macy Hudson, Kinleigh Hunter, Mary Ellis Jamison, Sarah Nelle Lasseter, Emily Lewis, Lauren Lewis, Emaley John Livingston, Evelyn Lugo, Harper Mcdaniel, Brylee Meissner, Mackenzie Meissner, Brooke Page, Ella Phifer, Allie Plott, Neva Jane Reardon, Cayler Ann Rich, Sarah Davis Roe, Victoria Schultz, Lydia Smith, Sunnie Strickland, Brooke Welton, Elizabeth Whitfield, Callie Williams, Sadler Williams, Annabelle Worrall"
+,,MINI/JUNIOR/PRETEEN + TEEN PRODUCTION: 6:45 PM,,,,
+,,TEEN/SENIOR COMPETITION,,,,
+,295,Higher Ground,7:30 PM,Teen Large Group Open/Acro,Jills Studio of Dance (E),"Performers: Lillian Bender, Ava Benton, Allie Clark, Anna Clayton, Tessa Grace Dollman, Ellie Dunham, Clare Gibbons, Sarah Grace Gignilliat, Elaina Haley, Ella Jossey, Hannah Pillsbury, Peyton Wilkerson"
+,296,Straight Out The Jungle,7:33 PM,Teen Line Hip Hop,Verve Dance Company (R),"Performers: Esme Baquedano, Jade Bryant, Carly Curtis, Lucy Curtis, Harper Dannelly, Savannah Hastings, Scarlett Hastings, Juliet Midgett, Vivienne Midgett, Layla Morris, Georgie Osmond, Bayla Paul, Emma Paul, Kierlee Stewart, Abby Summerlin, Mariah Williams, Charlie Wolkers, Gemma Wolkers"
+,297,Cage of Bones,7:37 PM,Teen Line Contemporary,"SpotLite Dance Studio, LLC (K)","Performers: Naima Abram, Emma Kate Caires, Dakota Casteel, Braelynn Cook, Kaylin Cutter, Calleigh Eaton, Ava Ezell, Kylie Hunnicutt, Addison Jackson, Saniyah King, Savannah Millar, Amaya Miller, Madelyn Pope, Kallie Schalow, Kinlee Sinclair, Lucy Sutherland, Kalina Thephavong, Elisabeth Walters"
+,298,Jet Black,7:40 PM,Teen Line Open/Acro,Evolve Studio for the Arts (C),"Performers: Abby Ross Bentley, Annabell Bentley, Lilly Dean, Otilia Dison, Maddie Escue, Ava Gilbert, Savannah Goodin, Trinity Goodin, Payton Harris, Auri Jenkins, Alia Johnson, Haleigh Johnson, Ariyana Motley, Baylor Robbins, Lauryn Simmons, Gracie Whisnand, Anna Lynn White"
+,299,Diamond In The Sun,7:44 PM,Teen Line Tap,The Dance Centre (O),"Performers: Rowan Bordner, Marleigh Campbell, Louise Cole, Madeline Dennis, Maddie El-Amin, Kate Feller, Eliza Finison, Olivia Fitts, Lucy Garner, Cece Hanley, Gracie Hawkins, Ava Kate Hollyhand, Kinleigh Hunter, Emily Lewis, Brylee Meissner, Mackenzie Meissner, Ella Phifer, Allie Plott, Neva Jane Reardon, Sarah Davis Roe, Elizabeth Whitfield, Annabelle Worrall"
+,300,Letting Go,7:47 PM,Senior Small Group Contemporary,Jills Studio of Dance (E),"Performers: Abbie Bender, Victoria Bender, Maddie Laine Callaway, Miriam Graffeo, Ella Lanwer, Mary Coles Lusk, Collier Mclain, Addison Murphy, Vivian Wiginton"
+,301,Iconic,7:50 PM,Teen Line Jazz Funk,Jills Studio of Dance (E),"Performers: Lillian Bender, Ava Benton, Allie Clark, Anna Clayton, Ellie Dunham, Clare Gibbons, Sarah Grace Gignilliat, Elaina Haley, Millie Heikkinen, Ella Jossey, Addison Killian, Bailey Osborne, Addie Pearson, Hannah Pillsbury, Paulina Ward, Olivia Warr, Peyton Wilkerson, Elle Woodington"
+,302,Drown In The Light,7:54 PM,Teen Small Group Contemporary,Machita Dance Company (F),"Performers: Annalise Anderson, Peyton Couvillion, Camille Foreman, Cc Thibodeaux, Avery Vaughn"
+,303,Pull Your Heart Out,7:57 PM,Teen Small Group Contemporary,Dothan School of Dance (B),"Performers: Taylor Andre, Kaylynn Batemon, Emma Grace Dunn, Anslee Freeman, Kennedy Milsapp, Isla Pflugner, Mckenna Silavent, Avery Steensland, Isabella Tran"
+,304,Y2K,8:00 PM,Teen Small Group Hip Hop,Taylor's Dance Company (N),"Performers: Brantleigh Culligan, Miriam Hanks, Audrey Hettinger, Rolley Len Kirk, Aria Ogburn"
+,305,Trust Me Again,8:03 PM,Teen Small Group Lyrical,"SpotLite Dance Studio, LLC (K)","Performers: Naima Abram, Dakota Casteel, Kaylin Cutter, Madelyn Pope, Kallie Schalow, Kinlee Sinclair, Elisabeth Walters"
+,306,Woman's Work,8:06 PM,Senior Large Group Contemporary,Jills Studio of Dance (E),"Performers: Abbie Bender, Victoria Bender, Maddie Laine Callaway, Miriam Graffeo, Ella Lanwer, Mary Coles Lusk, Lila Grace Mann, Collier Mclain, Addison Murphy, Vivian Wiginton, Elle Woodington"
+,307,We're Back Again,8:09 PM,Teen Large Group Jazz,Dothan School of Dance (B),"Performers: Katie Benefield, Mac Crew, Elise Field, Eva Gause, Sophia Harris, Hadley Maddox, Emma Kate Robinson, Vivienne Shillabeer, Emery Steensland, Mary Hugh Wheelless, Haddie Rae Wilkins"
+,308,Haunted,8:13 PM,Teen Large Group Jazz,Verve Dance Company (R),"Performers: Esme Baquedano, Jade Bryant, Carly Curtis, Harper Dannelly, Savannah Hastings, Shannon Norris, Georgie Osmond, Bayla Paul, Bella Rondon, Kierlee Stewart, Abby Summerlin, Mariah Williams"
+,309,Bamboo Banga,8:16 PM,Teen Small Group Jazz,Machita Dance Company (F),"Performers: Wren Anderson, Addison Benoit, Bryleigh Butler, Peyton Couvillion, Camille Foreman, Haddie Templet, Piper Waldrep"
+,310,The Moment,8:20 PM,Teen Large Group Contemporary,Young Artist Space (T),"Performers: Haadiya Brooks, Danielle Cockrell, Jordyn Donner, Hilly Dunlap, Lona Garrison, Ally Givens, Claire Jackson, Christian Jones, Gabriela Kunard, Mechesney Martin, Emery Mcewen, Mallie Rickman"
+,311,No More Dreaming,8:23 PM,Teen Large Group Contemporary,Dothan School of Dance (B),"Performers: Addie Grace Anderson, Taylor Andre, Collins Arkle, Kaylynn Batemon, Julia Batts, Landree Douglas, Emma Grace Dunn, Anslee Freeman, Kennedy Milsapp, Isla Pflugner, Libby Price, Noa Shillabeer, Mckenna Silavent, Avery Steensland, Isabella Tran, Elle Wells"
+,312,You Stole the Show,8:27 PM,Senior Small Group Lyrical,Jills Studio of Dance (E),"Performers: Abbie Bender, Victoria Bender, Ava Benton, Maddie Laine Callaway, Ellie Dunham, Addison Killian, Bailey Osborne, Addie Pearson, Elena Schreiber"
+,313,Love More,8:30 PM,Senior Large Group Contemporary,The Dance Centre (O),"Performers: Ellie Boulware, Kennedy Duffy, Gracie Elder, Kate Feller, Gracie Hawkins, Brylee Meissner, Mackenzie Meissner, Ella Phifer, Allie Plott, Cayler Ann Rich, Sarah Davis Roe, Lydia Smith, Brooke Welton"
+,314,Ka-Pow,8:33 PM,Senior Small Group Jazz,Evolve Studio for the Arts (C),"Performers: Sariah Benitez, Lilly Dean, Maddie Escue, Savannah Goodin, Payton Harris, Haleigh Johnson, Ariyana Motley, Gracie Whisnand, Anna Lynn White"
+,315,Staying Alive,8:36 PM,Senior Small Group Jazz,"SpotLite Dance Studio, LLC (K)","Performers: Naima Abram, Dakota Casteel, Braelynn Cook, Calleigh Eaton, Saniyah King, Journey Sadler, Kallie Schalow, Kalina Thephavong, Elisabeth Walters"
+,316,Made You Look,8:39 PM,Senior Small Group Jazz,Machita Dance Company (F),"Performers: Nola Adams, Sammie Alleman, Annalise Anderson, Caroline Bonin, Mary Clare Gautreaux, Shelbi Landry, Hannah Templet, Cc Thibodeaux, Avery Vaughn"
+,317,A Happening,8:42 PM,Teen Large Group Open/Acro,Young Artist Space (T),"Performers: Haadiya Brooks, Danielle Cockrell, Jordyn Donner, Hilly Dunlap, Lona Garrison, Ally Givens, Claire Jackson, Christian Jones, Gabriela Kunard, Mechesney Martin, Emery Mcewen, Mallie Rickman"
+,318,Clownz,8:46 PM,Senior Small Group Open/Acro,Jills Studio of Dance (E),"Performers: Abbie Bender, Maddie Laine Callaway, Miriam Graffeo, Mary Coles Lusk, Collier Mclain, Addison Murphy, Brantley Kate Simmons, Vivian Wiginton, Elle Woodington"
+,319,Emeralds,8:49 PM,Teen Line Ballet/Pointe,Dothan School of Dance (B),"Performers: Addie Grace Anderson, Taylor Andre, Collins Arkle, Abigail Avery, Kaylynn Batemon, Julia Batts, Landree Douglas, Emma Grace Dunn, Anslee Freeman, Maggie Lyons, Kennedy Milsapp, Isla Pflugner, Libby Price, Noa Shillabeer, Mckenna Silavent, Avery Steensland, Isabella Tran, Elle Wells"
+,320,Don't Stop No Sleep,8:52 PM,Senior Small Group Contemporary,The Dance Centre (O),"Performers: Ellie Boulware, Kennedy Duffy, Gracie Elder, Ella Phifer, Allie Plott, Sarah Davis Roe, Lydia Smith"
+,321,Somebody's Watching Me,8:56 PM,Senior Small Group Contemporary,"SpotLite Dance Studio, LLC (K)","Performers: Braelynn Cook, Ava Ezell, Kylie Hunnicutt, Addison Jackson, Saniyah King, Journey Sadler, Lucy Sutherland, Kalina Thephavong, Elisabeth Walters"
+,322,One Another With Each Other,8:59 PM,Senior Small Group Contemporary,Evolve Studio for the Arts (C),"Performers: Lilly Dean, Maddie Escue, Savannah Goodin, Trinity Goodin, Haleigh Johnson, Ariyana Motley, Gracie Whisnand, Anna Lynn White"
+,323,Naive,9:02 PM,Senior Small Group Contemporary,Jills Studio of Dance (E),"Performers: Tessa Grace Dollman, Madelyn Kimball, Elena Schreiber, Brantley Kate Simmons, Paulina Ward, Olivia Warr, Vivian Wiginton"
+,324,The 30th,9:05 PM,Senior Small Group Contemporary,Young Artist Space (T),"Performers: Haadiya Brooks, Danielle Cockrell, Jordyn Donner, Hilly Dunlap, Lona Garrison, Ally Givens, Gabriela Kunard"
+,325,Breath Of Life,9:08 PM,Senior Small Group Contemporary,Dothan School of Dance (B),"Performers: Taylor Andre, Kaylynn Batemon, Julia Batts, Landree Douglas, Emma Grace Dunn, Anslee Freeman, Kennedy Milsapp, Mckenna Silavent, Avery Steensland"
+,326,Jumpin Jumpin,9:11 PM,Senior Line Jazz,The Dance Centre (O),"Performers: Ellie Boulware, Marleigh Campbell, Brady Diltz, Kennedy Duffy, Gracie Elder, Kate Feller, Olivia Fitts, Gracie Hawkins, Lauren Lewis, Brylee Meissner, Mackenzie Meissner, Ella Phifer, Allie Plott, Cayler Ann Rich, Sarah Davis Roe, Lydia Smith, Brooke Welton, Callie Williams"
+,327,Temporary Tears,9:14 PM,Senior Small Group Contemporary,Machita Dance Company (F),"Performers: Nola Adams, Sammie Alleman, Mary Clare Gautreaux, Shelbi Landry, Hannah Templet"
+,328,5 4 3 2 1,9:18 PM,Senior Small Group Contemporary,"SpotLite Dance Studio, LLC (K)","Performers: Naima Abram, Dakota Casteel, Braelynn Cook, Aliya Miller, Journey Sadler, Kallie Schalow, Kalina Thephavong, Elisabeth Walters"
+,329,Arrow Knee,9:21 PM,Senior Large Group Contemporary,Jills Studio of Dance (E),"Performers: Tessa Grace Dollman, Ella Jossey, Addison Killian, Madelyn Kimball, Ella Lanwer, Lila Grace Mann, Collier Mclain, Bailey Osborne, Addie Pearson, Elena Schreiber, Brantley Kate Simmons, Paulina Ward, Olivia Warr"
+,330,My Discarded Men,9:24 PM,Senior Large Group Open/Acro,Jills Studio of Dance (E),"Performers: Abbie Bender, Victoria Bender, Maddie Laine Callaway, Anna Clayton, Tessa Grace Dollman, Miriam Graffeo, Madelyn Kimball, Mary Coles Lusk, Lila Grace Mann, Collier Mclain, Addison Murphy, Addie Pearson, Hannah Pillsbury, Vivian Wiginton, Peyton Wilkerson, Elle Woodington"
+,331,Leaving Song,9:28 PM,Senior Small Group Contemporary,Verve Dance Company (R),"Performers: Esme Baquedano, Jade Bryant, Harper Dannelly, Lorena Diaz, Shannon Norris, Bella Rondon, Kierlee Stewart, Abby Summerlin, Mariah Williams"
+,332,Ceremony,9:31 PM,Senior Line Contemporary,The Dance Centre (O),"Performers: Ellie Boulware, Marleigh Campbell, Madeline Dennis, Brady Diltz, Kennedy Duffy, Gracie Elder, Kate Feller, Olivia Fitts, Gracie Hawkins, Lauren Lewis, Brylee Meissner, Mackenzie Meissner, Ella Phifer, Allie Plott, Cayler Ann Rich, Sarah Davis Roe, Lydia Smith, Brooke Welton, Callie Williams"
+,333,Come Together,9:34 PM,Senior Small Group Jazz,Young Artist Space (T),"Performers: Haadiya Brooks, Danielle Cockrell, Jordyn Donner, Hilly Dunlap, Lona Garrison, Ally Givens, Gabriela Kunard, Mechesney Martin, Mallie Rickman"
+,334,Britney,9:37 PM,Teen Line Hip Hop,Dothan School of Dance (B),"Performers: Addie Grace Anderson, Taylor Andre, Collins Arkle, Abigail Avery, Kaylynn Batemon, Julia Batts, Landree Douglas, Emma Grace Dunn, Anslee Freeman, Maggie Lyons, Kennedy Milsapp, Isla Pflugner, Libby Price, Noa Shillabeer, Mckenna Silavent, Avery Steensland, Mckenzyi Thomas, Isabella Tran, Elle Wells"
+,335,Sync'd,9:41 PM,Senior Line Hip Hop,Jills Studio of Dance (E),"Performers: Abbie Bender, Allie Clark, Tessa Grace Dollman, Ellie Dunham, Sarah Grace Gignilliat, Miriam Graffeo, Ella Jossey, Madelyn Kimball, Ella Lanwer, Mary Coles Lusk, Lila Grace Mann, Collier Mclain, Addison Murphy, Elena Schreiber, Brantley Kate Simmons, Vivian Wiginton, Elle Woodington"
+,336,Hush,9:44 PM,Senior Small Group Hip Hop,Evolve Studio for the Arts (C),"Performers: Otilia Dison, Maddie Escue, Trinity Goodin, Haleigh Johnson, Ariyana Motley, Anna Lynn White"
+,337,Love Lost,9:47 PM,Senior Large Group Contemporary,Verve Dance Company (R),"Performers: Esme Baquedano, Jade Bryant, Carly Curtis, Harper Dannelly, Savannah Hastings, Shannon Norris, Bella Rondon, Kierlee Stewart, Abby Summerlin, Mariah Williams"
+,338,Boss,9:51 PM,Senior Line Hip Hop,The Dance Centre (O),"Performers: Rowan Bordner, Ellie Boulware, Marleigh Campbell, Madeline Dennis, Brady Diltz, Gracie Elder, Kate Feller, Olivia Fitts, Gracie Hawkins, Lauren Lewis, Brylee Meissner, Brooke Page, Ella Phifer, Cayler Ann Rich, Sarah Davis Roe, Victoria Schultz, Lydia Smith, Brooke Welton, Callie Williams"
+,339,Fractured Migration,9:54 PM,Senior Small Group Open/Acro,Young Artist Space (T),"Performers: Haadiya Brooks, Danielle Cockrell, Jordyn Donner, Lona Garrison, Ally Givens, Gabriela Kunard"
+,340,Cornerstone,9:57 PM,Senior Large Group Contemporary,Jills Studio of Dance (E),"Performers: Abbie Bender, Victoria Bender, Maddie Laine Callaway, Tessa Grace Dollman, Elaina Haley, Madelyn Kimball, Ella Lanwer, Mary Coles Lusk, Lila Grace Mann, Collier Mclain, Addison Murphy, Elena Schreiber, Brantley Kate Simmons, Vivian Wiginton, Elle Woodington"
+,341,Everybody Supports Women,10:01 PM,Senior Large Group Contemporary,Machita Dance Company (F),"Performers: Nola Adams, Sammie Alleman, Annalise Anderson, Addison Benoit, Caroline Bonin, Bryleigh Butler, Peyton Couvillion, Camille Foreman, Mary Clare Gautreaux, Shelbi Landry, Hannah Templet, Cc Thibodeaux, Avery Vaughn, Piper Waldrep"
+,342,Got What You Need,10:04 PM,Senior Large Group Hip Hop,"SpotLite Dance Studio, LLC (K)","Performers: Naima Abram, Dakota Casteel, Calleigh Eaton, Ava Ezell, Saniyah King, Savannah Millar, Aliya Miller, Madelyn Pope, Journey Sadler, Kallie Schalow, Kinlee Sinclair, Kalina Thephavong, Jaiden Vickers, Elisabeth Walters"
+,343,Hot Gum,10:08 PM,Senior Large Group Open/Acro,Evolve Studio for the Arts (C),"Performers: Sariah Benitez, Annabell Bentley, Lilly Dean, Otilia Dison, Maddie Escue, Savannah Goodin, Trinity Goodin, Haleigh Johnson, Ariyana Motley, Gracie Whisnand, Anna Lynn White"
+,344,Rich Girls,10:11 PM,Senior Large Group Open/Acro,Verve Dance Company (R),"Performers: Esme Baquedano, Jade Bryant, Carly Curtis, Harper Dannelly, Savannah Hastings, Georgie Osmond, Bella Rondon, Kierlee Stewart, Abby Summerlin, Mariah Williams"
+,345,Back To The Start,10:15 PM,Senior Line Lyrical,The Dance Centre (O),"Performers: Ellie Boulware, Marleigh Campbell, Madeline Dennis, Brady Diltz, Kennedy Duffy, Gracie Elder, Kate Feller, Olivia Fitts, Gracie Hawkins, Lauren Lewis, Brylee Meissner, Mackenzie Meissner, Ella Phifer, Allie Plott, Cayler Ann Rich, Sarah Davis Roe, Victoria Schultz, Lydia Smith, Brooke Welton, Callie Williams"
+,346,Britney,10:18 PM,Senior Production Jazz,Jills Studio of Dance (E),"Performers: Abbie Bender, Victoria Bender, Ava Benton, Maddie Laine Callaway, Allie Clark, Anna Clayton, Tessa Grace Dollman, Ellie Dunham, Sarah Grace Gignilliat, Miriam Graffeo, Elaina Haley, Ella Jossey, Addison Killian, Madelyn Kimball, Ella Lanwer, Mary Coles Lusk, Lila Grace Mann, Collier Mclain, Addison Murphy, Bailey Osborne, Addie Pearson, Hannah Pillsbury, Elena Schreiber, Brantley Kate Simmons, Paulina Ward, Olivia Warr, Vivian Wiginton, Peyton Wilkerson, Elle Woodington"
+,,TEEN/SENIOR AWARDS: 10:30 PM,,,,
+,,MINI/JUNIOR/PRETEEN + TEEN PRODUCTION COMPETITION,,,,
+,223,Proud Mary,2:30 PM,Mini Small Group Jazz,The Dance Centre (O),"Performers: Alden Faught, Eliza-Grace Fowler, Cordelia Howton, Hallie Hudson, Nora Mitchell, Ann Ellis Price, Evie Valasik, Anne Hollis Wilhite"
+,224,Walking on Sunshine,2:33 PM,Mini Solo Jazz,"SpotLite Dance Studio, LLC (K)",Performers: Amelia Baxter
+,225,LOVE,2:35 PM,Mini Solo Jazz,"SpotLite Dance Studio, LLC (K)",Performers: Camilla Hu
+,226,My Boyfriends Back,2:38 PM,Mini Solo Jazz,"SpotLite Dance Studio, LLC (K)",Performers: Haven Ayers
+,227,Like This Like That,2:41 PM,Mini Solo Jazz,Machita Dance Company (F),Performers: Kaitlee Courville
+,228,Mr Big Stuff,2:44 PM,Mini Solo Jazz,"SpotLite Dance Studio, LLC (K)",Performers: Ivory Riley
+,229,Feels So Good,2:47 PM,Mini Solo Jazz,The Dance Centre (O),Performers: Eliza-Grace Fowler
+,230,Hot Hot Hot,2:50 PM,Mini Solo Jazz,"SpotLite Dance Studio, LLC (K)",Performers: Karsen Fanelli
+,231,Car Wash,2:52 PM,Mini Solo Jazz,"SpotLite Dance Studio, LLC (K)",Performers: Kingsley Doss
+,232,Trouble,2:55 PM,Mini Solo Jazz,"SpotLite Dance Studio, LLC (K)",Performers: Reagan Robinson
+,233,Love Me,2:58 PM,Mini Solo Jazz,"SpotLite Dance Studio, LLC (K)",Performers: Teagan Caruso
+,234,Friend Like Me,3:01 PM,Mini Solo Musical Theatre,"SpotLite Dance Studio, LLC (K)",Performers: Evee Bartholetti
+,235,Finally Home,3:04 PM,Mini Solo Lyrical,"SpotLite Dance Studio, LLC (K)",Performers: Avery Jackson
+,236,Over The Rainbow,3:07 PM,Mini Solo Lyrical,"SpotLite Dance Studio, LLC (K)",Performers: Iversyn Mcbryar
+,237,Fabulous,3:09 PM,Mini Duo/Trio Jazz,Machita Dance Company (F),"Performers: Brie Ankeny, Eliska Green, Harlyn Holmes"
+,238,Faith,3:12 PM,Mini Duo/Trio Jazz,Vestavia Dance (S),"Performers: Lucy Hawkins, Anne Allen Leonard, Eloise Stephen"
+,239,We Won't Move,3:15 PM,Junior Line Lyrical,The Dance Centre (O),"Performers: Avery Bordner, Mykenzi Brown, Collier Cannon, Callaway Collins, Lucy Creel, Paige Feller, Charlotte Gattozzi, Rachel Guin, Carolyne Hawkins, Mary Ellis Jamison, Adilynn Kane, Gabby Mcdonald, Isla Norton, Audrey Shah, Alana Shephard, Mary Alston Suther, Margaret Whitfield, Sadler Williams, Sophie Wyatt"
+,240,Shake A Tail Feather,3:19 PM,Mini Large Group Jazz,The Dance Centre (O),"Performers: Bexley Drew Barton, Addie Chris Colson, Emma Claire Hughes, Miles Leigh Johnson, Khoryn Knight, Lena Laney, Callaway Parker, Chappell Robards, Sage Simon, Annie Beth Skelton, Ann Ryan Swann, Stella White"
+,241,Boots,3:22 PM,Mini Small Group Jazz,"SpotLite Dance Studio, LLC (K)","Performers: Cecilia Bacelieri, Evee Bartholetti, Addison Baxter, Kingsley Doss, Camilla Hu, Austyn Pratt, Ivory Riley, Liliana Sullivan"
+,242,Music,3:26 PM,Junior Small Group Jazz,"SpotLite Dance Studio, LLC (K)","Performers: Charlee Bartholetti, Sutton Burney, Peyton Byrd, Emma Kate Caires, Annalee Davis, Amiya Henry, Brooke Peery"
+,243,Funky Town,3:29 PM,Junior Small Group Jazz,Jills Studio of Dance (E),"Performers: Saylor Davis, Hadley Elwell, Molly Gibbons, Delaney Mccolgan, Brexley Mcnew, Brenley Sanders, Jenna Webster"
+,244,Can't Turn You Loose,3:32 PM,Junior Small Group Jazz,Machita Dance Company (F),"Performers: Callie Carriere, Jeanne Deshotel, Merrin Overall, Catherine Sanchez, Evelyn Voorhies"
+,245,Vroom Vroom,3:35 PM,Pre-Teen Production Hip Hop,The Dance Centre (O),"Performers: Madelyn Bobo, Rowan Bordner, Collier Cannon, Louise Cole, Lexi Dykes, Maddie El-Amin, Paige Feller, Eliza Finison, Lucy Garner, Mckenna Hallman, Cece Hanley, Ava Kate Hollyhand, Baylie Holman, Macy Hudson, Kinleigh Hunter, Mary Ellis Jamison, Sarah Nelle Lasseter, Emily Lewis, Emaley John Livingston, Gabby Mcdonald, Neva Jane Reardon, Sunnie Strickland, Elizabeth Whitfield, Sadler Williams, Annabelle Worrall"
+,246,Pump Up The Jam,3:40 PM,Junior Small Group Jazz,Verve Dance Company (R),"Performers: Lucy Curtis, Scarlett Hastings, Juliet Midgett, Vivienne Midgett, Layla Morris, Emma Paul, Charlie Wolkers, Gemma Wolkers"
+,247,Vibe Tribe,3:43 PM,Junior Small Group Jazz,Dothan School of Dance (B),"Performers: Emelyn Alley, Micah Mae Godwin, Malone King, Lola Laye, Vivienne Shillabeer, Emery Steensland"
+,248,Hound Dog,3:46 PM,Junior Small Group Jazz,Jills Studio of Dance (E),"Performers: Malina Alatorre, Clara Fay Savage, Hinsley Tankersley, Madison Tankersley, Quinn Turner"
+,249,Hard Knock Life,3:49 PM,Mini Production Musical Theatre,The Dance Centre (O),"Performers: Aj Adair, Augusta Agee, Maisie Ary, Anne Everett Bailey, Caroline Bobo, Caroline Cannon, Ellie Cardwell, Addie Chris Colson, Evelyn Eads, Madge Ezell, Alden Faught, Eliza-Grace Fowler, Cordelia Howton, Hallie Hudson, Emma Claire Hughes, Hannah Grace Hughes, Mary Kate Hughes, Josie Hunter, Charlotte Jennings, Miles Leigh Johnson, Harper Louise Karrh, Khoryn Knight, Rosie Mcgee, Ridgely Miller, Nora Mitchell, Isla Norton, Olive Parker, Elizabeth Powell, Ann Ellis Price, Betts Robards, Piper Sewell, Evie Shah, Adeline Shields, Tucker Ann Suther, Spencer Grace Swann, Evie Valasik, Margaret Whitfield, Anne Hollis Wilhite, Sloane Wood, Vivian Woolf"
+,250,Look,3:54 PM,Junior Small Group Contemporary,Evolve Studio for the Arts (C),"Performers: Auri Jenkins, Alia Johnson, Baylor Robbins, Lauryn Simmons"
+,251,Jumpin Jack,3:57 PM,Pre-Teen Line Jazz,The Dance Centre (O),"Performers: Avery Bordner, Rowan Bordner, Annie Cardwell, Louise Cole, Lexi Dykes, Maddie El-Amin, Paige Feller, Eliza Finison, Mckenna Hallman, Cece Hanley, Ava Kate Hollyhand, Macy Hudson, Mary Ellis Jamison, Sarah Nelle Lasseter, Emily Lewis, Neva Jane Reardon, Elizabeth Whitfield, Sadler Williams, Annabelle Worrall"
+,252,Wind It Up,4:01 PM,Junior Small Group Jazz,"SpotLite Dance Studio, LLC (K)","Performers: Cecilia Bacelieri, Charlee Bartholetti, Sutton Burney, Peyton Byrd, Annalee Davis, Amiya Henry, Ayla Miller, Brooke Peery, Austyn Pratt"
+,253,You're Gonna Be Okay,4:04 PM,Junior Small Group Lyrical,Machita Dance Company (F),"Performers: Reese Comeaux, Sophia Dove, Gracie Gautreaux, Eva Leblanc, Evie Normand, Kate Vaughn, Evelyn Voorhies"
+,254,Out Of The Woods,4:07 PM,Junior Small Group Lyrical,Verve Dance Company (R),"Performers: Lucy Curtis, Scarlett Hastings, Juliet Midgett, Vivienne Midgett, Layla Morris, Emma Paul, Charlie Wolkers, Gemma Wolkers"
+,255,Road Work,4:10 PM,Junior Large Group Jazz,Dothan School of Dance (B),"Performers: Emelyn Alley, Wellslie Arnold, Elise Field, Micah Mae Godwin, Malone King, Lola Laye, Mia Kathryn Morris, Marla Kate Pattillo, Emma Kate Robinson, Allie Reese Robison, Vivienne Shillabeer, Lilian St. Amant, Emery Steensland, Blayke Williamson"
+,256,Dear Future Husband,4:13 PM,Junior Large Group Jazz,Jills Studio of Dance (E),"Performers: Malina Alatorre, Caroline Andress, Annabelle Carter, Cora Jane Huff, Callianne King, Cora Anne Putt, Emersyn Quinn, Clara Fay Savage, Julia Sayers, Abbott Stolaas, Hinsley Tankersley, Madison Tankersley, Quinn Turner, Julianna York"
+,257,Hyperballad,4:17 PM,Pre-Teen Line Contemporary,The Dance Centre (O),"Performers: Rowan Bordner, Annie Cardwell, Louise Cole, Maddie El-Amin, Paige Feller, Eliza Finison, Mckenna Hallman, Cece Hanley, Ava Kate Hollyhand, Baylie Holman, Macy Hudson, Mary Ellis Jamison, Sarah Nelle Lasseter, Emily Lewis, Neva Jane Reardon, Elizabeth Whitfield, Sadler Williams, Annabelle Worrall"
+,258,River Deep Mountain High,4:20 PM,Junior Line Jazz,The Dance Centre (O),"Performers: Aj Adair, Ellie Cardwell, Anna Wesley Faught, Ellie Higdon, Callie Jennings, Anna Kerch, Ellie Lay, Lucy Lugo, Olive Parker, Annsley Pierce, Abigail Richburg, Harper Sewell, Bella Smith, Carrigan Stewart, Spencer Grace Swann, Margaret Whitfield, Vivian Woolf"
+,259,King Of New York,4:24 PM,Junior Small Group Musical Theatre,The Dance Centre (O),"Performers: Avery Bordner, Collier Cannon, Lucy Creel, Carolyne Hawkins, Gabby Mcdonald, Isla Norton"
+,260,Hopelessly,4:27 PM,Junior Small Group Musical Theatre,Machita Dance Company (F),"Performers: Kaitlee Courville, Ruby Doiron, Gracie Gautreaux, Evie Normand, Gabrielle Sanchez"
+,261,Rock With You,4:30 PM,Pre-Teen Small Group Jazz,"SpotLite Dance Studio, LLC (K)","Performers: Emma Kate Caires, Dakota Casteel, Calleigh Eaton, Savannah Millar, Olivia Mulligan, Madelyn Pope, Kinlee Sinclair, Jaiden Vickers, Charlotte Watters"
+,262,See You Again,4:33 PM,Pre-Teen Small Group Jazz,Evolve Studio for the Arts (C),"Performers: Abby Ross Bentley, Annabell Bentley, Ava Gilbert, Auri Jenkins, Alia Johnson, Baylor Robbins, Lauryn Simmons"
+,263,These Boots Are Made For Walking,4:36 PM,Pre-Teen Small Group Jazz,The Dance Centre (O),"Performers: Annie Cardwell, Paige Feller, Eliza Finison, Cece Hanley, Mary Ellis Jamison, Sarah Nelle Lasseter, Sadler Williams"
+,264,Must Be Love,4:39 PM,Pre-Teen Small Group Jazz,Jills Studio of Dance (E),"Performers: Tori Agee, Lillian Bender, Campbell Conner, Clare Gibbons, Molly Gibbons, Millie Heikkinen, Mary Ellen Schmidt"
+,265,Imma Bee,4:42 PM,Junior Production Hip Hop,The Dance Centre (O),"Performers: Aj Adair, Avery Bordner, Mykenzi Brown, Ellie Cardwell, Evie Chandler, Callaway Collins, Addy Crawford, Anna Katherine Crawford, Lucy Creel, Anna Wesley Faught, Charlotte Gattozzi, Rachel Guin, Carolyne Hawkins, Woodsea Hutchison, Madi James, Adilynn Kane, Anna Kerch, Ellie Lay, Aley Mac Livingston, Lucy Lugo, Isla Norton, Olive Parker, Audrey Shah, Alana Shephard, Bella Smith, Carrigan Stewart, Mary Alston Suther, Spencer Grace Swann, Margaret Whitfield, Vivian Woolf, Sophie Wyatt"
+,266,Black and Gold,4:47 PM,Pre-Teen Small Group Jazz,Young Artist Space (T),"Performers: Hilly Dunlap, Christian Jones, Emery Mcewen, Mallie Rickman, Lily Cait Turner"
+,267,Mama Knows Best,4:50 PM,Junior Line Jazz,The Dance Centre (O),"Performers: Augusta Agee, Maisie Ary, Anne Everett Bailey, Caroline Bobo, Caroline Cannon, Evelyn Eads, Madge Ezell, Hannah Grace Hughes, Mary Kate Hughes, Josie Hunter, Charlotte Jennings, Harper Louise Karrh, Rosie Mcgee, Ridgely Miller, Elizabeth Powell, Betts Robards, Piper Sewell, Evie Shah, Adeline Shields, Tucker Ann Suther, Sloane Wood"
+,268,Here Comes The Sun,4:54 PM,Junior Large Group Ballet/Pointe,Dothan School of Dance (B),"Performers: Emelyn Alley, Wellslie Arnold, Elise Field, Micah Mae Godwin, Malone King, Lola Laye, Mia Kathryn Morris, Marla Kate Pattillo, Emma Kate Robinson, Allie Reese Robison, Vivienne Shillabeer, Lilian St. Amant, Emery Steensland, Blayke Williamson"
+,269,Say Something,4:57 PM,Pre-Teen Line Lyrical,The Dance Centre (O),"Performers: Madelyn Bobo, Rowan Bordner, Annie Cardwell, Louise Cole, Lexi Dykes, Maddie El-Amin, Eliza Finison, Mckenna Hallman, Cece Hanley, Ava Kate Hollyhand, Baylie Holman, Macy Hudson, Sarah Nelle Lasseter, Emily Lewis, Neva Jane Reardon, Elizabeth Whitfield, Annabelle Worrall"
+,270,Beach Girls,5:01 PM,Junior Line Jazz,"SpotLite Dance Studio, LLC (K)","Performers: Haven Ayers, Cecilia Bacelieri, Layla Barry, Charlee Bartholetti, Evee Bartholetti, Addison Baxter, Amelia Baxter, Sutton Burney, Peyton Byrd, Teagan Caruso, Annalee Davis, Kingsley Doss, Karsen Fanelli, Amiya Henry, Camilla Hu, Avery Jackson, Iversyn Mcbryar, Ayla Miller, Olivia Mulligan, Austyn Pratt, Ivory Riley, Reagan Robinson, Liliana Sullivan"
+,271,Shoes,5:04 PM,Junior Line Jazz,Machita Dance Company (F),"Performers: Wren Anderson, Callie Carriere, Reese Comeaux, Kaitlee Courville, Jeanne Deshotel, Ruby Doiron, Sophia Dove, Gracie Gautreaux, Eva Leblanc, Emmalyn Matheny, Evie Normand, Merrin Overall, Catherine Sanchez, Gabrielle Sanchez, Haddie Templet, Kate Vaughn, Evelyn Voorhies"
+,272,Celebration In The Square,5:08 PM,Junior Line Ballet/Pointe,The Dance Centre (O),"Performers: Aj Adair, Avery Bordner, Mykenzi Brown, Collier Cannon, Ellie Cardwell, Paige Feller, Charlotte Gattozzi, Rachel Guin, Carolyne Hawkins, Ellie Higdon, Mary Ellis Jamison, Gabby Mcdonald, Isla Norton, Olive Parker, Carrigan Stewart, Spencer Grace Swann, Margaret Whitfield, Sadler Williams, Vivian Woolf"
+,273,Dream,5:11 PM,Pre-Teen Large Group Lyrical,Jills Studio of Dance (E),"Performers: Tori Agee, Ava Barclift, Layla Bishop, Campbell Conner, Anna Lane Evans, Clare Gibbons, Molly Gibbons, Millie Heikkinen, Lydia Lanwer, Kensington Martin, Alana Putt, Ann Tinsley Sayers, Mary Ellen Schmidt"
+,274,Something In The Orange,5:15 PM,Pre-Teen Small Group Contemporary,Evolve Studio for the Arts (C),"Performers: Abby Ross Bentley, Annabell Bentley, Ava Gilbert, Stella Rohrbeck"
+,275,Carmen Suite,5:18 PM,Teen Production Ballet/Pointe,The Dance Centre (O),"Performers: Rowan Bordner, Ellie Boulware, Marleigh Campbell, Annie Cardwell, Louise Cole, Madeline Dennis, Brady Diltz, Kennedy Duffy, Maddie El-Amin, Gracie Elder, Kate Feller, Eliza Finison, Mckenna Hallman, Cece Hanley, Gracie Hawkins, Ava Kate Hollyhand, Macy Hudson, Sarah Nelle Lasseter, Brylee Meissner, Mackenzie Meissner, Ella Phifer, Allie Plott, Neva Jane Reardon, Cayler Ann Rich, Sarah Davis Roe, Lydia Smith, Brooke Welton, Elizabeth Whitfield"
+,276,Cassandra,5:23 PM,Pre-Teen Small Group Contemporary,Dothan School of Dance (B),"Performers: Isla Pflugner, Noa Shillabeer, Isabella Tran, Elle Wells"
+,277,Dispostion,5:26 PM,Pre-Teen Small Group Contemporary,Young Artist Space (T),"Performers: Hilly Dunlap, Christian Jones, Emery Mcewen, Mallie Rickman, Lily Cait Turner"
+,278,Catch Me,5:29 PM,Pre-Teen Small Group Contemporary,Verve Dance Company (R),"Performers: Lucy Curtis, Scarlett Hastings, Juliet Midgett, Vivienne Midgett, Layla Morris, Bayla Paul, Emma Paul"
+,279,Devil Went Down To Georgia,5:32 PM,Pre-Teen Small Group Contemporary,"SpotLite Dance Studio, LLC (K)","Performers: Emma Kate Caires, Dakota Casteel, Calleigh Eaton, Savannah Millar, Amaya Miller, Olivia Mulligan, Kinlee Sinclair, Charlotte Watters"
+,280,My Year,5:35 PM,Junior Production Tap,The Dance Centre (O),"Performers: Aj Adair, Maisie Ary, Avery Bordner, Collier Cannon, Evie Chandler, Callaway Collins, Lucy Creel, Paige Feller, Rachel Guin, Carolyne Hawkins, Josie Hunter, Woodsea Hutchison, Madi James, Ellie Lay, Lucy Lugo, Gabby Mcdonald, Isla Norton, Olive Parker, Abigail Richburg, Audrey Shah, Alana Shephard, Bella Smith, Carrigan Stewart, Spencer Grace Swann, Sadler Williams, Vivian Woolf"
+,281,Hit Me With Your Best Shot,5:40 PM,Pre-Teen Large Group Jazz,Jills Studio of Dance (E),"Performers: Ava Barclift, Layla Bishop, Campbell Conner, Saylor Davis, Hadley Elwell, Anna Lane Evans, Molly Gibbons, Lydia Lanwer, Kensington Martin, Delaney Mccolgan, Brexley Mcnew, Alana Putt, Brenley Sanders, Mary Ellen Schmidt, Jenna Webster"
+,282,No Me Quitte Pas,5:44 PM,Pre-Teen Small Group Lyrical,The Dance Centre (O),"Performers: Rowan Bordner, Marleigh Campbell, Louise Cole, Maddie El-Amin, Macy Hudson, Brylee Meissner, Neva Jane Reardon"
+,283,Eclipse Of The Heart,5:47 PM,Pre-Teen Small Group Lyrical,Machita Dance Company (F),"Performers: Wren Anderson, Addison Benoit, Callie Carriere, Merrin Overall, Haddie Templet, Piper Waldrep"
+,284,Change Is Gonna Come,5:50 PM,Pre-Teen Small Group Lyrical,Taylor's Dance Company (N),"Performers: Benton Brown, Brantleigh Culligan, Audrey Hettinger, Aria Ogburn, Lucie Werner"
+,285,Six Seven Ate,5:53 PM,Pre-Teen Small Group Hip Hop,Evolve Studio for the Arts (C),"Performers: Abby Ross Bentley, Annabell Bentley, Ava Gilbert, Auri Jenkins, Alia Johnson, Baylor Robbins, Lauryn Simmons"
+,286,Hush Hush,5:56 PM,Junior Line Jazz,The Dance Centre (O),"Performers: Aj Adair, Mykenzi Brown, Collier Cannon, Evie Chandler, Callaway Collins, Addy Crawford, Anna Katherine Crawford, Lucy Creel, Charlotte Gattozzi, Rachel Guin, Carolyne Hawkins, Woodsea Hutchison, Madi James, Adilynn Kane, Aley Mac Livingston, Gabby Mcdonald, Isla Norton, Audrey Shah, Alana Shephard, Mary Alston Suther, Sophie Wyatt"
+,287,Grease,6:00 PM,Pre-Teen Production Open/Acro,Jills Studio of Dance (E),"Performers: Caroline Andress, Ava Barclift, Lillian Bender, Layla Bishop, Annabelle Carter, Campbell Conner, Tenley Davenport, Saylor Davis, Hadley Elwell, Anna Lane Evans, Clare Gibbons, Millie Heikkinen, Cora Jane Huff, Callianne King, Lydia Lanwer, Kensington Martin, Delaney Mccolgan, Brexley Mcnew, Pippa Mcnew, Alana Putt, Cora Anne Putt, Emersyn Quinn, Margot Roberts, Elsie-Kate Robison, Brenley Sanders, Ann Tinsley Sayers, Julia Sayers, Mary Ellen Schmidt, Abbott Stolaas, Hinsley Tankersley, Madison Tankersley, Quinn Turner, Jenna Webster, Julianna York"
+,288,Breakaway,6:05 PM,Pre-Teen Large Group Contemporary,The Dance Centre (O),"Performers: Annie Cardwell, Louise Cole, Maddie El-Amin, Eliza Finison, Cece Hanley, Macy Hudson, Mary Ellis Jamison, Sarah Nelle Lasseter, Neva Jane Reardon, Sadler Williams"
+,289,Trolley Song,6:08 PM,Pre-Teen Small Group Musical Theatre,Southern Dance Precision (J),"Performers: Evie Gaddy, Maggie Rodvelt, Ella Third, Dessa Williams"
+,290,Party,6:11 PM,Teen Production Jazz,"SpotLite Dance Studio, LLC (K)","Performers: Naima Abram, Haven Ayers, Cecilia Bacelieri, Layla Barry, Charlee Bartholetti, Evee Bartholetti, Amelia Baxter, Sutton Burney, Peyton Byrd, Emma Kate Caires, Teagan Caruso, Dakota Casteel, Braelynn Cook, Kaylin Cutter, Annalee Davis, Ava Ezell, Karsen Fanelli, Amiya Henry, Kylie Hunnicutt, Addison Jackson, Avery Jackson, Saniyah King, Iversyn Mcbryar, Aliya Miller, Amaya Miller, Ayla Miller, Olivia Mulligan, Brooke Peery, Austyn Pratt, Ivory Riley, Reagan Robinson, Journey Sadler, Kallie Schalow, Johnny Sica, Liliana Sullivan, Lucy Sutherland, Kalina Thephavong, Elisabeth Walters, Charlotte Watters"
+,291,In My Headphones,6:16 PM,Teen Production Open/Acro,Machita Dance Company (F),"Performers: Nola Adams, Sammie Alleman, Annalise Anderson, Wren Anderson, Addison Benoit, Caroline Bonin, Bryleigh Butler, Callie Carriere, Reese Comeaux, Kaitlee Courville, Peyton Couvillion, Jeanne Deshotel, Ruby Doiron, Sophia Dove, Camille Foreman, Gracie Gautreaux, Mary Clare Gautreaux, Shelbi Landry, Eva Leblanc, Emmalyn Matheny, Evie Normand, Merrin Overall, Catherine Sanchez, Gabrielle Sanchez, Haddie Templet, Hannah Templet, Cc Thibodeaux, Avery Vaughn, Kate Vaughn, Evelyn Voorhies, Piper Waldrep"
+,292,Making A Man,6:21 PM,Junior Production Musical Theatre,The Dance Centre (O),"Performers: Avery Bordner, Mykenzi Brown, Collier Cannon, Evie Chandler, Callaway Collins, Addy Crawford, Anna Katherine Crawford, Lucy Creel, Anna Wesley Faught, Charlotte Gattozzi, Rachel Guin, Carolyne Hawkins, Ellie Higdon, Woodsea Hutchison, Charli Ingram, Madi James, Callie Jennings, Adilynn Kane, Anna Kerch, Ellie Lay, Aley Mac Livingston, Lucy Lugo, Gabby Mcdonald, Annsley Pierce, Abigail Richburg, Harper Sewell, Audrey Shah, Alana Shephard, Bella Smith, Carrigan Stewart, Mary Alston Suther, Sophie Wyatt"
+,293,Somethin' Funky,6:26 PM,Teen Production Hip Hop,Jills Studio of Dance (E),"Performers: Tori Agee, Ava Barclift, Lillian Bender, Ava Benton, Layla Bishop, Allie Clark, Anna Clayton, Campbell Conner, Saylor Davis, Hadley Elwell, Anna Lane Evans, Clare Gibbons, Sarah Grace Gignilliat, Elaina Haley, Millie Heikkinen, Addison Killian, Lydia Lanwer, Kensington Martin, Delaney Mccolgan, Brexley Mcnew, Bailey Osborne, Alana Putt, Brenley Sanders, Ann Tinsley Sayers, Abbott Stolaas, Paulina Ward, Olivia Warr, Jenna Webster, Peyton Wilkerson"
+,294,Mad TeaDC Party,6:31 PM,Teen Production Musical Theatre,The Dance Centre (O),"Performers: Madelyn Bobo, Rowan Bordner, Ellie Boulware, Marleigh Campbell, Annie Cardwell, Louise Cole, Madeline Dennis, Brady Diltz, Kennedy Duffy, Lexi Dykes, Maddie El-Amin, Gracie Elder, Kate Feller, Paige Feller, Eliza Finison, Olivia Fitts, Lucy Garner, Mckenna Hallman, Cece Hanley, Gracie Hawkins, Ava Kate Hollyhand, Baylie Holman, Macy Hudson, Kinleigh Hunter, Mary Ellis Jamison, Sarah Nelle Lasseter, Emily Lewis, Lauren Lewis, Emaley John Livingston, Evelyn Lugo, Harper Mcdaniel, Brylee Meissner, Mackenzie Meissner, Brooke Page, Ella Phifer, Allie Plott, Neva Jane Reardon, Cayler Ann Rich, Sarah Davis Roe, Victoria Schultz, Lydia Smith, Sunnie Strickland, Brooke Welton, Elizabeth Whitfield, Callie Williams, Sadler Williams, Annabelle Worrall"
+,,MINI/JUNIOR/PRETEEN + TEEN PRODUCTION: 6:45 PM,,,,
+,,TEEN/SENIOR COMPETITION,,,,
+,295,Higher Ground,7:30 PM,Teen Large Group Open/Acro,Jills Studio of Dance (E),"Performers: Lillian Bender, Ava Benton, Allie Clark, Anna Clayton, Tessa Grace Dollman, Ellie Dunham, Clare Gibbons, Sarah Grace Gignilliat, Elaina Haley, Ella Jossey, Hannah Pillsbury, Peyton Wilkerson"
+,296,Straight Out The Jungle,7:33 PM,Teen Line Hip Hop,Verve Dance Company (R),"Performers: Esme Baquedano, Jade Bryant, Carly Curtis, Lucy Curtis, Harper Dannelly, Savannah Hastings, Scarlett Hastings, Juliet Midgett, Vivienne Midgett, Layla Morris, Georgie Osmond, Bayla Paul, Emma Paul, Kierlee Stewart, Abby Summerlin, Mariah Williams, Charlie Wolkers, Gemma Wolkers"
+,297,Cage of Bones,7:37 PM,Teen Line Contemporary,"SpotLite Dance Studio, LLC (K)","Performers: Naima Abram, Emma Kate Caires, Dakota Casteel, Braelynn Cook, Kaylin Cutter, Calleigh Eaton, Ava Ezell, Kylie Hunnicutt, Addison Jackson, Saniyah King, Savannah Millar, Amaya Miller, Madelyn Pope, Kallie Schalow, Kinlee Sinclair, Lucy Sutherland, Kalina Thephavong, Elisabeth Walters"
+,298,Jet Black,7:40 PM,Teen Line Open/Acro,Evolve Studio for the Arts (C),"Performers: Abby Ross Bentley, Annabell Bentley, Lilly Dean, Otilia Dison, Maddie Escue, Ava Gilbert, Savannah Goodin, Trinity Goodin, Payton Harris, Auri Jenkins, Alia Johnson, Haleigh Johnson, Ariyana Motley, Baylor Robbins, Lauryn Simmons, Gracie Whisnand, Anna Lynn White"
+,299,Diamond In The Sun,7:44 PM,Teen Line Tap,The Dance Centre (O),"Performers: Rowan Bordner, Marleigh Campbell, Louise Cole, Madeline Dennis, Maddie El-Amin, Kate Feller, Eliza Finison, Olivia Fitts, Lucy Garner, Cece Hanley, Gracie Hawkins, Ava Kate Hollyhand, Kinleigh Hunter, Emily Lewis, Brylee Meissner, Mackenzie Meissner, Ella Phifer, Allie Plott, Neva Jane Reardon, Sarah Davis Roe, Elizabeth Whitfield, Annabelle Worrall"
+,300,Letting Go,7:47 PM,Senior Small Group Contemporary,Jills Studio of Dance (E),"Performers: Abbie Bender, Victoria Bender, Maddie Laine Callaway, Miriam Graffeo, Ella Lanwer, Mary Coles Lusk, Collier Mclain, Addison Murphy, Vivian Wiginton"
+,301,Iconic,7:50 PM,Teen Line Jazz Funk,Jills Studio of Dance (E),"Performers: Lillian Bender, Ava Benton, Allie Clark, Anna Clayton, Ellie Dunham, Clare Gibbons, Sarah Grace Gignilliat, Elaina Haley, Millie Heikkinen, Ella Jossey, Addison Killian, Bailey Osborne, Addie Pearson, Hannah Pillsbury, Paulina Ward, Olivia Warr, Peyton Wilkerson, Elle Woodington"
+,302,Drown In The Light,7:54 PM,Teen Small Group Contemporary,Machita Dance Company (F),"Performers: Annalise Anderson, Peyton Couvillion, Camille Foreman, Cc Thibodeaux, Avery Vaughn"
+,303,Pull Your Heart Out,7:57 PM,Teen Small Group Contemporary,Dothan School of Dance (B),"Performers: Taylor Andre, Kaylynn Batemon, Emma Grace Dunn, Anslee Freeman, Kennedy Milsapp, Isla Pflugner, Mckenna Silavent, Avery Steensland, Isabella Tran"
+,304,Y2K,8:00 PM,Teen Small Group Hip Hop,Taylor's Dance Company (N),"Performers: Brantleigh Culligan, Miriam Hanks, Audrey Hettinger, Rolley Len Kirk, Aria Ogburn"
+,305,Trust Me Again,8:03 PM,Teen Small Group Lyrical,"SpotLite Dance Studio, LLC (K)","Performers: Naima Abram, Dakota Casteel, Kaylin Cutter, Madelyn Pope, Kallie Schalow, Kinlee Sinclair, Elisabeth Walters"
+,306,Woman's Work,8:06 PM,Senior Large Group Contemporary,Jills Studio of Dance (E),"Performers: Abbie Bender, Victoria Bender, Maddie Laine Callaway, Miriam Graffeo, Ella Lanwer, Mary Coles Lusk, Lila Grace Mann, Collier Mclain, Addison Murphy, Vivian Wiginton, Elle Woodington"
+,307,We're Back Again,8:09 PM,Teen Large Group Jazz,Dothan School of Dance (B),"Performers: Katie Benefield, Mac Crew, Elise Field, Eva Gause, Sophia Harris, Hadley Maddox, Emma Kate Robinson, Vivienne Shillabeer, Emery Steensland, Mary Hugh Wheelless, Haddie Rae Wilkins"
+,308,Haunted,8:13 PM,Teen Large Group Jazz,Verve Dance Company (R),"Performers: Esme Baquedano, Jade Bryant, Carly Curtis, Harper Dannelly, Savannah Hastings, Shannon Norris, Georgie Osmond, Bayla Paul, Bella Rondon, Kierlee Stewart, Abby Summerlin, Mariah Williams"
+,309,Bamboo Banga,8:16 PM,Teen Small Group Jazz,Machita Dance Company (F),"Performers: Wren Anderson, Addison Benoit, Bryleigh Butler, Peyton Couvillion, Camille Foreman, Haddie Templet, Piper Waldrep"
+,310,The Moment,8:20 PM,Teen Large Group Contemporary,Young Artist Space (T),"Performers: Haadiya Brooks, Danielle Cockrell, Jordyn Donner, Hilly Dunlap, Lona Garrison, Ally Givens, Claire Jackson, Christian Jones, Gabriela Kunard, Mechesney Martin, Emery Mcewen, Mallie Rickman"
+,311,No More Dreaming,8:23 PM,Teen Large Group Contemporary,Dothan School of Dance (B),"Performers: Addie Grace Anderson, Taylor Andre, Collins Arkle, Kaylynn Batemon, Julia Batts, Landree Douglas, Emma Grace Dunn, Anslee Freeman, Kennedy Milsapp, Isla Pflugner, Libby Price, Noa Shillabeer, Mckenna Silavent, Avery Steensland, Isabella Tran, Elle Wells"
+,312,You Stole the Show,8:27 PM,Senior Small Group Lyrical,Jills Studio of Dance (E),"Performers: Abbie Bender, Victoria Bender, Ava Benton, Maddie Laine Callaway, Ellie Dunham, Addison Killian, Bailey Osborne, Addie Pearson, Elena Schreiber"
+,313,Love More,8:30 PM,Senior Large Group Contemporary,The Dance Centre (O),"Performers: Ellie Boulware, Kennedy Duffy, Gracie Elder, Kate Feller, Gracie Hawkins, Brylee Meissner, Mackenzie Meissner, Ella Phifer, Allie Plott, Cayler Ann Rich, Sarah Davis Roe, Lydia Smith, Brooke Welton"
+,314,Ka-Pow,8:33 PM,Senior Small Group Jazz,Evolve Studio for the Arts (C),"Performers: Sariah Benitez, Lilly Dean, Maddie Escue, Savannah Goodin, Payton Harris, Haleigh Johnson, Ariyana Motley, Gracie Whisnand, Anna Lynn White"
+,315,Staying Alive,8:36 PM,Senior Small Group Jazz,"SpotLite Dance Studio, LLC (K)","Performers: Naima Abram, Dakota Casteel, Braelynn Cook, Calleigh Eaton, Saniyah King, Journey Sadler, Kallie Schalow, Kalina Thephavong, Elisabeth Walters"
+,316,Made You Look,8:39 PM,Senior Small Group Jazz,Machita Dance Company (F),"Performers: Nola Adams, Sammie Alleman, Annalise Anderson, Caroline Bonin, Mary Clare Gautreaux, Shelbi Landry, Hannah Templet, Cc Thibodeaux, Avery Vaughn"
+,317,A Happening,8:42 PM,Teen Large Group Open/Acro,Young Artist Space (T),"Performers: Haadiya Brooks, Danielle Cockrell, Jordyn Donner, Hilly Dunlap, Lona Garrison, Ally Givens, Claire Jackson, Christian Jones, Gabriela Kunard, Mechesney Martin, Emery Mcewen, Mallie Rickman"
+,318,Clownz,8:46 PM,Senior Small Group Open/Acro,Jills Studio of Dance (E),"Performers: Abbie Bender, Maddie Laine Callaway, Miriam Graffeo, Mary Coles Lusk, Collier Mclain, Addison Murphy, Brantley Kate Simmons, Vivian Wiginton, Elle Woodington"
+,319,Emeralds,8:49 PM,Teen Line Ballet/Pointe,Dothan School of Dance (B),"Performers: Addie Grace Anderson, Taylor Andre, Collins Arkle, Abigail Avery, Kaylynn Batemon, Julia Batts, Landree Douglas, Emma Grace Dunn, Anslee Freeman, Maggie Lyons, Kennedy Milsapp, Isla Pflugner, Libby Price, Noa Shillabeer, Mckenna Silavent, Avery Steensland, Isabella Tran, Elle Wells"
+,320,Don't Stop No Sleep,8:52 PM,Senior Small Group Contemporary,The Dance Centre (O),"Performers: Ellie Boulware, Kennedy Duffy, Gracie Elder, Ella Phifer, Allie Plott, Sarah Davis Roe, Lydia Smith"
+,321,Somebody's Watching Me,8:56 PM,Senior Small Group Contemporary,"SpotLite Dance Studio, LLC (K)","Performers: Braelynn Cook, Ava Ezell, Kylie Hunnicutt, Addison Jackson, Saniyah King, Journey Sadler, Lucy Sutherland, Kalina Thephavong, Elisabeth Walters"
+,322,One Another With Each Other,8:59 PM,Senior Small Group Contemporary,Evolve Studio for the Arts (C),"Performers: Lilly Dean, Maddie Escue, Savannah Goodin, Trinity Goodin, Haleigh Johnson, Ariyana Motley, Gracie Whisnand, Anna Lynn White"
+,323,Naive,9:02 PM,Senior Small Group Contemporary,Jills Studio of Dance (E),"Performers: Tessa Grace Dollman, Madelyn Kimball, Elena Schreiber, Brantley Kate Simmons, Paulina Ward, Olivia Warr, Vivian Wiginton"
+,324,The 30th,9:05 PM,Senior Small Group Contemporary,Young Artist Space (T),"Performers: Haadiya Brooks, Danielle Cockrell, Jordyn Donner, Hilly Dunlap, Lona Garrison, Ally Givens, Gabriela Kunard"
+,325,Breath Of Life,9:08 PM,Senior Small Group Contemporary,Dothan School of Dance (B),"Performers: Taylor Andre, Kaylynn Batemon, Julia Batts, Landree Douglas, Emma Grace Dunn, Anslee Freeman, Kennedy Milsapp, Mckenna Silavent, Avery Steensland"
+,326,Jumpin Jumpin,9:11 PM,Senior Line Jazz,The Dance Centre (O),"Performers: Ellie Boulware, Marleigh Campbell, Brady Diltz, Kennedy Duffy, Gracie Elder, Kate Feller, Olivia Fitts, Gracie Hawkins, Lauren Lewis, Brylee Meissner, Mackenzie Meissner, Ella Phifer, Allie Plott, Cayler Ann Rich, Sarah Davis Roe, Lydia Smith, Brooke Welton, Callie Williams"
+,327,Temporary Tears,9:14 PM,Senior Small Group Contemporary,Machita Dance Company (F),"Performers: Nola Adams, Sammie Alleman, Mary Clare Gautreaux, Shelbi Landry, Hannah Templet"
+,328,5 4 3 2 1,9:18 PM,Senior Small Group Contemporary,"SpotLite Dance Studio, LLC (K)","Performers: Naima Abram, Dakota Casteel, Braelynn Cook, Aliya Miller, Journey Sadler, Kallie Schalow, Kalina Thephavong, Elisabeth Walters"
+,329,Arrow Knee,9:21 PM,Senior Large Group Contemporary,Jills Studio of Dance (E),"Performers: Tessa Grace Dollman, Ella Jossey, Addison Killian, Madelyn Kimball, Ella Lanwer, Lila Grace Mann, Collier Mclain, Bailey Osborne, Addie Pearson, Elena Schreiber, Brantley Kate Simmons, Paulina Ward, Olivia Warr"
+,330,My Discarded Men,9:24 PM,Senior Large Group Open/Acro,Jills Studio of Dance (E),"Performers: Abbie Bender, Victoria Bender, Maddie Laine Callaway, Anna Clayton, Tessa Grace Dollman, Miriam Graffeo, Madelyn Kimball, Mary Coles Lusk, Lila Grace Mann, Collier Mclain, Addison Murphy, Addie Pearson, Hannah Pillsbury, Vivian Wiginton, Peyton Wilkerson, Elle Woodington"
+,331,Leaving Song,9:28 PM,Senior Small Group Contemporary,Verve Dance Company (R),"Performers: Esme Baquedano, Jade Bryant, Harper Dannelly, Lorena Diaz, Shannon Norris, Bella Rondon, Kierlee Stewart, Abby Summerlin, Mariah Williams"
+,332,Ceremony,9:31 PM,Senior Line Contemporary,The Dance Centre (O),"Performers: Ellie Boulware, Marleigh Campbell, Madeline Dennis, Brady Diltz, Kennedy Duffy, Gracie Elder, Kate Feller, Olivia Fitts, Gracie Hawkins, Lauren Lewis, Brylee Meissner, Mackenzie Meissner, Ella Phifer, Allie Plott, Cayler Ann Rich, Sarah Davis Roe, Lydia Smith, Brooke Welton, Callie Williams"
+,333,Come Together,9:34 PM,Senior Small Group Jazz,Young Artist Space (T),"Performers: Haadiya Brooks, Danielle Cockrell, Jordyn Donner, Hilly Dunlap, Lona Garrison, Ally Givens, Gabriela Kunard, Mechesney Martin, Mallie Rickman"
+,334,Britney,9:37 PM,Teen Line Hip Hop,Dothan School of Dance (B),"Performers: Addie Grace Anderson, Taylor Andre, Collins Arkle, Abigail Avery, Kaylynn Batemon, Julia Batts, Landree Douglas, Emma Grace Dunn, Anslee Freeman, Maggie Lyons, Kennedy Milsapp, Isla Pflugner, Libby Price, Noa Shillabeer, Mckenna Silavent, Avery Steensland, Mckenzyi Thomas, Isabella Tran, Elle Wells"
+,335,Sync'd,9:41 PM,Senior Line Hip Hop,Jills Studio of Dance (E),"Performers: Abbie Bender, Allie Clark, Tessa Grace Dollman, Ellie Dunham, Sarah Grace Gignilliat, Miriam Graffeo, Ella Jossey, Madelyn Kimball, Ella Lanwer, Mary Coles Lusk, Lila Grace Mann, Collier Mclain, Addison Murphy, Elena Schreiber, Brantley Kate Simmons, Vivian Wiginton, Elle Woodington"
+,336,Hush,9:44 PM,Senior Small Group Hip Hop,Evolve Studio for the Arts (C),"Performers: Otilia Dison, Maddie Escue, Trinity Goodin, Haleigh Johnson, Ariyana Motley, Anna Lynn White"
+,337,Love Lost,9:47 PM,Senior Large Group Contemporary,Verve Dance Company (R),"Performers: Esme Baquedano, Jade Bryant, Carly Curtis, Harper Dannelly, Savannah Hastings, Shannon Norris, Bella Rondon, Kierlee Stewart, Abby Summerlin, Mariah Williams"
+,338,Boss,9:51 PM,Senior Line Hip Hop,The Dance Centre (O),"Performers: Rowan Bordner, Ellie Boulware, Marleigh Campbell, Madeline Dennis, Brady Diltz, Gracie Elder, Kate Feller, Olivia Fitts, Gracie Hawkins, Lauren Lewis, Brylee Meissner, Brooke Page, Ella Phifer, Cayler Ann Rich, Sarah Davis Roe, Victoria Schultz, Lydia Smith, Brooke Welton, Callie Williams"
+,339,Fractured Migration,9:54 PM,Senior Small Group Open/Acro,Young Artist Space (T),"Performers: Haadiya Brooks, Danielle Cockrell, Jordyn Donner, Lona Garrison, Ally Givens, Gabriela Kunard"
+,340,Cornerstone,9:57 PM,Senior Large Group Contemporary,Jills Studio of Dance (E),"Performers: Abbie Bender, Victoria Bender, Maddie Laine Callaway, Tessa Grace Dollman, Elaina Haley, Madelyn Kimball, Ella Lanwer, Mary Coles Lusk, Lila Grace Mann, Collier Mclain, Addison Murphy, Elena Schreiber, Brantley Kate Simmons, Vivian Wiginton, Elle Woodington"
+,341,Everybody Supports Women,10:01 PM,Senior Large Group Contemporary,Machita Dance Company (F),"Performers: Nola Adams, Sammie Alleman, Annalise Anderson, Addison Benoit, Caroline Bonin, Bryleigh Butler, Peyton Couvillion, Camille Foreman, Mary Clare Gautreaux, Shelbi Landry, Hannah Templet, Cc Thibodeaux, Avery Vaughn, Piper Waldrep"
+,342,Got What You Need,10:04 PM,Senior Large Group Hip Hop,"SpotLite Dance Studio, LLC (K)","Performers: Naima Abram, Dakota Casteel, Calleigh Eaton, Ava Ezell, Saniyah King, Savannah Millar, Aliya Miller, Madelyn Pope, Journey Sadler, Kallie Schalow, Kinlee Sinclair, Kalina Thephavong, Jaiden Vickers, Elisabeth Walters"
+,343,Hot Gum,10:08 PM,Senior Large Group Open/Acro,Evolve Studio for the Arts (C),"Performers: Sariah Benitez, Annabell Bentley, Lilly Dean, Otilia Dison, Maddie Escue, Savannah Goodin, Trinity Goodin, Haleigh Johnson, Ariyana Motley, Gracie Whisnand, Anna Lynn White"
+,344,Rich Girls,10:11 PM,Senior Large Group Open/Acro,Verve Dance Company (R),"Performers: Esme Baquedano, Jade Bryant, Carly Curtis, Harper Dannelly, Savannah Hastings, Georgie Osmond, Bella Rondon, Kierlee Stewart, Abby Summerlin, Mariah Williams"
+,345,Back To The Start,10:15 PM,Senior Line Lyrical,The Dance Centre (O),"Performers: Ellie Boulware, Marleigh Campbell, Madeline Dennis, Brady Diltz, Kennedy Duffy, Gracie Elder, Kate Feller, Olivia Fitts, Gracie Hawkins, Lauren Lewis, Brylee Meissner, Mackenzie Meissner, Ella Phifer, Allie Plott, Cayler Ann Rich, Sarah Davis Roe, Victoria Schultz, Lydia Smith, Brooke Welton, Callie Williams"
+,346,Britney,10:18 PM,Senior Production Jazz,Jills Studio of Dance (E),"Performers: Abbie Bender, Victoria Bender, Ava Benton, Maddie Laine Callaway, Allie Clark, Anna Clayton, Tessa Grace Dollman, Ellie Dunham, Sarah Grace Gignilliat, Miriam Graffeo, Elaina Haley, Ella Jossey, Addison Killian, Madelyn Kimball, Ella Lanwer, Mary Coles Lusk, Lila Grace Mann, Collier Mclain, Addison Murphy, Bailey Osborne, Addie Pearson, Hannah Pillsbury, Elena Schreiber, Brantley Kate Simmons, Paulina Ward, Olivia Warr, Vivian Wiginton, Peyton Wilkerson, Elle Woodington"
+,,TEEN/SENIOR AWARDS: 10:30 PM,,,,

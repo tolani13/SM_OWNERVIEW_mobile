@@ -5,7 +5,10 @@ import pdfplumber
 import pandas as pd
 
 
-TIME_RE = re.compile(r"^\d{1,2}:\d{2}\s*(AM|PM)$", re.IGNORECASE)
+TIME_RE = re.compile(
+    r"^\d{1,2}:\d{2}(?:\s*(AM|PM))?(?:\s*-\s*\d{1,2}:\d{2}(?:\s*(AM|PM))?)?$",
+    re.IGNORECASE,
+)
 
 
 def clean_cell(value):

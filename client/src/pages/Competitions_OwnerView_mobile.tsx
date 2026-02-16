@@ -11,6 +11,7 @@ import { useState, useMemo, useRef, type ChangeEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   useCompetitions, 
   useCreateCompetition, 
@@ -41,6 +42,8 @@ const DEFAULT_FEE_STRUCTURE = {
   photoFee: "0"
 };
 
+type ConventionParserChoice = "auto" | "wcde" | "velocity" | "nycda";
+
 export default function Competitions() {
     const queryClient = useQueryClient();
     const { data: competitions = [], isLoading: competitionsLoading } = useCompetitions();
@@ -57,6 +60,7 @@ export default function Competitions() {
     const [isAddCompOpen, setIsAddCompOpen] = useState(false);
     const conventionPdfInputRef = useRef<HTMLInputElement>(null);
     const [isImportingConventionPdf, setIsImportingConventionPdf] = useState(false);
+    const [conventionParserChoice, setConventionParserChoice] = useState<ConventionParserChoice>("auto");
     
     // Form state for new competition
     const [newCompName, setNewCompName] = useState("");
@@ -152,6 +156,9 @@ export default function Competitions() {
         const formData = new FormData();
         formData.append("pdf", file);
         formData.append("type", "convention");
+        if (conventionParserChoice !== "auto") {
+            formData.append("parser", conventionParserChoice);
+        }
 
         try {
             const response = await fetch(`/api/competitions/${selectedCompId}/parse-pdf`, {
@@ -167,7 +174,9 @@ export default function Competitions() {
             queryClient.invalidateQueries({ queryKey: ["conventionClasses"] });
             queryClient.invalidateQueries({ queryKey: ["conventionClasses", selectedCompId] });
 
-            toast.success(`Convention classes imported: ${result.savedCount || result.totalParsed || 0} saved.`);
+            toast.success(
+                `Convention classes imported: ${result.savedCount || result.totalParsed || 0} saved (${result.company || result.parserVendor || "auto"} parser).`
+            );
 
             if (result.warnings?.length) {
                 result.warnings.forEach((warning: string) => toast(warning, { icon: "⚠️" }));
@@ -338,10 +347,11 @@ export default function Competitions() {
                                               )}
 
                                               {!runSheetLoading && runSheetEntries.length > 0 && (
-                                                <div className="border rounded-lg overflow-hidden">
+                                                <div className="border rounded-lg overflow-hidden max-h-[32vh] overflow-y-auto">
                                                   <table className="w-full text-sm">
-                                                    <thead className="bg-secondary/30 border-b">
+                                                    <thead className="bg-secondary/30 border-b sticky top-0 z-10">
                                                       <tr>
+                                                        <th className="p-3 text-left font-semibold">Day</th>
                                                         <th className="p-3 text-left font-semibold">Time</th>
                                                         <th className="p-3 text-left font-semibold">#</th>
                                                         <th className="p-3 text-left font-semibold">Routine</th>
@@ -353,6 +363,7 @@ export default function Competitions() {
                                                     <tbody className="divide-y">
                                                       {runSheetEntries.map((e: any, idx: number) => (
                                                         <tr key={e.id || idx} className="hover:bg-gray-50">
+                                                          <td className="p-3 text-muted-foreground">{e.day || "-"}</td>
                                                           <td className="p-3 font-mono text-primary">{e.performanceTime || "-"}</td>
                                                           <td className="p-3">{e.entryNumber || "-"}</td>
                                                           <td className="p-3 font-semibold">{e.routineName || "(untitled)"}</td>
@@ -376,7 +387,7 @@ export default function Competitions() {
                                     </TabsContent>
 
                                     <TabsContent value="convention" className="flex-1 overflow-hidden p-0 m-0">
-                                        <div className="p-4 border-b bg-gray-50 flex items-center justify-between gap-3">
+                                        <div className="p-4 border-b bg-gray-50 flex flex-wrap items-center justify-between gap-3">
                                             <input
                                                 ref={conventionPdfInputRef}
                                                 type="file"
@@ -399,6 +410,22 @@ export default function Competitions() {
                                                     "Import Convention PDF"
                                                 )}
                                             </Button>
+                                            <div className="w-[220px]">
+                                                <Select
+                                                    value={conventionParserChoice}
+                                                    onValueChange={(value) => setConventionParserChoice(value as ConventionParserChoice)}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Convention parser" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="auto">Auto detect</SelectItem>
+                                                        <SelectItem value="wcde">WCDE</SelectItem>
+                                                        <SelectItem value="velocity">Velocity</SelectItem>
+                                                        <SelectItem value="nycda">NYCDA</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
                                             <Button size="sm" onClick={addConventionClass} className="bg-primary text-white" disabled={isImportingConventionPdf}>
                                                 <Plus className="w-4 h-4 mr-2" /> Add Class
                                             </Button>
@@ -796,6 +823,26 @@ function ConventionTable({ classes, onUpdate }: { classes: ConventionClass[], on
                     <div key={cls.id} className="flex items-center p-4 border rounded-lg bg-white shadow-sm border-l-4 border-l-orange-300 hover:shadow-md transition-all">
                         <div className="flex-1">
                             <div className="flex items-center gap-3 mb-1">
+                                {isEditing ? (
+                                    <Select
+                                        value={cls.day || "Saturday"}
+                                        onValueChange={value => onUpdate(cls.id, { day: value })}
+                                    >
+                                        <SelectTrigger className="h-8 w-28">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Friday">Friday</SelectItem>
+                                            <SelectItem value="Saturday">Saturday</SelectItem>
+                                            <SelectItem value="Sunday">Sunday</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                ) : (
+                                    <Badge variant="secondary" className="bg-slate-100 text-slate-700 border-slate-200">
+                                        {cls.day || "TBD"}
+                                    </Badge>
+                                )}
+
                                 {isEditing ? (
                                     <Input className="w-24 h-8 font-mono" value={cls.startTime} onChange={e => onUpdate(cls.id, { startTime: e.target.value })} />
                                 ) : (
