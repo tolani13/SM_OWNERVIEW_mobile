@@ -12,7 +12,9 @@
     "build:server": "node script/build-server.mjs",
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
+    "seed:classes": "tsx script/seed-classes.ts",
     "seed:demo": "tsx script/seed-demo.ts",
+    "seed:policies": "tsx script/seed-policies.ts",
     "test:pdf:smoke": "tsx test_wcde_parser.ts",
     "test:pdf:competition": "tsx server/scripts/testCompetitionPdfParser.ts",
     "db:push": "drizzle-kit push"
