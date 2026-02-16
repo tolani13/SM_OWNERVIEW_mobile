@@ -23,7 +23,10 @@ import type {
   InsertCompetitionRunSheet,
 } from "@server/schema";
 
-const API_BASE = "/api";
+// Defaults to same-origin /api (works with Render monolith and Netlify proxy rewrites).
+// Can be overridden in static deployments via VITE_API_BASE_URL, e.g.
+// https://studio-maestro-api.onrender.com/api
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/+$/, "");
 
 // Run sheet helper types
 export interface RunSheetImportResponse {
