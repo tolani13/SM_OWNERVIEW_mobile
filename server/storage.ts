@@ -19,6 +19,8 @@ import {
   chatMessages,
   chatMessageReads,
   fees,
+  policies,
+  policyAgreements,
   type Dancer,
   type InsertDancer,
   type Teacher,
@@ -53,6 +55,10 @@ import {
   type InsertChatMessageRead,
   type Fee,
   type InsertFee,
+  type Policy,
+  type InsertPolicy,
+  type PolicyAgreement,
+  type InsertPolicyAgreement,
 } from "./schema";
 
 export class Storage {
@@ -109,6 +115,21 @@ export class Storage {
 
   async deleteTeacher(id: string): Promise<void> {
     await this.db.delete(teachers).where(eq(teachers.id, id));
+  }
+
+  async countStudioClassesByTeacherId(teacherId: string): Promise<number> {
+    const classes = await this.db
+      .select({ id: studioClasses.id })
+      .from(studioClasses)
+      .where(eq(studioClasses.teacherId, teacherId));
+    return classes.length;
+  }
+
+  async detachTeacherFromStudioClasses(teacherId: string): Promise<void> {
+    await this.db
+      .update(studioClasses)
+      .set({ teacherId: null, teacherName: "Unassigned" })
+      .where(eq(studioClasses.teacherId, teacherId));
   }
 
   // ========== ROUTINES ==========
@@ -209,6 +230,11 @@ export class Storage {
     return await this.db.select().from(studioClasses);
   }
 
+  async getStudioClass(id: string): Promise<StudioClass | undefined> {
+    const [cls] = await this.db.select().from(studioClasses).where(eq(studioClasses.id, id));
+    return cls;
+  }
+
   async createStudioClass(data: InsertStudioClass): Promise<StudioClass> {
     const [cls] = await this.db.insert(studioClasses).values(data).returning();
     return cls;
@@ -259,6 +285,36 @@ export class Storage {
 
   async deleteAnnouncement(id: string): Promise<void> {
     await this.db.delete(announcements).where(eq(announcements.id, id));
+  }
+
+  // ========== POLICIES ==========
+  async getPolicies(): Promise<Policy[]> {
+    return await this.db.select().from(policies);
+  }
+
+  async getPolicy(id: string): Promise<Policy | undefined> {
+    const [policy] = await this.db.select().from(policies).where(eq(policies.id, id));
+    return policy;
+  }
+
+  async createPolicy(data: InsertPolicy): Promise<Policy> {
+    const [policy] = await this.db.insert(policies).values(data).returning();
+    return policy;
+  }
+
+  async updatePolicy(id: string, data: Partial<InsertPolicy>): Promise<Policy | undefined> {
+    const [policy] = await this.db.update(policies).set(data).where(eq(policies.id, id)).returning();
+    return policy;
+  }
+
+  // ========== POLICY AGREEMENTS ==========
+  async getPolicyAgreements(): Promise<PolicyAgreement[]> {
+    return await this.db.select().from(policyAgreements);
+  }
+
+  async createPolicyAgreement(data: InsertPolicyAgreement): Promise<PolicyAgreement> {
+    const [agreement] = await this.db.insert(policyAgreements).values(data).returning();
+    return agreement;
   }
 
   // ========== MESSAGES ==========

@@ -27,8 +27,18 @@ export default function Announcements() {
     const [newPost, setNewPost] = useState<Partial<InsertAnnouncement>>({ 
         tags: "Studio", 
         isPinned: false,
-        date: new Date().toISOString()
+        date: new Date().toISOString().split('T')[0]
     });
+
+    const safeAnnouncements = Array.isArray(announcements) ? announcements : [];
+
+    const parseTags = (value: unknown): string[] => {
+        if (typeof value !== "string") return [];
+        return value
+            .split(",")
+            .map((tag) => tag.trim())
+            .filter(Boolean);
+    };
 
     const handleCreate = async () => {
         // Validate required fields
@@ -54,7 +64,7 @@ export default function Announcements() {
             const announcementData = {
                 title: safeTrim(newPost.title)!,
                 content: safeTrim(newPost.content)!,
-                date: newPost.date || new Date().toISOString(),
+                date: newPost.date || new Date().toISOString().split('T')[0],
                 tags: newPost.tags || "Studio",
                 isPinned: newPost.isPinned || false,
                 status: "Active" as const
@@ -75,7 +85,7 @@ export default function Announcements() {
             }
             
             setIsCreateOpen(false);
-            setNewPost({ tags: "Studio", isPinned: false, date: new Date().toISOString() });
+            setNewPost({ tags: "Studio", isPinned: false, date: new Date().toISOString().split('T')[0] });
         } catch (error: any) {
             console.error('Save announcement error:', error);
             toast.error(error?.message || 'Failed to save announcement. Please try again.');
@@ -87,21 +97,11 @@ export default function Announcements() {
     const openEdit = (announcement: Announcement) => {
         setNewPost({
             ...announcement,
-            date: announcement.date
+            date: announcement.date || undefined
         });
         setEditingId(announcement.id);
         setIsCreateOpen(true);
     };
-
-    if (isLoading) {
-        return (
-            <Layout>
-                <div className="flex items-center justify-center h-64">
-                    <div className="text-muted-foreground">Loading...</div>
-                </div>
-            </Layout>
-        );
-    }
 
     const toggleTag = (tag: string) => {
         const currentTags = (newPost.tags || "").split(',').filter(Boolean);
@@ -118,15 +118,32 @@ export default function Announcements() {
     };
 
     const sortedAnnouncements = useMemo(() => {
-        return [...announcements].sort((a, b) => {
+        return [...safeAnnouncements].sort((a, b) => {
             const aTime = toTimestamp(a.date) || toTimestamp(a.createdAt);
             const bTime = toTimestamp(b.date) || toTimestamp(b.createdAt);
             return bTime - aTime;
         });
-    }, [announcements]);
+    }, [safeAnnouncements]);
 
     const pinnedAnnouncements = sortedAnnouncements.filter(a => a.isPinned);
     const regularAnnouncements = sortedAnnouncements.filter(a => !a.isPinned);
+
+    const getDateInputValue = (value?: string | null) => {
+        if (!value) return "";
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) return "";
+        return parsed.toISOString().split('T')[0];
+    };
+
+    if (isLoading) {
+        return (
+            <Layout>
+                <div className="flex items-center justify-center h-64">
+                    <div className="text-muted-foreground">Loading...</div>
+                </div>
+            </Layout>
+        );
+    }
 
     const handleOpenCreate = () => {
         setNewPost({ tags: "Studio", isPinned: false, date: new Date().toISOString().split('T')[0] });
@@ -174,7 +191,7 @@ export default function Announcements() {
                                     <CardContent className="p-6">
                                         <div className="flex justify-between items-start mb-2">
                                             <div className="flex gap-2 mb-2">
-                                                {(announcement.tags || "").split(',').filter(Boolean).map(tag => (
+                                                {parseTags(announcement.tags).map(tag => (
                                                     <Badge key={tag} variant="secondary" className="font-normal text-xs">{tag}</Badge>
                                                 ))}
                                             </div>
@@ -222,7 +239,7 @@ export default function Announcements() {
                                     <CardContent className="p-6">
                                         <div className="flex justify-between items-start mb-2">
                                             <div className="flex gap-2 mb-2">
-                                                {(announcement.tags || "").split(',').filter(Boolean).map(tag => (
+                                                {parseTags(announcement.tags).map(tag => (
                                                     <Badge key={tag} variant="secondary" className="font-normal text-xs">{tag}</Badge>
                                                 ))}
                                             </div>
@@ -259,8 +276,8 @@ export default function Announcements() {
                                 <Label className="text-sm font-medium">Date</Label>
                                 <Input 
                                     type="date"
-                                    value={newPost.date ? new Date(newPost.date).toISOString().split('T')[0] : ""} 
-                                    onChange={e => setNewPost({...newPost, date: new Date(e.target.value).toISOString()})}
+                                    value={getDateInputValue(newPost.date)} 
+                                    onChange={e => setNewPost({...newPost, date: e.target.value || undefined})}
                                 />
                             </div>
                             <div className="space-y-2">
