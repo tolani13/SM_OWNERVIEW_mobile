@@ -6,15 +6,15 @@
 [build.environment]
   NODE_VERSION = "22"
 
+# Proxy API calls to Render backend so frontend can keep using /api.
+[[redirects]]
+  from = "/api/*"
+  to = "https://studio-maestro-api.onrender.com/api/:splat"
+  status = 200
+  force = true
+
 # SPA fallback for client-side routing
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-
-# Optional API proxy (uncomment if you want same-origin /api calls from Netlify)
-# [[redirects]]
-#   from = "/api/*"
-#   to = "https://studio-maestro-api.onrender.com/api/:splat"
-#   status = 200
-#   force = true
