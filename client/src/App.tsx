@@ -14,7 +14,7 @@ import Finance from "@/pages/Finance_OwnerView_mobile";
 import Announcements from "@/pages/Announcements_OwnerView_mobile";
 import Messages from "@/pages/Messages_OwnerView_mobile";
 import StudioSettings from "@/pages/StudioSettings_OwnerView_mobile";
-import ParentPolicies from "@/pages/ParentPolicies";
+import Policies from "@/pages/Policies_OwnerView_mobile";
 import RecitalListPage from "@/pages/recitals/RecitalListPage";
 import RecitalEditorPage from "@/pages/recitals/RecitalEditorPage";
 
@@ -30,7 +30,7 @@ function Router() {
       <Route path="/recitals/:id" component={RecitalEditorPage} />
       <Route path="/finance" component={Finance} />
       <Route path="/messages" component={Messages} />
-      <Route path="/policies" component={ParentPolicies} />
+      <Route path="/policies" component={Policies} />
       <Route path="/announcements" component={Announcements} />
       <Route path="/settings" component={StudioSettings} />
       <Route component={NotFound} />

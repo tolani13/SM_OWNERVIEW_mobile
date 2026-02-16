@@ -21,6 +21,8 @@ import type {
   InsertChatMessage,
   InsertChatMessageRead,
   InsertFee,
+  InsertPolicy,
+  InsertPolicyAgreement,
 } from "./schema";
 
 type ActorRole = "owner" | "staff" | "parent";
@@ -36,6 +38,139 @@ function getActor(req: any): { id: string; name: string; role: ActorRole } {
 
 function isStudioStaff(role: string): boolean {
   return role === "owner" || role === "staff";
+}
+
+const CLASS_PROGRAM_TYPES = ["REC", "COMP", "BOTH"] as const;
+type ClassProgramType = (typeof CLASS_PROGRAM_TYPES)[number];
+
+function normalizeProgramType(value: unknown): ClassProgramType {
+  const candidate = typeof value === "string" ? value.toUpperCase() : "";
+  return (CLASS_PROGRAM_TYPES as readonly string[]).includes(candidate)
+    ? (candidate as ClassProgramType)
+    : "REC";
+}
+
+function parseInteger(value: unknown, fallback = 0): number {
+  const parsed =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+        ? Number(value)
+        : Number.NaN;
+  return Number.isFinite(parsed) ? Math.trunc(parsed) : fallback;
+}
+
+function parseMoney(value: unknown, fallback = "0.00"): string {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value.toFixed(2);
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return fallback;
+
+    const normalized = trimmed.replace(/[^0-9.-]/g, "");
+    const parsed = Number(normalized);
+    if (Number.isFinite(parsed)) return parsed.toFixed(2);
+  }
+
+  return fallback;
+}
+
+function parseTimeTo24Hour(value: unknown, fallback = "00:00"): string {
+  if (typeof value !== "string") return fallback;
+
+  const raw = value.trim();
+  if (!raw) return fallback;
+
+  // 12-hour format: 1:30 PM / 01:30am
+  const ampmMatch = raw.match(/^(\d{1,2}):(\d{2})\s*([AaPp][Mm])$/);
+  if (ampmMatch) {
+    const hour12 = Number(ampmMatch[1]);
+    const minute = Number(ampmMatch[2]);
+    const period = ampmMatch[3].toUpperCase();
+
+    if (hour12 >= 1 && hour12 <= 12 && minute >= 0 && minute <= 59) {
+      let hour24 = hour12 % 12;
+      if (period === "PM") hour24 += 12;
+      return `${hour24.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+    }
+  }
+
+  // 24-hour format: HH:mm[:ss]
+  const twentyFourHourMatch = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (twentyFourHourMatch) {
+    const hour = Number(twentyFourHourMatch[1]);
+    const minute = Number(twentyFourHourMatch[2]);
+
+    if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+      return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+    }
+  }
+
+  return fallback;
+}
+
+function normalizeStudioClassPayload(
+  payload: Partial<InsertStudioClass>,
+  existing?: Partial<InsertStudioClass>,
+  resolvedTeacherName?: string | null,
+): InsertStudioClass {
+  const className = (
+    payload.className ||
+    payload.name ||
+    existing?.className ||
+    existing?.name ||
+    "Untitled Class"
+  ).trim();
+  const dayOfWeek = (payload.dayOfWeek || payload.day || existing?.dayOfWeek || existing?.day || "Wednesday").trim();
+  const rawStartTime = (payload.startTime || payload.time || existing?.startTime || existing?.time || "00:00").trim();
+  const rawEndTime = (payload.endTime || existing?.endTime || rawStartTime || "00:00").trim();
+  const startTime = parseTimeTo24Hour(rawStartTime, "00:00");
+  const endTime = parseTimeTo24Hour(rawEndTime, startTime);
+  const ageGroupLabel = (
+    payload.ageGroupLabel ||
+    payload.level ||
+    existing?.ageGroupLabel ||
+    existing?.level ||
+    "All Ages"
+  ).trim();
+  const programType = normalizeProgramType(payload.programType ?? existing?.programType);
+  const tuitionMonthly = parseMoney(
+    payload.tuitionMonthly ?? payload.cost ?? existing?.tuitionMonthly ?? existing?.cost,
+    "0.00",
+  );
+  const spotsLeft = parseInteger(payload.spotsLeft ?? existing?.spotsLeft, 0);
+
+  return {
+    ...payload,
+    name: className,
+    className,
+    level: (payload.level || ageGroupLabel || "All Levels").trim(),
+    ageGroupLabel: ageGroupLabel || "All Ages",
+    day: dayOfWeek,
+    dayOfWeek,
+    time: startTime,
+    startTime,
+    endTime,
+    sessionLabel: (payload.sessionLabel || existing?.sessionLabel || "2025–2026").trim(),
+    startDate: (payload.startDate || existing?.startDate || "2025-09-02").trim(),
+    room: (payload.room || existing?.room || "Main").trim(),
+    type: payload.type || existing?.type || "Weekly",
+    description: payload.description ?? existing?.description ?? "",
+    cost: payload.cost || existing?.cost || `$${tuitionMonthly}/month`,
+    teacherId: payload.teacherId ?? existing?.teacherId ?? null,
+    teacherName: resolvedTeacherName || payload.teacherName || existing?.teacherName || null,
+    minAge: payload.minAge ?? existing?.minAge ?? null,
+    maxAge: payload.maxAge ?? existing?.maxAge ?? null,
+    spotsLeft,
+    tuitionMonthly,
+    programType,
+    isCompetition:
+      typeof payload.isCompetition === "boolean"
+        ? payload.isCompetition
+        : programType !== "REC",
+  } as InsertStudioClass;
 }
 
 export async function registerRoutes(
@@ -144,8 +279,21 @@ export async function registerRoutes(
 
   app.delete("/api/teachers/:id", async (req, res) => {
     try {
+      const teacher = await storage.getTeacher(req.params.id);
+      if (!teacher) {
+        return res.status(404).json({ error: "Teacher not found" });
+      }
+
+      const linkedClassCount = await storage.countStudioClassesByTeacherId(req.params.id);
+      if (linkedClassCount > 0) {
+        await storage.detachTeacherFromStudioClasses(req.params.id);
+      }
+
       await storage.deleteTeacher(req.params.id);
-      res.status(204).send();
+      res.status(200).json({
+        success: true,
+        detachedClasses: linkedClassCount,
+      });
     } catch (error: any) {
       console.error("Delete teacher error:", error);
       res.status(500).json({ error: "Failed to delete teacher" });
@@ -595,9 +743,25 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/classes", async (_req, res) => {
+    try {
+      const classes = await storage.getStudioClasses();
+      res.json(classes);
+    } catch (error: any) {
+      console.error("Get classes error:", error);
+      res.status(500).json({ error: "Failed to fetch classes" });
+    }
+  });
+
   app.post("/api/studio-classes", async (req, res) => {
     try {
-      const studioClass = await storage.createStudioClass(req.body as InsertStudioClass);
+      const payload = req.body as Partial<InsertStudioClass>;
+      const teacher = payload.teacherId ? await storage.getTeacher(payload.teacherId) : undefined;
+      const teacherName = teacher ? `${teacher.firstName} ${teacher.lastName}` : payload.teacherName;
+
+      const studioClass = await storage.createStudioClass(
+        normalizeStudioClassPayload(payload, undefined, teacherName),
+      );
       res.status(201).json(studioClass);
     } catch (error: any) {
       console.error("Create studio class error:", error);
@@ -607,7 +771,21 @@ export async function registerRoutes(
 
   app.patch("/api/studio-classes/:id", async (req, res) => {
     try {
-      const studioClass = await storage.updateStudioClass(req.params.id, req.body);
+      const existing = await storage.getStudioClass(req.params.id);
+      if (!existing) {
+        return res.status(404).json({ error: "Studio class not found" });
+      }
+
+      const payload = req.body as Partial<InsertStudioClass>;
+      const teacher = payload.teacherId ? await storage.getTeacher(payload.teacherId) : undefined;
+      const teacherName = teacher
+        ? `${teacher.firstName} ${teacher.lastName}`
+        : payload.teacherName || existing.teacherName;
+
+      const studioClass = await storage.updateStudioClass(
+        req.params.id,
+        normalizeStudioClassPayload(payload, existing, teacherName),
+      );
       if (!studioClass) {
         return res.status(404).json({ error: "Studio class not found" });
       }
@@ -713,6 +891,61 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("Delete announcement error:", error);
       res.status(500).json({ error: "Failed to delete announcement" });
+    }
+  });
+
+  // ========== POLICIES ==========
+  app.get("/api/policies", async (_req, res) => {
+    try {
+      const allPolicies = await storage.getPolicies();
+      res.json(allPolicies);
+    } catch (error: any) {
+      console.error("Get policies error:", error);
+      res.status(500).json({ error: "Failed to fetch policies" });
+    }
+  });
+
+  app.post("/api/policies", async (req, res) => {
+    try {
+      const policy = await storage.createPolicy(req.body as InsertPolicy);
+      res.status(201).json(policy);
+    } catch (error: any) {
+      console.error("Create policy error:", error);
+      res.status(400).json({ error: error?.message || "Invalid policy data" });
+    }
+  });
+
+  app.patch("/api/policies/:id", async (req, res) => {
+    try {
+      const policy = await storage.updatePolicy(req.params.id, req.body);
+      if (!policy) {
+        return res.status(404).json({ error: "Policy not found" });
+      }
+      res.json(policy);
+    } catch (error: any) {
+      console.error("Update policy error:", error);
+      res.status(400).json({ error: "Failed to update policy" });
+    }
+  });
+
+  // ========== POLICY AGREEMENTS ==========
+  app.get("/api/policy-agreements", async (_req, res) => {
+    try {
+      const allAgreements = await storage.getPolicyAgreements();
+      res.json(allAgreements);
+    } catch (error: any) {
+      console.error("Get policy agreements error:", error);
+      res.status(500).json({ error: "Failed to fetch policy agreements" });
+    }
+  });
+
+  app.post("/api/policy-agreements", async (req, res) => {
+    try {
+      const agreement = await storage.createPolicyAgreement(req.body as InsertPolicyAgreement);
+      res.status(201).json(agreement);
+    } catch (error: any) {
+      console.error("Create policy agreement error:", error);
+      res.status(400).json({ error: error?.message || "Invalid policy agreement data" });
     }
   });
 
