@@ -9,7 +9,7 @@
 # Proxy API calls to Render backend so frontend can keep using /api.
 [[redirects]]
   from = "/api/*"
-  to = "https://studio-maestro-api.onrender.com/api/:splat"
+  to = "https://sm-ownerview-mobile.onrender.com/api/:splat"
   status = 200
   force = true
 

@@ -36,6 +36,28 @@ import type {
   InsertRecitalLineup,
 } from "@server/schema";
 
+const RAW_API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) || "/api";
+const API_BASE = RAW_API_BASE.replace(/\/+$/, "");
+
+const nativeFetch = globalThis.fetch.bind(globalThis);
+
+const resolveApiUrl = (url: string): string => {
+  if (!url.startsWith("/api")) return url;
+
+  const suffix = url === "/api" ? "" : url.replace(/^\/api/, "");
+  return `${API_BASE}${suffix}`;
+};
+
+// Shadow global fetch in this module so all hook calls support VITE_API_BASE_URL
+// while preserving local `/api/*` behavior in development.
+const fetch: typeof globalThis.fetch = (input, init) => {
+  if (typeof input === "string") {
+    return nativeFetch(resolveApiUrl(input), init);
+  }
+
+  return nativeFetch(input, init);
+};
+
 // Helper to keep a minimal graceful fallback while removing mock data dependencies
 function safeJsonFetch<T>(url: string): Promise<T> {
   return fetch(url).then(async (res) => {
