@@ -2,6 +2,7 @@ import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import { registerRoutes } from "./routes";
+import { ensureDatabaseSchema } from "./migrations";
 import { serveStatic } from "./static";
 
 const app = express();
@@ -60,6 +61,15 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  try {
+    await ensureDatabaseSchema(log);
+  } catch (error) {
+    log(
+      `startup schema check failed: ${(error as Error).message}`,
+      "db",
+    );
+  }
+
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
