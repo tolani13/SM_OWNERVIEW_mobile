@@ -108,7 +108,7 @@ export function CopyRecitalDialog({
           </Button>
           <Button
             type="button"
-            className="rounded-xl px-4 py-2 text-sm font-semibold bg-coral text-white hover:bg-coral/90"
+            className="rounded-xl px-4 py-2 text-sm font-semibold bg-primary text-white hover:bg-primary/90"
             disabled={!canSubmit}
             onClick={() => {
               if (!sourceRecital || !newName.trim()) return;

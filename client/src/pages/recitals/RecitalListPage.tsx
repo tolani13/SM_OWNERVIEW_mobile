@@ -58,7 +58,7 @@ const INITIAL_RECITALS: Recital[] = [
 
 function statusPill(status: Recital["status"]) {
   if (status === "scheduled") {
-    return "bg-coral/10 text-coral";
+    return "bg-primary/10 text-primary";
   }
   if (status === "draft") {
     return "bg-orange-50 text-orange-700";
@@ -192,11 +192,11 @@ export default function RecitalListPage() {
           </div>
 
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <Button className="rounded-xl px-4 py-2 text-sm font-semibold bg-coral text-white hover:bg-coral/90">
+            <Button className="rounded-xl px-4 py-2 text-sm font-semibold bg-primary text-white hover:bg-primary/90">
               Search
             </Button>
             <Button
-              className="rounded-xl px-4 py-2 text-sm font-semibold bg-coral text-white hover:bg-coral/90"
+              className="rounded-xl px-4 py-2 text-sm font-semibold bg-primary text-white hover:bg-primary/90"
               onClick={() => setCreateOpen(true)}
             >
               Create New Recital
@@ -229,7 +229,7 @@ export default function RecitalListPage() {
                     <td className="py-3">
                       <button
                         type="button"
-                        className="text-coral hover:underline font-medium"
+                        className="text-primary hover:underline font-medium"
                         onClick={() => setLocation(`/recitals/${recital.id}`)}
                       >
                         {recital.name}

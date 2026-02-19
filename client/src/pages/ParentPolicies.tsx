@@ -91,19 +91,19 @@ export default function ParentPolicies() {
           <TabsList className="mb-6 h-auto w-full flex-wrap justify-start gap-2 rounded-xl border border-slate-200 bg-white p-1.5 shadow-sm">
             <TabsTrigger
               value="policies"
-              className="rounded-lg border border-transparent px-4 py-2 text-black transition-colors data-[state=active]:border-coral data-[state=active]:bg-coral/10 data-[state=active]:text-coral"
+              className="rounded-lg border border-transparent px-4 py-2 text-black transition-colors data-[state=active]:border-primary data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
             >
               Policies
             </TabsTrigger>
             <TabsTrigger
               value="billing"
-              className="rounded-lg border border-transparent px-4 py-2 text-black transition-colors data-[state=active]:border-coral data-[state=active]:bg-coral/10 data-[state=active]:text-coral"
+              className="rounded-lg border border-transparent px-4 py-2 text-black transition-colors data-[state=active]:border-primary data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
             >
               Billing
             </TabsTrigger>
             <TabsTrigger
               value="contacts"
-              className="rounded-lg border border-transparent px-4 py-2 text-black transition-colors data-[state=active]:border-coral data-[state=active]:bg-coral/10 data-[state=active]:text-coral"
+              className="rounded-lg border border-transparent px-4 py-2 text-black transition-colors data-[state=active]:border-primary data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
             >
               Contacts
             </TabsTrigger>
@@ -113,7 +113,7 @@ export default function ParentPolicies() {
             <Card className="border border-slate-200 bg-white shadow-sm">
               <CardContent className="pt-6">
                 <div className="max-w-sm space-y-2">
-                  <p className="text-sm font-medium text-coral">Policy Type</p>
+                  <p className="text-sm font-medium text-primary">Policy Type</p>
                   <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as PolicyType | "ALL")}>
                     <SelectTrigger className="border-slate-300 bg-white text-black focus:ring-2 focus:ring-primary/25 focus:ring-offset-1">
                       <SelectValue placeholder="Filter by policy type" />
@@ -250,7 +250,7 @@ export default function ParentPolicies() {
                   <DialogDescription className="text-black/80">{selectedPolicy.summary}</DialogDescription>
                 </DialogHeader>
                 <div className="mt-6 space-y-4">
-                  <Badge variant="outline" className="border-coral/40 bg-coral/10 text-coral">{selectedPolicy.appliesTo}</Badge>
+                  <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary">{selectedPolicy.appliesTo}</Badge>
                   <div
                     className="prose prose-sm max-w-none"
                     dangerouslySetInnerHTML={{ __html: selectedPolicy.bodyHtml }}

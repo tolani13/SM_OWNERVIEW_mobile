@@ -58,6 +58,7 @@ export function applyPrimaryTheme(themeId: PrimaryThemeId) {
   root.style.setProperty("--primary", theme.primaryHsl);
   root.style.setProperty("--ring", theme.ringHsl);
   root.style.setProperty("--chart-1", theme.primaryHsl);
+  root.style.setProperty("--color-coral", `hsl(${theme.primaryHsl})`);
 }
 
 export function persistPrimaryTheme(themeId: PrimaryThemeId) {

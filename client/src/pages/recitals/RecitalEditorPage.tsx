@@ -128,7 +128,7 @@ function segmentPill(segment: string) {
   if (segment.toLowerCase().includes("intermission")) {
     return "bg-orange-50 text-orange-700";
   }
-  return "bg-coral/10 text-coral";
+  return "bg-primary/10 text-primary";
 }
 
 function TreeNode({
@@ -176,14 +176,14 @@ function TreeNode({
         className={[
           "w-full flex items-center gap-2 hover:bg-orange-50 cursor-pointer rounded-lg px-2 py-1.5 border transition-colors",
           selected
-            ? "bg-coral/10 border-coral/40"
+            ? "bg-primary/10 border-primary/40"
             : "bg-white border-transparent",
         ].join(" ")}
         style={{ marginLeft: `${level * 12}px` }}
       >
         <GripVertical className="w-3.5 h-3.5 text-gray-400 cursor-grab" />
         <span className="text-sm text-gray-700 text-left">{node.name}</span>
-        <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full bg-coral/10 text-coral">
+        <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
           Class
         </span>
       </button>
@@ -307,7 +307,7 @@ export default function RecitalEditorPage() {
 
             <div className="flex flex-wrap items-center gap-2">
               <Button
-                className="rounded-xl px-4 py-2 text-sm font-semibold bg-coral text-white hover:bg-coral/90"
+                className="rounded-xl px-4 py-2 text-sm font-semibold bg-primary text-white hover:bg-primary/90"
                 onClick={handleSaveChanges}
               >
                 Save Changes
@@ -457,13 +457,13 @@ export default function RecitalEditorPage() {
               <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
-                  className="border border-coral text-coral bg-coral/5 rounded-xl px-3 py-1.5 text-xs font-medium"
+                  className="border border-primary text-primary bg-primary/5 rounded-xl px-3 py-1.5 text-xs font-medium"
                 >
                   Print Lineup
                 </Button>
                 <Button
                   variant="ghost"
-                  className="border border-coral text-coral bg-coral/5 rounded-xl px-3 py-1.5 text-xs font-medium"
+                  className="border border-primary text-primary bg-primary/5 rounded-xl px-3 py-1.5 text-xs font-medium"
                 >
                   Export CSV
                 </Button>
