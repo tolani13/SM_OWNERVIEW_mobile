@@ -42,6 +42,46 @@ function isStudioStaff(role: string): boolean {
 
 const CLASS_PROGRAM_TYPES = ["REC", "COMP", "BOTH"] as const;
 type ClassProgramType = (typeof CLASS_PROGRAM_TYPES)[number];
+const DANCER_LEVEL_OPTIONS = ["Mini", "Junior", "Teen", "Senior", "Elite"] as const;
+
+function normalizeDancerLevel(value: unknown): (typeof DANCER_LEVEL_OPTIONS)[number] | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return DANCER_LEVEL_OPTIONS.find((level) => level.toLowerCase() === trimmed.toLowerCase());
+}
+
+function validateDancerPayload(
+  payload: Partial<InsertDancer>,
+  mode: "create" | "update",
+): { ok: true; data: Partial<InsertDancer> } | { ok: false; error: string } {
+  const data: Partial<InsertDancer> = { ...payload };
+
+  const ageProvided = Object.prototype.hasOwnProperty.call(payload, "age");
+  if (mode === "create" || ageProvided) {
+    const parsedAge =
+      typeof payload.age === "number"
+        ? payload.age
+        : typeof payload.age === "string"
+          ? Number(payload.age)
+          : Number.NaN;
+
+    if (!Number.isInteger(parsedAge) || parsedAge < 2 || parsedAge > 25) {
+      return { ok: false, error: "Age is required and must be an integer between 2 and 25." };
+    }
+    data.age = parsedAge;
+  }
+
+  const levelProvided = Object.prototype.hasOwnProperty.call(payload, "level");
+  if (mode === "create" || levelProvided) {
+    const normalizedLevel = normalizeDancerLevel(payload.level);
+    if (!normalizedLevel) {
+      return { ok: false, error: `Level is required and must be one of: ${DANCER_LEVEL_OPTIONS.join(", ")}.` };
+    }
+    data.level = normalizedLevel;
+  }
+
+  return { ok: true, data };
+}
 
 function normalizeProgramType(value: unknown): ClassProgramType {
   const candidate = typeof value === "string" ? value.toUpperCase() : "";
@@ -212,7 +252,12 @@ export async function registerRoutes(
 
   app.post("/api/dancers", async (req, res) => {
     try {
-      const dancer = await storage.createDancer(req.body as InsertDancer);
+      const validation = validateDancerPayload(req.body as Partial<InsertDancer>, "create");
+      if (!validation.ok) {
+        return res.status(400).json({ error: validation.error });
+      }
+
+      const dancer = await storage.createDancer(validation.data as InsertDancer);
       res.status(201).json(dancer);
     } catch (error: any) {
       console.error("Create dancer error:", error);
@@ -222,7 +267,12 @@ export async function registerRoutes(
 
   app.patch("/api/dancers/:id", async (req, res) => {
     try {
-      const dancer = await storage.updateDancer(req.params.id, req.body);
+      const validation = validateDancerPayload(req.body as Partial<InsertDancer>, "update");
+      if (!validation.ok) {
+        return res.status(400).json({ error: validation.error });
+      }
+
+      const dancer = await storage.updateDancer(req.params.id, validation.data);
       if (!dancer) {
         return res.status(404).json({ error: "Dancer not found" });
       }
