@@ -43,6 +43,41 @@ function isStudioStaff(role: string): boolean {
 const CLASS_PROGRAM_TYPES = ["REC", "COMP", "BOTH"] as const;
 type ClassProgramType = (typeof CLASS_PROGRAM_TYPES)[number];
 const DANCER_LEVEL_OPTIONS = ["Mini", "Junior", "Teen", "Senior", "Elite"] as const;
+const FEE_TYPE_OPTIONS = ["tuition", "costume", "competition", "recital", "other"] as const;
+type FeeTypeOption = (typeof FEE_TYPE_OPTIONS)[number];
+
+const TUITION_RATES_BY_LEVEL: Record<string, number> = {
+  Mini: 120,
+  Junior: 150,
+  Teen: 175,
+  Senior: 200,
+  Elite: 225,
+};
+
+function parseCurrency(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Number(value.replace(/[^0-9.-]/g, ""));
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+}
+
+function normalizeFeeType(value: unknown, fallbackType?: unknown): FeeTypeOption {
+  const pick = (candidate: unknown): FeeTypeOption | null => {
+    if (typeof candidate !== "string") return null;
+    const normalized = candidate.trim().toLowerCase();
+    return FEE_TYPE_OPTIONS.find((opt) => opt === normalized) ?? null;
+  };
+
+  const direct = pick(value);
+  if (direct) return direct;
+
+  const legacy = pick(fallbackType);
+  if (legacy) return legacy;
+
+  return "other";
+}
 
 function normalizeDancerLevel(value: unknown): (typeof DANCER_LEVEL_OPTIONS)[number] | undefined {
   if (typeof value !== "string") return undefined;
@@ -1285,7 +1320,14 @@ export async function registerRoutes(
 
   app.post("/api/fees", async (req, res) => {
     try {
-      const fee = await storage.createFee(req.body as InsertFee);
+      const payload = req.body as InsertFee & { feeType?: string; accountingCode?: string | null };
+      const normalizedPayload: InsertFee = {
+        ...payload,
+        feeType: normalizeFeeType(payload.feeType, payload.type),
+        accountingCode: payload.accountingCode?.trim() || null,
+      };
+
+      const fee = await storage.createFee(normalizedPayload);
       res.status(201).json(fee);
     } catch (error: any) {
       console.error("Create fee error:", error);
@@ -1295,7 +1337,18 @@ export async function registerRoutes(
 
   app.patch("/api/fees/:id", async (req, res) => {
     try {
-      const fee = await storage.updateFee(req.params.id, req.body);
+      const payload = req.body as Partial<InsertFee> & { feeType?: string; accountingCode?: string | null };
+      const normalizedPayload: Partial<InsertFee> = { ...payload };
+
+      if (Object.prototype.hasOwnProperty.call(payload, "feeType") || Object.prototype.hasOwnProperty.call(payload, "type")) {
+        normalizedPayload.feeType = normalizeFeeType(payload.feeType, payload.type);
+      }
+
+      if (Object.prototype.hasOwnProperty.call(payload, "accountingCode")) {
+        normalizedPayload.accountingCode = payload.accountingCode?.trim() || null;
+      }
+
+      const fee = await storage.updateFee(req.params.id, normalizedPayload);
       if (!fee) {
         return res.status(404).json({ error: "Fee not found" });
       }
@@ -1303,6 +1356,85 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("Update fee error:", error);
       res.status(400).json({ error: "Failed to update fee" });
+    }
+  });
+
+  app.get("/api/finance/dancer-accounts", async (_req, res) => {
+    try {
+      const [allDancers, allFees] = await Promise.all([storage.getDancers(), storage.getFees()]);
+
+      const accounts = allDancers.map((dancer) => {
+        const dancerFees = allFees.filter((fee) => fee.dancerId === dancer.id);
+        const totalAmount = dancerFees.reduce((sum, fee) => sum + parseCurrency(fee.amount), 0);
+        const paidAmount = dancerFees
+          .filter((fee) => fee.paid)
+          .reduce((sum, fee) => sum + parseCurrency(fee.amount), 0);
+
+        const level = typeof dancer.level === "string" ? dancer.level : "";
+        const monthlyRate = TUITION_RATES_BY_LEVEL[level] ?? 0;
+
+        return {
+          dancerId: dancer.id,
+          dancerName: `${dancer.firstName} ${dancer.lastName}`,
+          level: level || "N/A",
+          monthlyRate,
+          currentBalance: Number((totalAmount - paidAmount).toFixed(2)),
+        };
+      });
+
+      res.json(accounts);
+    } catch (error: any) {
+      console.error("Get dancer accounts error:", error);
+      res.status(500).json({ error: "Failed to fetch dancer accounts" });
+    }
+  });
+
+  app.get("/api/finance/dancers/:dancerId/ledger", async (req, res) => {
+    try {
+      const dancerId = req.params.dancerId;
+      const dancer = await storage.getDancer(dancerId);
+      if (!dancer) {
+        return res.status(404).json({ error: "Dancer not found" });
+      }
+
+      const dancerFees = (await storage.getFees(dancerId)).slice().sort((a, b) => {
+        const dateA = Date.parse(a.dueDate || "");
+        const dateB = Date.parse(b.dueDate || "");
+        return (Number.isFinite(dateA) ? dateA : 0) - (Number.isFinite(dateB) ? dateB : 0);
+      });
+
+      let runningBalance = 0;
+      const ledger = dancerFees.map((fee) => {
+        const amount = parseCurrency(fee.amount);
+        const paid = fee.paid ? amount : 0;
+        runningBalance += amount - paid;
+
+        const normalizedFeeType = normalizeFeeType((fee as any).feeType, fee.type);
+
+        return {
+          id: fee.id,
+          date: fee.dueDate,
+          type: normalizedFeeType,
+          amount: Number(amount.toFixed(2)),
+          paid: Number(paid.toFixed(2)),
+          balance: Number(runningBalance.toFixed(2)),
+          accountingCode: (fee as any).accountingCode ?? null,
+        };
+      });
+
+      const currentBalance = ledger.length > 0 ? ledger[ledger.length - 1].balance : 0;
+      const lastPaidRow = [...ledger].reverse().find((entry) => entry.paid > 0);
+
+      res.json({
+        dancerId,
+        dancerName: `${dancer.firstName} ${dancer.lastName}`,
+        currentBalance,
+        lastPaymentDate: lastPaidRow?.date ?? null,
+        entries: ledger,
+      });
+    } catch (error: any) {
+      console.error("Get dancer ledger error:", error);
+      res.status(500).json({ error: "Failed to fetch dancer ledger" });
     }
   });
 

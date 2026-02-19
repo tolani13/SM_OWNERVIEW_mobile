@@ -363,9 +363,21 @@ export type ChatMessageRead = typeof chatMessageReads.$inferSelect;
 export type InsertChatMessageRead = typeof chatMessageReads.$inferInsert;
 
 // ========== FEES ==========
+export const feeTypeValues = [
+  "tuition",
+  "costume",
+  "competition",
+  "recital",
+  "other",
+] as const;
+
+export type FeeType = (typeof feeTypeValues)[number];
+
 export const fees = pgTable("fees", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
   type: text("type").notNull(),
+  feeType: text("fee_type").$type<FeeType>().notNull().default("other"),
+  accountingCode: text("accounting_code"),
   amount: text("amount").notNull(),
   paid: boolean("paid").default(false).notNull(),
   dueDate: text("due_date").notNull(),
