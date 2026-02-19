@@ -88,6 +88,8 @@ export default function Dancers() {
         data: {
           firstName: editableDancer.firstName,
           lastName: editableDancer.lastName,
+          age: editableDancer.age,
+          level: editableDancer.level,
           status: editableDancer.status,
           parentName: editableDancer.parentName,
           parentPhone: editableDancer.parentPhone,
