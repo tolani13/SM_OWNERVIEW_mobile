@@ -44,6 +44,35 @@ export type DancerAccountSummary = {
   currentBalance: number;
 };
 
+export type FinanceEventPaymentStatus = "paid" | "unpaid" | "partial";
+
+export type FinanceDancerLevel = "mini" | "junior" | "teen" | "senior" | "elite";
+
+export type FinanceSortBy = "lastName" | "age" | "level" | "balance";
+
+export type FinanceSortDir = "asc" | "desc";
+
+export type FinanceDancerListItem = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  level: FinanceDancerLevel;
+  birthdate: string;
+  age: number | null;
+  isCompetitionDancer: boolean;
+  currentBalance: number;
+  eventStatuses: Record<string, FinanceEventPaymentStatus>;
+};
+
+export type FinanceDancersQuery = {
+  sortBy?: FinanceSortBy;
+  sortDir?: FinanceSortDir;
+  levels?: FinanceDancerLevel[];
+  isCompetitionDancer?: boolean;
+  eventId?: string;
+  eventPaymentStatus?: FinanceEventPaymentStatus;
+};
+
 export type DancerLedgerEntry = {
   id: string;
   date: string;
@@ -61,6 +90,80 @@ export type DancerLedgerResponse = {
   lastPaymentDate: string | null;
   entries: DancerLedgerEntry[];
 };
+
+export type FinanceLedgerEntry = {
+  id: string;
+  date: string;
+  type: "charge" | "payment";
+  feeType: "tuition" | "costume" | "competition" | "recital" | "other";
+  amount: number;
+  description: string | null;
+  runningBalance: number;
+  eventFeeId: string | null;
+  eventId: string | null;
+  eventName: string | null;
+};
+
+export type FinanceLedgerResponse = {
+  dancerId: string;
+  dancerName: string;
+  currentBalance: number;
+  lastPaymentDate: string | null;
+  entries: FinanceLedgerEntry[];
+};
+
+export type FinanceEvent = {
+  id: string;
+  name: string;
+  type: "competition" | "nationals" | "recital" | "other";
+  seasonYear: number;
+  dueDate: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type FinanceEventFeeStatus = "unbilled" | "billed" | "paid" | "partial";
+
+export type FinanceEventFee = {
+  id: string;
+  dancerId: string;
+  eventId: string;
+  amount: string;
+  balance: string;
+  status: FinanceEventFeeStatus;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type FinancePaymentPayload = {
+  dancerId?: string;
+  amount: number;
+  date?: string;
+  feeType?: "tuition" | "costume" | "competition" | "recital" | "other";
+  description?: string;
+  eventFeeId?: string;
+};
+
+function buildFinanceDancersQueryString(query?: FinanceDancersQuery): string {
+  if (!query) return "";
+
+  const params = new URLSearchParams();
+
+  if (query.sortBy) params.set("sortBy", query.sortBy);
+  if (query.sortDir) params.set("sortDir", query.sortDir);
+  if (typeof query.isCompetitionDancer === "boolean") {
+    params.set("isCompetitionDancer", String(query.isCompetitionDancer));
+  }
+  if (query.eventId) params.set("eventId", query.eventId);
+  if (query.eventPaymentStatus) params.set("eventPaymentStatus", query.eventPaymentStatus);
+
+  for (const level of query.levels ?? []) {
+    params.append("level", level);
+  }
+
+  const raw = params.toString();
+  return raw ? `?${raw}` : "";
+}
 
 const RAW_API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) || "/api";
 const API_BASE = RAW_API_BASE.replace(/\/+$/, "");
@@ -1001,8 +1104,18 @@ export function useDeleteFee() {
 
 export function useDancerAccountSummaries() {
   return useQuery({
-    queryKey: ["finance", "dancer-accounts"],
-    queryFn: async () => safeJsonFetch<DancerAccountSummary[]>("/api/finance/dancer-accounts"),
+    queryKey: ["finance", "dancer-accounts", "legacy"],
+    queryFn: async () => {
+      const dancers = await safeJsonFetch<FinanceDancerListItem[]>("/api/finance/dancers?sortBy=lastName&sortDir=asc");
+
+      return dancers.map((dancer) => ({
+        dancerId: dancer.id,
+        dancerName: `${dancer.firstName} ${dancer.lastName}`,
+        level: dancer.level,
+        monthlyRate: 0,
+        currentBalance: dancer.currentBalance,
+      }));
+    },
     placeholderData: [],
   });
 }
@@ -1010,8 +1123,126 @@ export function useDancerAccountSummaries() {
 export function useDancerLedger(dancerId: string | null) {
   return useQuery({
     queryKey: ["finance", "ledger", dancerId],
-    queryFn: async () => safeJsonFetch<DancerLedgerResponse>(`/api/finance/dancers/${dancerId}/ledger`),
+    queryFn: async () => {
+      const ledger = await safeJsonFetch<FinanceLedgerResponse>(`/api/finance/dancers/${dancerId}/transactions`);
+
+      let running = 0;
+      const entries: DancerLedgerEntry[] = ledger.entries.map((entry) => {
+        const paid = entry.type === "payment" ? entry.amount : 0;
+        running = entry.runningBalance;
+
+        return {
+          id: entry.id,
+          date: entry.date,
+          type: entry.feeType,
+          amount: entry.amount,
+          paid,
+          balance: running,
+          accountingCode: null,
+        };
+      });
+
+      return {
+        dancerId: ledger.dancerId,
+        dancerName: ledger.dancerName,
+        currentBalance: ledger.currentBalance,
+        lastPaymentDate: ledger.lastPaymentDate,
+        entries,
+      } satisfies DancerLedgerResponse;
+    },
     enabled: Boolean(dancerId),
+  });
+}
+
+export function useFinanceDancers(query: FinanceDancersQuery) {
+  return useQuery({
+    queryKey: ["finance", "dancers", query],
+    queryFn: async () => {
+      const qs = buildFinanceDancersQueryString(query);
+      return safeJsonFetch<FinanceDancerListItem[]>(`/api/finance/dancers${qs}`);
+    },
+    placeholderData: [],
+  });
+}
+
+export function useFinanceDancerLedger(dancerId: string | null) {
+  return useQuery({
+    queryKey: ["finance", "dancers", dancerId, "transactions"],
+    queryFn: async () => safeJsonFetch<FinanceLedgerResponse>(`/api/finance/dancers/${dancerId}/transactions`),
+    enabled: Boolean(dancerId),
+  });
+}
+
+export function useFinanceEvents(seasonYear?: number) {
+  return useQuery({
+    queryKey: ["finance", "events", seasonYear ?? null],
+    queryFn: async () => {
+      const suffix = typeof seasonYear === "number" ? `?seasonYear=${seasonYear}` : "";
+      return safeJsonFetch<FinanceEvent[]>(`/api/finance/events${suffix}`);
+    },
+    placeholderData: [],
+  });
+}
+
+export function useCreateFinanceEventFee() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: { dancerId: string; eventId: string; amount: number; description?: string }) => {
+      const res = await fetch("/api/finance/event-fees", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) throw new Error(await res.text());
+      return res.json() as Promise<{ eventFee: FinanceEventFee }>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["finance"] });
+      queryClient.invalidateQueries({ queryKey: ["fees"] });
+    },
+  });
+}
+
+export function useUpdateFinanceEventFee() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: FinanceEventFeeStatus }) => {
+      const res = await fetch(`/api/finance/event-fees/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+
+      if (!res.ok) throw new Error(await res.text());
+      return res.json() as Promise<FinanceEventFee>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["finance"] });
+    },
+  });
+}
+
+export function useRecordFinancePayment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: FinancePaymentPayload) => {
+      const res = await fetch("/api/finance/payments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["finance"] });
+      queryClient.invalidateQueries({ queryKey: ["fees"] });
+    },
   });
 }
 

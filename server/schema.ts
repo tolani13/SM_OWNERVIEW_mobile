@@ -7,17 +7,68 @@ import {
   json,
   numeric,
   pgEnum,
+  date,
+  uuid,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 import { createId } from "@paralleldrive/cuid2";
 import { relations } from "drizzle-orm";
+
+export const dancerLevelValues = ["mini", "junior", "teen", "senior", "elite"] as const;
+export type DancerLevel = (typeof dancerLevelValues)[number];
+
+// ========== FAMILIES / GUARDIANS ==========
+export const familyGuardianRoleValues = ["primary", "secondary"] as const;
+export type FamilyGuardianRole = (typeof familyGuardianRoleValues)[number];
+
+export const families = pgTable("families", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  familyName: text("family_name").notNull(),
+  primaryContactName: text("primary_contact_name"),
+  primaryEmail: text("primary_email"),
+  primaryPhone: text("primary_phone"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type Family = typeof families.$inferSelect;
+export type InsertFamily = typeof families.$inferInsert;
+
+export const guardians = pgTable("guardians", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type Guardian = typeof guardians.$inferSelect;
+export type InsertGuardian = typeof guardians.$inferInsert;
+
+export const familyGuardians = pgTable("family_guardians", {
+  familyId: uuid("family_id").notNull().references(() => families.id, { onDelete: "cascade" }),
+  guardianId: uuid("guardian_id").notNull().references(() => guardians.id, { onDelete: "cascade" }),
+  role: text("role").$type<FamilyGuardianRole>().notNull().default("secondary"),
+  isPrimary: boolean("is_primary").notNull().default(false),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.familyId, table.guardianId] }),
+}));
+
+export type FamilyGuardian = typeof familyGuardians.$inferSelect;
+export type InsertFamilyGuardian = typeof familyGuardians.$inferInsert;
 
 // ========== DANCERS ==========
 export const dancers = pgTable("dancers", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
+  familyId: uuid("family_id").references(() => families.id, { onDelete: "set null" }),
   age: integer("age"),
-  level: text("level"),
+  level: text("level").$type<DancerLevel>().notNull().default("mini"),
+  birthdate: date("birthdate", { mode: "string" }).notNull().default("2015-01-01"),
+  isCompetitionDancer: boolean("is_competition_dancer").default(false).notNull(),
   dateOfBirth: text("date_of_birth"),
   parentName: text("parent_name"),
   parentEmail: text("parent_email"),
@@ -389,6 +440,138 @@ export const fees = pgTable("fees", {
 
 export type Fee = typeof fees.$inferSelect;
 export type InsertFee = typeof fees.$inferInsert;
+
+// ========== FINANCE HUB: EVENTS / EVENT FEES / TRANSACTIONS ==========
+export const eventTypeValues = ["competition", "nationals", "recital", "other"] as const;
+export type EventType = (typeof eventTypeValues)[number];
+
+export const eventFeeStatusValues = ["unbilled", "billed", "paid", "partial"] as const;
+export type EventFeeStatus = (typeof eventFeeStatusValues)[number];
+
+export const transactionTypeValues = ["charge", "payment"] as const;
+export type TransactionType = (typeof transactionTypeValues)[number];
+
+export const syncStatusValues = ["pending", "synced", "failed"] as const;
+export type SyncStatus = (typeof syncStatusValues)[number];
+
+export const events = pgTable("events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  type: text("type").$type<EventType>().notNull().default("other"),
+  seasonYear: integer("season_year").notNull(),
+  dueDate: date("due_date", { mode: "string" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type Event = typeof events.$inferSelect;
+export type InsertEvent = typeof events.$inferInsert;
+
+export const eventFees = pgTable("event_fees", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  dancerId: text("dancer_id").notNull().references(() => dancers.id, { onDelete: "cascade" }),
+  eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull().default("0.00"),
+  balance: numeric("balance", { precision: 10, scale: 2 }).notNull().default("0.00"),
+  status: text("status").$type<EventFeeStatus>().notNull().default("unbilled"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type EventFee = typeof eventFees.$inferSelect;
+export type InsertEventFee = typeof eventFees.$inferInsert;
+
+export const transactions = pgTable("transactions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  dancerId: text("dancer_id").notNull().references(() => dancers.id, { onDelete: "cascade" }),
+  date: timestamp("date").notNull().defaultNow(),
+  type: text("type").$type<TransactionType>().notNull(),
+  feeType: text("fee_type").$type<FeeType>().notNull().default("other"),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+  description: text("description"),
+  eventFeeId: uuid("event_fee_id").references(() => eventFees.id, { onDelete: "set null" }),
+  quickbooksItemId: text("quickbooks_item_id"),
+  quickbooksAccountId: text("quickbooks_account_id"),
+  waveIncomeAccountId: text("wave_income_account_id"),
+  externalIdQuickbooks: text("external_id_quickbooks"),
+  externalIdWave: text("external_id_wave"),
+  syncStatus: text("sync_status").$type<SyncStatus>().notNull().default("pending"),
+  legacyFeeId: text("legacy_fee_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type Transaction = typeof transactions.$inferSelect;
+export type InsertTransaction = typeof transactions.$inferInsert;
+
+export const feeTypes = pgTable("fee_types", {
+  feeType: text("fee_type").$type<FeeType>().primaryKey(),
+  label: text("label").notNull(),
+  defaultQuickbooksItemId: text("default_quickbooks_item_id"),
+  defaultQuickbooksAccountId: text("default_quickbooks_account_id"),
+  defaultWaveIncomeAccountId: text("default_wave_income_account_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type FeeTypeDefault = typeof feeTypes.$inferSelect;
+export type InsertFeeTypeDefault = typeof feeTypes.$inferInsert;
+
+export const eventsRelations = relations(events, ({ many }) => ({
+  eventFees: many(eventFees),
+}));
+
+export const eventFeesRelations = relations(eventFees, ({ one, many }) => ({
+  dancer: one(dancers, {
+    fields: [eventFees.dancerId],
+    references: [dancers.id],
+  }),
+  event: one(events, {
+    fields: [eventFees.eventId],
+    references: [events.id],
+  }),
+  transactions: many(transactions),
+}));
+
+export const transactionsRelations = relations(transactions, ({ one }) => ({
+  dancer: one(dancers, {
+    fields: [transactions.dancerId],
+    references: [dancers.id],
+  }),
+  eventFee: one(eventFees, {
+    fields: [transactions.eventFeeId],
+    references: [eventFees.id],
+  }),
+}));
+
+export const familiesRelations = relations(families, ({ many }) => ({
+  dancers: many(dancers),
+  familyGuardians: many(familyGuardians),
+}));
+
+export const guardiansRelations = relations(guardians, ({ many }) => ({
+  familyGuardians: many(familyGuardians),
+}));
+
+export const familyGuardiansRelations = relations(familyGuardians, ({ one }) => ({
+  family: one(families, {
+    fields: [familyGuardians.familyId],
+    references: [families.id],
+  }),
+  guardian: one(guardians, {
+    fields: [familyGuardians.guardianId],
+    references: [guardians.id],
+  }),
+}));
+
+export const dancersRelations = relations(dancers, ({ one, many }) => ({
+  family: one(families, {
+    fields: [dancers.familyId],
+    references: [families.id],
+  }),
+  transactions: many(transactions),
+  eventFees: many(eventFees),
+}));
 
 // ========== POLICIES (Waivers) ==========
 export const policies = pgTable("policies", {

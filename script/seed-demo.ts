@@ -9,6 +9,8 @@ function plusDays(days: number): string {
 
 async function seedDemo() {
   console.log("🌱 Seeding demo data...");
+  const now = new Date();
+  const currentSeasonYear = now.getMonth() >= 7 ? now.getFullYear() + 1 : now.getFullYear();
 
   // ---------- DANCERS ----------
   const existingDancers = await storage.getDancers();
@@ -363,6 +365,123 @@ async function seedDemo() {
   for (const fee of feeSeeds) {
     if (needFee(fee.type, fee.dancerId as string, fee.amount)) {
       await storage.createFee(fee as any);
+    }
+  }
+
+  // ---------- FINANCE HUB EVENTS ----------
+  const existingEvents = await storage.getEvents(currentSeasonYear);
+  const findEventByName = (name: string) => existingEvents.find((event) => event.name === name);
+
+  const recitalEvent =
+    findEventByName(`${currentSeasonYear} Spring Recital`) ||
+    (await storage.createEvent({
+      name: `${currentSeasonYear} Spring Recital`,
+      type: "recital",
+      seasonYear: currentSeasonYear,
+      dueDate: plusDays(35),
+    }));
+
+  const regionalEvent =
+    findEventByName("Next Regional Comp") ||
+    (await storage.createEvent({
+      name: "Next Regional Comp",
+      type: "competition",
+      seasonYear: currentSeasonYear,
+      dueDate: plusDays(21),
+    }));
+
+  const nationalsEvent =
+    findEventByName(`Nationals ${currentSeasonYear}`) ||
+    (await storage.createEvent({
+      name: `Nationals ${currentSeasonYear}`,
+      type: "nationals",
+      seasonYear: currentSeasonYear,
+      dueDate: plusDays(75),
+    }));
+
+  // ---------- EVENT FEES + EVENT-LINKED TRANSACTIONS ----------
+  const eventFeeSeeds: Array<{ dancerId: string; eventId: string; amount: number; payments: number[] }> = [
+    {
+      dancerId: seededDancers[0]?.id,
+      eventId: regionalEvent.id,
+      amount: 285,
+      payments: [100],
+    },
+    {
+      dancerId: seededDancers[1]?.id,
+      eventId: recitalEvent.id,
+      amount: 145,
+      payments: [145],
+    },
+    {
+      dancerId: seededDancers[2]?.id,
+      eventId: nationalsEvent.id,
+      amount: 525,
+      payments: [],
+    },
+  ].filter((entry) => Boolean(entry.dancerId));
+
+  for (const seed of eventFeeSeeds) {
+    const existingEventFees = await storage.getEventFeesByDancer(seed.dancerId);
+    const existingEventFee = existingEventFees.find((fee) => fee.eventId === seed.eventId);
+
+    const eventFee =
+      existingEventFee ||
+      (await storage.createEventFeeWithCharge({
+        dancerId: seed.dancerId,
+        eventId: seed.eventId,
+        amount: seed.amount,
+        description: "Phase 1 seeded event charge",
+      })).eventFee;
+
+    const existingTransactions = await storage.getTransactions(seed.dancerId);
+
+    for (const paymentAmount of seed.payments) {
+      const alreadySeeded = existingTransactions.some(
+        (tx) =>
+          tx.type === "payment" &&
+          tx.eventFeeId === eventFee.id &&
+          Number(tx.amount) === paymentAmount &&
+          (tx.description || "") === "Phase 1 seeded event payment",
+      );
+
+      if (!alreadySeeded) {
+        await storage.createFinancePayment({
+          dancerId: seed.dancerId,
+          amount: paymentAmount,
+          date: plusDays(-3),
+          description: "Phase 1 seeded event payment",
+          eventFeeId: eventFee.id,
+        });
+      }
+    }
+  }
+
+  // ---------- LEDGER PAYMENTS (NON-EVENT) ----------
+  const nonEventPaymentSeeds = [
+    { dancerId: seededDancers[0]?.id, amount: 120, feeType: "tuition" as const, description: "Monthly tuition payment" },
+    { dancerId: seededDancers[3]?.id, amount: 95, feeType: "costume" as const, description: "Costume payment" },
+  ].filter((entry) => Boolean(entry.dancerId));
+
+  for (const payment of nonEventPaymentSeeds) {
+    const existingTransactions = await storage.getTransactions(payment.dancerId);
+    const alreadySeeded = existingTransactions.some(
+      (tx) =>
+        tx.type === "payment" &&
+        !tx.eventFeeId &&
+        tx.feeType === payment.feeType &&
+        Number(tx.amount) === payment.amount &&
+        (tx.description || "") === payment.description,
+    );
+
+    if (!alreadySeeded) {
+      await storage.createFinancePayment({
+        dancerId: payment.dancerId,
+        amount: payment.amount,
+        feeType: payment.feeType,
+        date: plusDays(-1),
+        description: payment.description,
+      });
     }
   }
 

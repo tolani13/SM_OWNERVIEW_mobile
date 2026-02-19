@@ -30,6 +30,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { TuitionHubPanel } from "@/components/finance/TuitionHubPanel";
 import {
   Dialog,
   DialogContent,
@@ -419,82 +420,10 @@ export default function Finance() {
             <Card className="border-none shadow-sm bg-white overflow-hidden group">
               <div className="h-2 bg-primary w-full origin-left group-hover:scale-x-105 transition-transform" />
               <CardHeader className="pb-4">
-                <div className="flex justify-between items-center">
-                  <CardTitle>Tuition Tracker (Jan - Dec)</CardTitle>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <div className="w-3 h-3 rounded-full bg-green-500" /> Paid
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <div className="w-3 h-3 rounded-full bg-gray-200" /> Unpaid
-                    </span>
-                  </div>
-                </div>
+                <CardTitle>Dancer Finance Hub</CardTitle>
               </CardHeader>
-              <CardContent className="p-0">
-                <ScrollArea className="w-full whitespace-nowrap">
-                  <div className="min-w-[1000px]">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="hover:bg-transparent">
-                          <TableHead className="w-[200px] sticky left-0 bg-white z-10 font-bold text-foreground">
-                            Dancer
-                          </TableHead>
-                          <TableHead className="w-[100px] text-center bg-gray-50/50">
-                            Rate
-                          </TableHead>
-                          {MONTHS.map((m) => (
-                            <TableHead
-                              key={m}
-                              className="text-center w-[80px] text-xs uppercase font-bold text-muted-foreground"
-                            >
-                              {m}
-                            </TableHead>
-                          ))}
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {dancers.map((dancer) => (
-                          <TableRow
-                            key={dancer.id}
-                            className="hover:bg-gray-50/50"
-                          >
-                            <TableCell className="font-medium sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-                              {dancer.firstName} {dancer.lastName.charAt(0)}.
-                              <div className="text-[10px] text-muted-foreground uppercase">
-                                {(dancer as any).level || "N/A"}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-center text-muted-foreground font-mono bg-gray-50/30">
-                              ${tuitionRates[(dancer as any).level] ?? 0}
-                            </TableCell>
-                            {MONTHS.map((_, index) => {
-                              const fee = tuitionMatrix[dancer.id]?.[index];
-                              const paid = fee ? (paidOverrides[fee.id] ?? fee.paid) : false;
-                              return (
-                                <TableCell
-                                  key={index}
-                                  className="text-center p-2"
-                                >
-                                  <div className="flex justify-center">
-                                    <Switch
-                                      checked={!!paid}
-                                      onCheckedChange={() =>
-                                        toggleTuitionMonth(dancer.id, index)
-                                      }
-                                      className="data-[state=checked]:bg-green-500 scale-75"
-                                    />
-                                  </div>
-                                </TableCell>
-                              );
-                            })}
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                  <ScrollBar orientation="horizontal" />
-                </ScrollArea>
+              <CardContent>
+                <TuitionHubPanel />
               </CardContent>
             </Card>
           </TabsContent>

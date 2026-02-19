@@ -34,7 +34,7 @@ import {
 } from "@/hooks/useData";
 import type { Dancer } from "@server/schema";
 
-const DANCER_LEVEL_OPTIONS = ["Mini", "Junior", "Teen", "Senior", "Elite"] as const;
+const DANCER_LEVEL_OPTIONS = ["mini", "junior", "teen", "senior", "elite"] as const;
 
 export default function Dancers() {
   const { data: dancers = [], isLoading: dancersLoading } = useDancers();
@@ -60,7 +60,7 @@ export default function Dancers() {
       firstName: "New",
       lastName: "Dancer",
       age: 5,
-      level: "Mini" as const,
+      level: "mini" as const,
       status: "Active" as const,
       parentName: "",
       parentPhone: "",

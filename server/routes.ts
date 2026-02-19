@@ -23,6 +23,10 @@ import type {
   InsertFee,
   InsertPolicy,
   InsertPolicyAgreement,
+  DancerLevel,
+  EventType,
+  EventFeeStatus,
+  FeeType,
 } from "./schema";
 
 type ActorRole = "owner" | "staff" | "parent";
@@ -42,16 +46,18 @@ function isStudioStaff(role: string): boolean {
 
 const CLASS_PROGRAM_TYPES = ["REC", "COMP", "BOTH"] as const;
 type ClassProgramType = (typeof CLASS_PROGRAM_TYPES)[number];
-const DANCER_LEVEL_OPTIONS = ["Mini", "Junior", "Teen", "Senior", "Elite"] as const;
+const DANCER_LEVEL_OPTIONS = ["mini", "junior", "teen", "senior", "elite"] as const;
 const FEE_TYPE_OPTIONS = ["tuition", "costume", "competition", "recital", "other"] as const;
 type FeeTypeOption = (typeof FEE_TYPE_OPTIONS)[number];
+const EVENT_TYPE_OPTIONS = ["competition", "nationals", "recital", "other"] as const;
+const EVENT_PAYMENT_STATUS_OPTIONS = ["paid", "unpaid", "partial"] as const;
 
 const TUITION_RATES_BY_LEVEL: Record<string, number> = {
-  Mini: 120,
-  Junior: 150,
-  Teen: 175,
-  Senior: 200,
-  Elite: 225,
+  mini: 120,
+  junior: 150,
+  teen: 175,
+  senior: 200,
+  elite: 225,
 };
 
 function parseCurrency(value: unknown): number {
@@ -79,10 +85,53 @@ function normalizeFeeType(value: unknown, fallbackType?: unknown): FeeTypeOption
   return "other";
 }
 
-function normalizeDancerLevel(value: unknown): (typeof DANCER_LEVEL_OPTIONS)[number] | undefined {
+function normalizeDancerLevel(value: unknown): DancerLevel | undefined {
   if (typeof value !== "string") return undefined;
-  const trimmed = value.trim();
-  return DANCER_LEVEL_OPTIONS.find((level) => level.toLowerCase() === trimmed.toLowerCase());
+  const trimmed = value.trim().toLowerCase();
+  return DANCER_LEVEL_OPTIONS.find((level) => level === trimmed) as DancerLevel | undefined;
+}
+
+function normalizeBooleanParam(value: unknown): boolean | undefined {
+  if (typeof value !== "string") return undefined;
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return undefined;
+}
+
+function normalizeSortBy(value: unknown): "lastName" | "age" | "level" | "balance" {
+  if (value === "age" || value === "level" || value === "balance") return value;
+  return "lastName";
+}
+
+function normalizeSortDir(value: unknown): "asc" | "desc" {
+  return value === "desc" ? "desc" : "asc";
+}
+
+function normalizeEventType(value: unknown): EventType {
+  if (typeof value !== "string") return "other";
+  const normalized = value.trim().toLowerCase();
+  return (EVENT_TYPE_OPTIONS.find((opt) => opt === normalized) as EventType | undefined) ?? "other";
+}
+
+function normalizeEventPaymentStatus(value: unknown): "paid" | "unpaid" | "partial" | undefined {
+  if (typeof value !== "string") return undefined;
+  const normalized = value.trim().toLowerCase();
+  return EVENT_PAYMENT_STATUS_OPTIONS.find((opt) => opt === normalized) as "paid" | "unpaid" | "partial" | undefined;
+}
+
+function normalizeEventFeeStatus(value: unknown): EventFeeStatus {
+  if (typeof value !== "string") return "unbilled";
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "paid") return "paid";
+  if (normalized === "partial") return "partial";
+  if (normalized === "billed") return "billed";
+  return "unbilled";
+}
+
+function normalizeFeeTypeParam(value: unknown): FeeType {
+  if (typeof value !== "string") return "other";
+  const normalized = value.trim().toLowerCase();
+  return (FEE_TYPE_OPTIONS.find((opt) => opt === normalized) as FeeType | undefined) ?? "other";
 }
 
 function validateDancerPayload(
@@ -91,23 +140,30 @@ function validateDancerPayload(
 ): { ok: true; data: Partial<InsertDancer> } | { ok: false; error: string } {
   const data: Partial<InsertDancer> = { ...payload };
 
-  const parsedAge =
-    typeof payload.age === "number"
-      ? payload.age
-      : typeof payload.age === "string"
-        ? Number(payload.age)
-        : Number.NaN;
+  const hasAge = Object.prototype.hasOwnProperty.call(payload, "age");
+  const hasLevel = Object.prototype.hasOwnProperty.call(payload, "level");
 
-  if (!Number.isInteger(parsedAge) || parsedAge < 2 || parsedAge > 25) {
-    return { ok: false, error: "Age is required and must be an integer between 2 and 25." };
-  }
-  data.age = parsedAge;
+  if (mode === "create" || hasAge) {
+    const parsedAge =
+      typeof payload.age === "number"
+        ? payload.age
+        : typeof payload.age === "string"
+          ? Number(payload.age)
+          : Number.NaN;
 
-  const normalizedLevel = normalizeDancerLevel(payload.level);
-  if (!normalizedLevel) {
-    return { ok: false, error: `Level is required and must be one of: ${DANCER_LEVEL_OPTIONS.join(", ")}.` };
+    if (!Number.isInteger(parsedAge) || parsedAge < 2 || parsedAge > 25) {
+      return { ok: false, error: "Age is required and must be an integer between 2 and 25." };
+    }
+    data.age = parsedAge;
   }
-  data.level = normalizedLevel;
+
+  if (mode === "create" || hasLevel) {
+    const normalizedLevel = normalizeDancerLevel(payload.level);
+    if (!normalizedLevel) {
+      return { ok: false, error: `Level is required and must be one of: ${DANCER_LEVEL_OPTIONS.join(", ")}.` };
+    }
+    data.level = normalizedLevel;
+  }
 
   return { ok: true, data };
 }
@@ -1435,6 +1491,278 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("Get dancer ledger error:", error);
       res.status(500).json({ error: "Failed to fetch dancer ledger" });
+    }
+  });
+
+  app.get("/api/finance/dancers", async (req, res) => {
+    try {
+      const levelParam = (req.query.level ?? (req.query as any)["level[]"]) as string | string[] | undefined;
+      const levelsRaw = Array.isArray(levelParam)
+        ? levelParam
+        : typeof levelParam === "string"
+          ? [levelParam]
+          : [];
+
+      const levels = levelsRaw
+        .flatMap((entry) => entry.split(","))
+        .map((entry) => normalizeDancerLevel(entry))
+        .filter((entry): entry is DancerLevel => Boolean(entry));
+
+      const isCompetitionDancer = normalizeBooleanParam(req.query.isCompetitionDancer);
+
+      const eventPaymentStatus = normalizeEventPaymentStatus(req.query.eventPaymentStatus);
+      const eventId = typeof req.query.eventId === "string" && req.query.eventId.trim()
+        ? req.query.eventId
+        : undefined;
+
+      const dancers = await storage.getFinanceDancers({
+        sortBy: normalizeSortBy(req.query.sortBy),
+        sortDir: normalizeSortDir(req.query.sortDir),
+        levels: levels.length ? levels : undefined,
+        isCompetitionDancer,
+        eventId,
+        eventPaymentStatus,
+      });
+
+      res.json(dancers);
+    } catch (error: any) {
+      console.error("Get finance dancers error:", error);
+      res.status(500).json({ error: "Failed to fetch finance dancers" });
+    }
+  });
+
+  app.get("/api/finance/dancers/:dancerId/transactions", async (req, res) => {
+    try {
+      const ledger = await storage.getDancerFinanceLedger(req.params.dancerId);
+      if (!ledger) {
+        return res.status(404).json({ error: "Dancer not found" });
+      }
+      res.json(ledger);
+    } catch (error: any) {
+      console.error("Get finance dancer transactions error:", error);
+      res.status(500).json({ error: "Failed to fetch dancer transactions" });
+    }
+  });
+
+  app.get("/api/finance/events", async (req, res) => {
+    try {
+      const seasonYear = typeof req.query.seasonYear === "string" ? Number(req.query.seasonYear) : undefined;
+      const events = await storage.getEvents(Number.isFinite(seasonYear) ? seasonYear : undefined);
+      res.json(events);
+    } catch (error: any) {
+      console.error("List finance events error:", error);
+      res.status(500).json({ error: "Failed to fetch events" });
+    }
+  });
+
+  app.post("/api/finance/events", async (req, res) => {
+    try {
+      const payload = req.body as {
+        name?: string;
+        type?: string;
+        seasonYear?: number | string;
+        dueDate?: string | null;
+      };
+
+      if (!payload.name?.trim()) {
+        return res.status(400).json({ error: "Event name is required" });
+      }
+
+      const seasonYear = typeof payload.seasonYear === "number"
+        ? payload.seasonYear
+        : Number(payload.seasonYear);
+
+      if (!Number.isFinite(seasonYear)) {
+        return res.status(400).json({ error: "seasonYear is required" });
+      }
+
+      const event = await storage.createEvent({
+        name: payload.name.trim(),
+        type: normalizeEventType(payload.type),
+        seasonYear: Math.trunc(seasonYear),
+        dueDate: payload.dueDate || null,
+      });
+
+      res.status(201).json(event);
+    } catch (error: any) {
+      console.error("Create finance event error:", error);
+      res.status(400).json({ error: error?.message || "Failed to create event" });
+    }
+  });
+
+  app.patch("/api/finance/events/:id", async (req, res) => {
+    try {
+      const payload = req.body as {
+        name?: string;
+        type?: string;
+        seasonYear?: number | string;
+        dueDate?: string | null;
+      };
+
+      const updates: Record<string, unknown> = {};
+
+      if (Object.prototype.hasOwnProperty.call(payload, "name")) {
+        if (!payload.name?.trim()) {
+          return res.status(400).json({ error: "name cannot be empty" });
+        }
+        updates.name = payload.name.trim();
+      }
+
+      if (Object.prototype.hasOwnProperty.call(payload, "type")) {
+        updates.type = normalizeEventType(payload.type);
+      }
+
+      if (Object.prototype.hasOwnProperty.call(payload, "seasonYear")) {
+        const parsedYear = typeof payload.seasonYear === "number"
+          ? payload.seasonYear
+          : Number(payload.seasonYear);
+        if (!Number.isFinite(parsedYear)) {
+          return res.status(400).json({ error: "seasonYear must be numeric" });
+        }
+        updates.seasonYear = Math.trunc(parsedYear);
+      }
+
+      if (Object.prototype.hasOwnProperty.call(payload, "dueDate")) {
+        updates.dueDate = payload.dueDate || null;
+      }
+
+      const event = await storage.updateEvent(req.params.id, updates);
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+
+      res.json(event);
+    } catch (error: any) {
+      console.error("Update finance event error:", error);
+      res.status(400).json({ error: error?.message || "Failed to update event" });
+    }
+  });
+
+  app.post("/api/finance/event-fees", async (req, res) => {
+    try {
+      const payload = req.body as {
+        dancerId?: string;
+        eventId?: string;
+        amount?: number | string;
+        description?: string;
+      };
+
+      if (!payload.dancerId || !payload.eventId) {
+        return res.status(400).json({ error: "dancerId and eventId are required" });
+      }
+
+      const amount = typeof payload.amount === "number" ? payload.amount : Number(payload.amount);
+      if (!Number.isFinite(amount) || amount < 0) {
+        return res.status(400).json({ error: "amount must be a non-negative number" });
+      }
+
+      const result = await storage.createEventFeeWithCharge({
+        dancerId: payload.dancerId,
+        eventId: payload.eventId,
+        amount,
+        description: payload.description,
+      });
+
+      res.status(201).json(result);
+    } catch (error: any) {
+      console.error("Create finance event fee error:", error);
+      res.status(400).json({ error: error?.message || "Failed to create event fee" });
+    }
+  });
+
+  app.patch("/api/finance/event-fees/:id", async (req, res) => {
+    try {
+      const payload = req.body as {
+        status?: string;
+        amount?: number | string;
+        description?: string;
+      };
+
+      const existingEventFee = await storage.getEventFee(req.params.id);
+      if (!existingEventFee) {
+        return res.status(404).json({ error: "Event fee not found" });
+      }
+
+      let targetEventFeeId = existingEventFee.id;
+
+      if (Object.prototype.hasOwnProperty.call(payload, "amount")) {
+        const amount =
+          typeof payload.amount === "number"
+            ? payload.amount
+            : Number(payload.amount);
+
+        if (!Number.isFinite(amount) || amount < 0) {
+          return res.status(400).json({ error: "amount must be a non-negative number" });
+        }
+
+        const upsertResult = await storage.createEventFeeWithCharge({
+          dancerId: existingEventFee.dancerId,
+          eventId: existingEventFee.eventId,
+          amount,
+          description: payload.description,
+        });
+
+        targetEventFeeId = upsertResult.eventFee.id;
+      }
+
+      if (Object.prototype.hasOwnProperty.call(payload, "status")) {
+        const normalizedStatus = normalizeEventFeeStatus(payload.status);
+        const updated = await storage.updateEventFee(targetEventFeeId, { status: normalizedStatus });
+
+        if (normalizedStatus === "paid") {
+          const currentBalance = parseCurrency(updated?.balance ?? 0);
+          if (currentBalance > 0) {
+            await storage.createFinancePayment({
+              dancerId: updated?.dancerId || existingEventFee.dancerId,
+              amount: currentBalance,
+              description: "Manual event fee payoff",
+              eventFeeId: targetEventFeeId,
+            });
+          }
+        }
+      }
+
+      const refreshed = await storage.getEventFee(targetEventFeeId);
+      res.json(refreshed);
+    } catch (error: any) {
+      console.error("Update finance event fee error:", error);
+      res.status(400).json({ error: error?.message || "Failed to update event fee" });
+    }
+  });
+
+  app.post("/api/finance/payments", async (req, res) => {
+    try {
+      const payload = req.body as {
+        dancerId?: string;
+        amount?: number | string;
+        date?: string;
+        feeType?: string;
+        description?: string;
+        eventFeeId?: string;
+      };
+
+      const amount = typeof payload.amount === "number" ? payload.amount : Number(payload.amount);
+      if (!Number.isFinite(amount) || amount <= 0) {
+        return res.status(400).json({ error: "amount must be greater than zero" });
+      }
+
+      if (!payload.dancerId && !payload.eventFeeId) {
+        return res.status(400).json({ error: "dancerId or eventFeeId is required" });
+      }
+
+      const payment = await storage.createFinancePayment({
+        dancerId: payload.dancerId || "",
+        amount,
+        date: payload.date,
+        feeType: normalizeFeeTypeParam(payload.feeType),
+        description: payload.description,
+        eventFeeId: payload.eventFeeId,
+      });
+
+      res.status(201).json(payment);
+    } catch (error: any) {
+      console.error("Record finance payment error:", error);
+      res.status(400).json({ error: error?.message || "Failed to record payment" });
     }
   });
 

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -18,17 +21,54 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import {
-  useCreateFee,
-  useDancerAccountSummaries,
-  useDancerLedger,
-  useUpdateFee,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  useFinanceDancerLedger,
+  useFinanceDancers,
+  useFinanceEvents,
+  useRecordFinancePayment,
+  type FinanceDancersQuery,
+  type FinanceDancerLevel,
+  type FinanceEventPaymentStatus,
+  type FinanceSortBy,
+  type FinanceSortDir,
 } from "@/hooks/useData";
+import { cn } from "@/lib/utils";
+
+const LEVEL_OPTIONS: { label: string; value: FinanceDancerLevel }[] = [
+  { label: "Mini", value: "mini" },
+  { label: "Junior", value: "junior" },
+  { label: "Teen", value: "teen" },
+  { label: "Senior", value: "senior" },
+  { label: "Elite", value: "elite" },
+];
+
+const EVENT_STATUS_FILTER_OPTIONS: Array<{ label: string; value: "all" | FinanceEventPaymentStatus }> = [
+  { label: "All", value: "all" },
+  { label: "Paid", value: "paid" },
+  { label: "Unpaid", value: "unpaid" },
+  { label: "Partial", value: "partial" },
+];
+
+const SORT_OPTIONS: Array<{
+  label: string;
+  value: string;
+  sortBy: FinanceSortBy;
+  sortDir: FinanceSortDir;
+}> = [
+  { label: "Last Name A–Z", value: "lastName-asc", sortBy: "lastName", sortDir: "asc" },
+  { label: "Last Name Z–A", value: "lastName-desc", sortBy: "lastName", sortDir: "desc" },
+  { label: "Age (youngest→oldest)", value: "age-asc", sortBy: "age", sortDir: "asc" },
+  { label: "Age (oldest→youngest)", value: "age-desc", sortBy: "age", sortDir: "desc" },
+  { label: "Level", value: "level-asc", sortBy: "level", sortDir: "asc" },
+  { label: "Balance (high→low)", value: "balance-desc", sortBy: "balance", sortDir: "desc" },
+];
 
 const FEE_TYPE_LABELS = {
   tuition: "Tuition",
@@ -38,257 +78,394 @@ const FEE_TYPE_LABELS = {
   other: "Misc",
 } as const;
 
-type FeeTypeKey = keyof typeof FEE_TYPE_LABELS;
+const currencyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+});
 
-const formatMoney = (value: number) => `$${value.toFixed(2)}`;
-const formatDate = (value: string | null) =>
-  value ? new Date(value).toLocaleDateString() : "No payments recorded";
+function formatMoney(value: number): string {
+  return currencyFormatter.format(value || 0);
+}
 
-const today = () => new Date().toISOString().split("T")[0];
+function formatDate(value: string | null | undefined): string {
+  if (!value) return "—";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "—";
+  return parsed.toLocaleDateString();
+}
+
+function paymentStatusChipClass(status: FinanceEventPaymentStatus | undefined): string {
+  if (status === "paid") {
+    return "bg-green-100 text-green-700 border-green-200";
+  }
+
+  if (status === "partial") {
+    return "bg-amber-100 text-amber-700 border-amber-200";
+  }
+
+  return "bg-red-100 text-red-700 border-red-200";
+}
 
 export function TuitionHubPanel() {
-  const queryClient = useQueryClient();
-  const { data: accounts = [], isLoading: accountsLoading } = useDancerAccountSummaries();
+  const [selectedSort, setSelectedSort] = useState<string>("lastName-asc");
+  const [selectedLevels, setSelectedLevels] = useState<FinanceDancerLevel[]>([]);
+  const [competitionOnly, setCompetitionOnly] = useState(false);
+  const [selectedEventId, setSelectedEventId] = useState<string>("all");
+  const [eventPaymentStatus, setEventPaymentStatus] = useState<"all" | FinanceEventPaymentStatus>("all");
   const [selectedDancerId, setSelectedDancerId] = useState<string | null>(null);
-  const { data: ledgerData, isLoading: ledgerLoading } = useDancerLedger(selectedDancerId);
-  const createFee = useCreateFee();
-  const updateFee = useUpdateFee();
 
-  const [isReceivePaymentOpen, setIsReceivePaymentOpen] = useState(false);
-  const [paymentAmount, setPaymentAmount] = useState("");
-  const [paymentDate, setPaymentDate] = useState(today());
-  const [paymentFeeType, setPaymentFeeType] = useState<FeeTypeKey>("tuition");
-  const [paymentAccountingCode, setPaymentAccountingCode] = useState("");
+  const [isRecordPaymentOpen, setIsRecordPaymentOpen] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState<string>("");
+  const [paymentDate, setPaymentDate] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [paymentDescription, setPaymentDescription] = useState<string>("");
+
+  const sortOption = SORT_OPTIONS.find((option) => option.value === selectedSort) ?? SORT_OPTIONS[0];
+
+  const dancersQuery = useMemo<FinanceDancersQuery>(
+    () => ({
+      sortBy: sortOption.sortBy,
+      sortDir: sortOption.sortDir,
+      levels: selectedLevels.length ? selectedLevels : undefined,
+      isCompetitionDancer: competitionOnly ? true : undefined,
+      eventId: selectedEventId !== "all" ? selectedEventId : undefined,
+      eventPaymentStatus: eventPaymentStatus !== "all" ? eventPaymentStatus : undefined,
+    }),
+    [competitionOnly, eventPaymentStatus, selectedEventId, selectedLevels, sortOption.sortBy, sortOption.sortDir],
+  );
+
+  const { data: events = [] } = useFinanceEvents();
+  const { data: dancers = [], isLoading: dancersLoading } = useFinanceDancers(dancersQuery);
+  const {
+    data: ledger,
+    isLoading: ledgerLoading,
+  } = useFinanceDancerLedger(selectedDancerId);
+  const recordPayment = useRecordFinancePayment();
 
   useEffect(() => {
-    if (!accounts.length) {
+    if (!dancers.length) {
       setSelectedDancerId(null);
       return;
     }
 
-    const selectedStillExists = selectedDancerId && accounts.some((a) => a.dancerId === selectedDancerId);
-    if (!selectedStillExists) {
-      setSelectedDancerId(accounts[0].dancerId);
+    if (!selectedDancerId || !dancers.some((dancer) => dancer.id === selectedDancerId)) {
+      setSelectedDancerId(dancers[0].id);
     }
-  }, [accounts, selectedDancerId]);
+  }, [dancers, selectedDancerId]);
 
-  const selectedAccount = useMemo(
-    () => accounts.find((account) => account.dancerId === selectedDancerId) ?? null,
-    [accounts, selectedDancerId],
+  const selectedDancer = useMemo(
+    () => dancers.find((dancer) => dancer.id === selectedDancerId) ?? null,
+    [dancers, selectedDancerId],
   );
 
-  const recentEntries = useMemo(
-    () => (ledgerData?.entries ? [...ledgerData.entries].reverse() : []),
-    [ledgerData?.entries],
-  );
+  const orderedLedgerEntries = useMemo(() => {
+    if (!ledger?.entries?.length) return [];
+    return [...ledger.entries].sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
+  }, [ledger?.entries]);
 
-  const resetPaymentState = () => {
-    setPaymentAmount("");
-    setPaymentDate(today());
-    setPaymentFeeType("tuition");
-    setPaymentAccountingCode("");
+  const toggleLevel = (value: FinanceDancerLevel, checked: boolean) => {
+    setSelectedLevels((prev) => {
+      if (checked) {
+        if (prev.includes(value)) return prev;
+        return [...prev, value];
+      }
+      return prev.filter((entry) => entry !== value);
+    });
   };
 
-  const handleSubmitPayment = async () => {
-    if (!selectedDancerId) return;
+  const selectedEventNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const event of events) {
+      map.set(event.id, event.name);
+    }
+    return map;
+  }, [events]);
 
-    const parsedAmount = Number(paymentAmount);
-    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-      toast.error("Enter a valid payment amount.");
+  const handleRecordPayment = async () => {
+    const amount = Number(paymentAmount);
+    if (!selectedDancerId) {
+      toast.error("Select a dancer account first.");
+      return;
+    }
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.error("Please enter a valid payment amount.");
       return;
     }
 
     try {
-      let remaining = parsedAmount;
-      const unpaidEntries = (ledgerData?.entries ?? [])
-        .filter((entry) => entry.amount > entry.paid && entry.amount > 0)
-        .sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
-
-      for (const entry of unpaidEntries) {
-        const outstanding = entry.amount - entry.paid;
-        if (remaining + 0.0001 >= outstanding) {
-          await updateFee.mutateAsync({ id: entry.id, data: { paid: true } });
-          remaining = Number((remaining - outstanding).toFixed(2));
-        }
-      }
-
-      await createFee.mutateAsync({
-        type: "Payment Received",
-        feeType: paymentFeeType,
-        accountingCode: paymentAccountingCode.trim() || null,
-        amount: parsedAmount.toFixed(2),
-        paid: true,
-        dueDate: paymentDate,
+      await recordPayment.mutateAsync({
         dancerId: selectedDancerId,
+        amount,
+        date: paymentDate,
+        description: paymentDescription.trim() || "Payment received",
       });
 
-      await queryClient.invalidateQueries({ queryKey: ["fees"] });
-      await queryClient.invalidateQueries({ queryKey: ["finance"] });
-
-      if (remaining > 0) {
-        toast.success(`Payment recorded. $${remaining.toFixed(2)} remains as unapplied credit.`);
-      } else {
-        toast.success("Payment recorded and applied.");
-      }
-
-      setIsReceivePaymentOpen(false);
-      resetPaymentState();
+      toast.success("Payment recorded.");
+      setIsRecordPaymentOpen(false);
+      setPaymentAmount("");
+      setPaymentDescription("");
+      setPaymentDate(new Date().toISOString().slice(0, 10));
     } catch (error: any) {
       toast.error(error?.message || "Unable to record payment.");
     }
   };
 
-  if (accountsLoading) {
-    return (
-      <Card className="border-none shadow-sm bg-white">
-        <CardContent className="py-10 text-center text-sm text-muted-foreground">
-          Loading dancer accounts...
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (!accounts.length) {
-    return (
-      <Card className="border-none shadow-sm bg-white">
-        <CardContent className="py-10 text-center text-sm text-muted-foreground">
-          No dancer accounts available yet.
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <>
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
-        <Card className="xl:col-span-2 border-none shadow-sm bg-white overflow-hidden group">
-          <div className="h-2 bg-primary w-full origin-left group-hover:scale-x-105 transition-transform" />
-          <CardHeader>
-            <CardTitle className="text-base">Dancer Accounts</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Dancer</TableHead>
-                    <TableHead>Level</TableHead>
-                    <TableHead className="text-right">Monthly</TableHead>
-                    <TableHead className="text-right">Balance</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {accounts.map((account) => {
-                    const isSelected = account.dancerId === selectedDancerId;
-                    return (
-                      <TableRow
-                        key={account.dancerId}
-                        className={cn("cursor-pointer", isSelected && "bg-primary/5")}
-                        onClick={() => setSelectedDancerId(account.dancerId)}
-                      >
-                        <TableCell className="font-medium">{account.dancerName}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{account.level}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right">{formatMoney(account.monthlyRate)}</TableCell>
-                        <TableCell className="text-right font-semibold">
-                          {formatMoney(account.currentBalance)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            size="sm"
-                            variant={isSelected ? "default" : "outline"}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setSelectedDancerId(account.dancerId);
-                            }}
-                          >
-                            View account
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-
         <Card className="xl:col-span-3 border-none shadow-sm bg-white overflow-hidden group">
           <div className="h-2 bg-primary w-full origin-left group-hover:scale-x-105 transition-transform" />
           <CardHeader className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-              <div>
-                <CardTitle className="text-xl">{selectedAccount?.dancerName ?? "Select a dancer"}</CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Last payment: {formatDate(ledgerData?.lastPaymentDate ?? null)}
-                </p>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                <div className="w-full sm:w-56">
+                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">Sort</Label>
+                  <Select value={selectedSort} onValueChange={setSelectedSort}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SORT_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="w-full sm:w-56">
+                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">Event</Label>
+                  <Select value={selectedEventId} onValueChange={setSelectedEventId}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All events</SelectItem>
+                      {events.map((event) => (
+                        <SelectItem key={event.id} value={event.id}>
+                          {event.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="w-full sm:w-44">
+                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">Status</Label>
+                  <Select
+                    value={eventPaymentStatus}
+                    onValueChange={(value) => setEventPaymentStatus(value as "all" | FinanceEventPaymentStatus)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EVENT_STATUS_FILTER_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="sm:text-right space-y-2">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">Current Balance</p>
-                <p className="text-2xl font-bold text-primary">
-                  {formatMoney(ledgerData?.currentBalance ?? selectedAccount?.currentBalance ?? 0)}
-                </p>
-                <Button onClick={() => setIsReceivePaymentOpen(true)}>Receive payment</Button>
+
+              <div className="flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
+                <div className="flex flex-wrap gap-4">
+                  {LEVEL_OPTIONS.map((levelOption) => {
+                    const checked = selectedLevels.includes(levelOption.value);
+                    return (
+                      <label
+                        key={levelOption.value}
+                        className="inline-flex items-center gap-2 text-sm text-muted-foreground cursor-pointer"
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(isChecked) => toggleLevel(levelOption.value, Boolean(isChecked))}
+                        />
+                        <span>{levelOption.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+
+                <label className="inline-flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+                  <Checkbox checked={competitionOnly} onCheckedChange={(v) => setCompetitionOnly(Boolean(v))} />
+                  <span>Competition dancers only</span>
+                </label>
               </div>
             </div>
           </CardHeader>
+
           <CardContent className="pt-0">
-            <h3 className="text-sm font-semibold mb-3">Recent Activity</h3>
-            {ledgerLoading ? (
-              <div className="text-sm text-muted-foreground py-6">Loading ledger...</div>
-            ) : recentEntries.length === 0 ? (
-              <div className="text-sm text-muted-foreground py-6">No activity recorded for this dancer.</div>
+            {dancersLoading ? (
+              <div className="text-sm text-muted-foreground py-8">Loading dancers...</div>
+            ) : dancers.length === 0 ? (
+              <div className="text-sm text-muted-foreground py-8">No dancers matched the current filters.</div>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                      <TableHead className="text-right">Paid</TableHead>
-                      <TableHead className="text-right">Balance</TableHead>
+                      <TableHead>Dancer</TableHead>
+                      <TableHead>Level</TableHead>
+                      <TableHead>Age</TableHead>
+                      <TableHead className="text-right">Current Balance</TableHead>
+                      <TableHead>Event Status</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {recentEntries.map((entry) => (
-                      <TableRow key={entry.id}>
-                        <TableCell>{formatDate(entry.date)}</TableCell>
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span>{FEE_TYPE_LABELS[entry.type]}</span>
-                            {entry.accountingCode ? (
-                              <span className="text-xs text-muted-foreground">Code: {entry.accountingCode}</span>
-                            ) : null}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">{formatMoney(entry.amount)}</TableCell>
-                        <TableCell className="text-right">{formatMoney(entry.paid)}</TableCell>
-                        <TableCell className="text-right font-semibold">{formatMoney(entry.balance)}</TableCell>
-                      </TableRow>
-                    ))}
+                    {dancers.map((dancer) => {
+                      const isSelected = dancer.id === selectedDancerId;
+
+                      const statusChips = events.map((event) => {
+                        const status = dancer.eventStatuses[event.id] ?? "unpaid";
+                        return (
+                          <Badge
+                            key={`${dancer.id}-${event.id}`}
+                            variant="outline"
+                            className={cn("text-[10px] px-2 py-0.5", paymentStatusChipClass(status))}
+                          >
+                            {event.name.split(" ")[0]}: {status}
+                          </Badge>
+                        );
+                      });
+
+                      return (
+                        <TableRow
+                          key={dancer.id}
+                          className={cn("cursor-pointer", isSelected && "bg-primary/5")}
+                          onClick={() => setSelectedDancerId(dancer.id)}
+                        >
+                          <TableCell className="font-medium">
+                            {dancer.firstName} {dancer.lastName}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="capitalize">
+                              {dancer.level}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{dancer.age ?? "—"}</TableCell>
+                          <TableCell className="text-right font-semibold">
+                            {formatMoney(dancer.currentBalance)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1.5">{statusChips}</div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant={isSelected ? "default" : "outline"}
+                              size="sm"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setSelectedDancerId(dancer.id);
+                              }}
+                            >
+                              View account
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
             )}
           </CardContent>
         </Card>
+
+        <div className="xl:col-span-2 space-y-6">
+          <Card className="border-none shadow-sm bg-white overflow-hidden group">
+            <div className="h-2 bg-primary w-full origin-left group-hover:scale-x-105 transition-transform" />
+            <CardHeader className="space-y-3">
+              <CardTitle>{selectedDancer ? `${selectedDancer.firstName} ${selectedDancer.lastName}` : "Select a dancer"}</CardTitle>
+              <div className="text-sm text-muted-foreground space-y-1">
+                <p>
+                  Current balance:{" "}
+                  <span className="font-semibold text-foreground">
+                    {formatMoney(ledger?.currentBalance ?? selectedDancer?.currentBalance ?? 0)}
+                  </span>
+                </p>
+                <p>
+                  Last payment date: <span className="font-medium text-foreground">{formatDate(ledger?.lastPaymentDate)}</span>
+                </p>
+              </div>
+              <Button disabled={!selectedDancerId} onClick={() => setIsRecordPaymentOpen(true)}>
+                Record payment
+              </Button>
+            </CardHeader>
+          </Card>
+
+          <Card className="border-none shadow-sm bg-white overflow-hidden group">
+            <div className="h-2 bg-primary w-full origin-left group-hover:scale-x-105 transition-transform" />
+            <CardHeader>
+              <CardTitle className="text-base">Recent Activity</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              {ledgerLoading ? (
+                <div className="text-sm text-muted-foreground py-6">Loading ledger...</div>
+              ) : !orderedLedgerEntries.length ? (
+                <div className="text-sm text-muted-foreground py-6">No transactions recorded yet.</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead className="text-right">Paid</TableHead>
+                        <TableHead className="text-right">Balance</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {orderedLedgerEntries.map((entry) => {
+                        const isPayment = entry.type === "payment";
+                        const label = FEE_TYPE_LABELS[entry.feeType] ?? "Misc";
+
+                        return (
+                          <TableRow key={entry.id}>
+                            <TableCell>{formatDate(entry.date)}</TableCell>
+                            <TableCell>
+                              <div className="space-y-0.5">
+                                <p className="text-sm font-medium">{label}</p>
+                                <p className="text-xs text-muted-foreground capitalize">{entry.type}</p>
+                                {entry.eventId ? (
+                                  <p className="text-xs text-muted-foreground">
+                                    {selectedEventNameById.get(entry.eventId) ?? entry.eventName ?? "Event"}
+                                  </p>
+                                ) : null}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">{formatMoney(entry.amount)}</TableCell>
+                            <TableCell className="text-right">{isPayment ? formatMoney(entry.amount) : "—"}</TableCell>
+                            <TableCell className="text-right font-semibold">{formatMoney(entry.runningBalance)}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
-      <Dialog open={isReceivePaymentOpen} onOpenChange={setIsReceivePaymentOpen}>
-        <DialogContent className="sm:max-w-[460px]">
+      <Dialog open={isRecordPaymentOpen} onOpenChange={setIsRecordPaymentOpen}>
+        <DialogContent className="sm:max-w-[420px]">
           <DialogHeader>
-            <DialogTitle>Receive payment</DialogTitle>
+            <DialogTitle>Record payment</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="paymentAmount">Amount</Label>
+              <Label htmlFor="payment-amount">Amount</Label>
               <Input
-                id="paymentAmount"
+                id="payment-amount"
                 type="number"
                 min="0"
                 step="0.01"
@@ -299,9 +476,9 @@ export function TuitionHubPanel() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="paymentDate">Payment date</Label>
+              <Label htmlFor="payment-date">Date</Label>
               <Input
-                id="paymentDate"
+                id="payment-date"
                 type="date"
                 value={paymentDate}
                 onChange={(event) => setPaymentDate(event.target.value)}
@@ -309,43 +486,23 @@ export function TuitionHubPanel() {
             </div>
 
             <div className="space-y-2">
-              <Label>Payment type</Label>
-              <Select value={paymentFeeType} onValueChange={(value) => setPaymentFeeType(value as FeeTypeKey)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {(Object.keys(FEE_TYPE_LABELS) as FeeTypeKey[]).map((feeType) => (
-                    <SelectItem key={feeType} value={feeType}>
-                      {FEE_TYPE_LABELS[feeType]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="accountingCode">Accounting code (optional)</Label>
+              <Label htmlFor="payment-description">Description</Label>
               <Input
-                id="accountingCode"
-                value={paymentAccountingCode}
-                onChange={(event) => setPaymentAccountingCode(event.target.value)}
-                placeholder="QB/Wave code"
+                id="payment-description"
+                value={paymentDescription}
+                onChange={(event) => setPaymentDescription(event.target.value)}
+                placeholder="Optional note"
               />
             </div>
           </div>
 
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsReceivePaymentOpen(false);
-                resetPaymentState();
-              }}
-            >
+            <Button variant="outline" onClick={() => setIsRecordPaymentOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSubmitPayment}>Record payment</Button>
+            <Button onClick={handleRecordPayment} disabled={recordPayment.isPending}>
+              {recordPayment.isPending ? "Saving..." : "Record payment"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
