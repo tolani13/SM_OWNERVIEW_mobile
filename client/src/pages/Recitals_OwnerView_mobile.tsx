@@ -319,13 +319,13 @@ export default function Recitals() {
           <TabsList className="bg-white/50 border p-1 h-auto mb-6">
             <TabsTrigger 
               value="upcoming"
-              className="py-2 px-6 rounded-md data-[state=active]:bg-[#FF9F7F] data-[state=active]:text-white data-[state=active]:shadow-sm transition-colors"
+              className="py-2 px-6 rounded-md data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm transition-colors"
             >
               Upcoming
             </TabsTrigger>
             <TabsTrigger 
               value="past"
-              className="py-2 px-6 rounded-md data-[state=active]:bg-[#FF9F7F] data-[state=active]:text-white data-[state=active]:shadow-sm transition-colors"
+              className="py-2 px-6 rounded-md data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm transition-colors"
             >
               Past Recitals
             </TabsTrigger>

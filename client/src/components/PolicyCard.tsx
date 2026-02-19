@@ -42,7 +42,7 @@ export function PolicyCard({
           </div>
           <Badge
             variant="secondary"
-            className="border border-coral/40 bg-coral/10 text-coral"
+            className="border border-primary/40 bg-primary/10 text-primary"
           >
             {categoryLabel}
           </Badge>
@@ -51,7 +51,7 @@ export function PolicyCard({
 
       <CardContent className="space-y-4">
         <p className="text-sm text-black/90">
-          <span className="font-medium text-coral">Applies to:</span> {appliesTo}
+          <span className="font-medium text-primary">Applies to:</span> {appliesTo}
         </p>
 
         <div className="flex flex-wrap gap-2">

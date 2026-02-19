@@ -511,19 +511,19 @@ export default function Studio() {
           <TabsList className="bg-white/50 border p-1 h-auto mb-6">
             <TabsTrigger 
               value="classes"
-              className="py-2 px-6 rounded-md data-[state=active]:bg-[#FF9F7F] data-[state=active]:text-white data-[state=active]:shadow-sm transition-colors"
+              className="py-2 px-6 rounded-md data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm transition-colors"
             >
               Classes
             </TabsTrigger>
             <TabsTrigger 
               value="teachers"
-              className="py-2 px-6 rounded-md data-[state=active]:bg-[#FF9F7F] data-[state=active]:text-white data-[state=active]:shadow-sm transition-colors"
+              className="py-2 px-6 rounded-md data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm transition-colors"
             >
               Teachers
             </TabsTrigger>
             <TabsTrigger 
               value="bookings"
-              className="py-2 px-6 rounded-md data-[state=active]:bg-[#FF9F7F] data-[state=active]:text-white data-[state=active]:shadow-sm transition-colors"
+              className="py-2 px-6 rounded-md data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm transition-colors"
             >
               Practice Bookings
             </TabsTrigger>

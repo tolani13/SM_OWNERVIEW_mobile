@@ -325,19 +325,19 @@ export default function Finance() {
           <TabsList className="bg-white/50 border p-1 h-auto mb-6">
             <TabsTrigger
               value="studio"
-              className="py-2 px-6 rounded-md data-[state=active]:bg-[#FF9F7F] data-[state=active]:text-white data-[state=active]:shadow-sm transition-colors"
+              className="py-2 px-6 rounded-md data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm transition-colors"
             >
               Tuition
             </TabsTrigger>
             <TabsTrigger
               value="competitions"
-              className="py-2 px-6 rounded-md data-[state=active]:bg-[#FF9F7F] data-[state=active]:text-white data-[state=active]:shadow-sm transition-colors"
+              className="py-2 px-6 rounded-md data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm transition-colors"
             >
               Comp Fees
             </TabsTrigger>
             <TabsTrigger
               value="costumes"
-              className="py-2 px-6 rounded-md data-[state=active]:bg-[#FF9F7F] data-[state=active]:text-white data-[state=active]:shadow-sm transition-colors"
+              className="py-2 px-6 rounded-md data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm transition-colors"
             >
               Costumes
             </TabsTrigger>
