@@ -34,6 +34,8 @@ import {
 } from "@/hooks/useData";
 import type { Dancer } from "@server/schema";
 
+const DANCER_LEVEL_OPTIONS = ["Mini", "Junior", "Teen", "Senior", "Elite"] as const;
+
 export default function Dancers() {
   const { data: dancers = [], isLoading: dancersLoading } = useDancers();
   const { data: routines = [], isLoading: routinesLoading } = useRoutines();
@@ -82,13 +84,27 @@ export default function Dancers() {
   const handleSaveDancer = async () => {
     if (!editableDancer) return;
 
+    const parsedAge = Number(editableDancer.age);
+    if (!Number.isInteger(parsedAge) || parsedAge < 2 || parsedAge > 25) {
+      toast.error("Age is required and must be a whole number between 2 and 25.");
+      return;
+    }
+
+    if (
+      typeof editableDancer.level !== "string" ||
+      !DANCER_LEVEL_OPTIONS.includes(editableDancer.level as (typeof DANCER_LEVEL_OPTIONS)[number])
+    ) {
+      toast.error("Please select a valid level.");
+      return;
+    }
+
     try {
       await updateDancer.mutateAsync({
         id: editableDancer.id,
         data: {
           firstName: editableDancer.firstName,
           lastName: editableDancer.lastName,
-          age: editableDancer.age,
+          age: parsedAge,
           level: editableDancer.level,
           status: editableDancer.status,
           parentName: editableDancer.parentName,
@@ -254,10 +270,18 @@ export default function Dancers() {
                       <label className="text-xs font-bold uppercase text-muted-foreground">Age</label>
                       <Input
                         type="number"
+                        min={2}
+                        max={25}
+                        step={1}
                         value={editableDancer?.age ?? ""}
                         onChange={(e) => {
-                          const age = parseInt(e.target.value);
-                          setEditableDancer((prev) => (prev ? { ...prev, age: isNaN(age) ? 0 : age } : prev));
+                          const rawValue = e.target.value;
+                          setEditableDancer((prev) => {
+                            if (!prev) return prev;
+                            if (rawValue === "") return { ...prev, age: undefined };
+                            const age = Number.parseInt(rawValue, 10);
+                            return { ...prev, age: Number.isNaN(age) ? undefined : age };
+                          });
                         }}
                       />
                     </div>
@@ -273,11 +297,11 @@ export default function Dancers() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Mini">Mini</SelectItem>
-                          <SelectItem value="Junior">Junior</SelectItem>
-                          <SelectItem value="Teen">Teen</SelectItem>
-                          <SelectItem value="Senior">Senior</SelectItem>
-                          <SelectItem value="Elite">Elite</SelectItem>
+                          {DANCER_LEVEL_OPTIONS.map((level) => (
+                            <SelectItem key={level} value={level}>
+                              {level}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
