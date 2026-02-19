@@ -22,6 +22,27 @@ async function ensureDancerAgeLevelColumns(log: Logger): Promise<void> {
   log("ensured dancers.age and dancers.level columns", "db");
 }
 
+async function ensureFeeAccountingColumns(log: Logger): Promise<void> {
+  await db.execute(
+    sql`ALTER TABLE "fees" ADD COLUMN IF NOT EXISTS "fee_type" text NOT NULL DEFAULT 'other'`,
+  );
+  await db.execute(sql`ALTER TABLE "fees" ADD COLUMN IF NOT EXISTS "accounting_code" text`);
+
+  await db.execute(sql`
+    UPDATE "fees"
+    SET "fee_type" = CASE
+      WHEN lower("type") = 'tuition' THEN 'tuition'
+      WHEN lower("type") = 'costume' THEN 'costume'
+      WHEN lower("type") = 'competition' THEN 'competition'
+      WHEN lower("type") = 'recital' THEN 'recital'
+      ELSE 'other'
+    END
+    WHERE "fee_type" = 'other'
+  `);
+
+  log("ensured fees.fee_type and fees.accounting_code columns", "db");
+}
+
 export async function ensureDatabaseSchema(log?: Logger): Promise<void> {
   const logger: Logger =
     log ??
@@ -35,6 +56,7 @@ export async function ensureDatabaseSchema(log?: Logger): Promise<void> {
       "db",
     );
     await ensureDancerAgeLevelColumns(logger);
+    await ensureFeeAccountingColumns(logger);
     return;
   }
 
@@ -42,11 +64,13 @@ export async function ensureDatabaseSchema(log?: Logger): Promise<void> {
   if (coreTablesExist) {
     logger("core tables already exist; skipping startup migrations", "db");
     await ensureDancerAgeLevelColumns(logger);
+    await ensureFeeAccountingColumns(logger);
     return;
   }
 
   logger("core tables missing; applying startup migrations", "db");
   await migrate(db, { migrationsFolder: MIGRATIONS_FOLDER });
   await ensureDancerAgeLevelColumns(logger);
+  await ensureFeeAccountingColumns(logger);
   logger("startup migrations applied", "db");
 }

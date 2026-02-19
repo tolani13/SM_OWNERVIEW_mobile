@@ -36,6 +36,32 @@ import type {
   InsertRecitalLineup,
 } from "@server/schema";
 
+export type DancerAccountSummary = {
+  dancerId: string;
+  dancerName: string;
+  level: string;
+  monthlyRate: number;
+  currentBalance: number;
+};
+
+export type DancerLedgerEntry = {
+  id: string;
+  date: string;
+  type: "tuition" | "costume" | "competition" | "recital" | "other";
+  amount: number;
+  paid: number;
+  balance: number;
+  accountingCode: string | null;
+};
+
+export type DancerLedgerResponse = {
+  dancerId: string;
+  dancerName: string;
+  currentBalance: number;
+  lastPaymentDate: string | null;
+  entries: DancerLedgerEntry[];
+};
+
 const RAW_API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) || "/api";
 const API_BASE = RAW_API_BASE.replace(/\/+$/, "");
 
@@ -970,6 +996,22 @@ export function useDeleteFee() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["fees"] });
     },
+  });
+}
+
+export function useDancerAccountSummaries() {
+  return useQuery({
+    queryKey: ["finance", "dancer-accounts"],
+    queryFn: async () => safeJsonFetch<DancerAccountSummary[]>("/api/finance/dancer-accounts"),
+    placeholderData: [],
+  });
+}
+
+export function useDancerLedger(dancerId: string | null) {
+  return useQuery({
+    queryKey: ["finance", "ledger", dancerId],
+    queryFn: async () => safeJsonFetch<DancerLedgerResponse>(`/api/finance/dancers/${dancerId}/ledger`),
+    enabled: Boolean(dancerId),
   });
 }
 
