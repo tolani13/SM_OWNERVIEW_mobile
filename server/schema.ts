@@ -16,6 +16,8 @@ export const dancers = pgTable("dancers", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
+  age: integer("age"),
+  level: text("level"),
   dateOfBirth: text("date_of_birth"),
   parentName: text("parent_name"),
   parentEmail: text("parent_email"),

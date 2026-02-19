@@ -16,6 +16,12 @@ async function hasCoreTables(): Promise<boolean> {
   return Boolean(result.rows[0]?.dancers);
 }
 
+async function ensureDancerAgeLevelColumns(log: Logger): Promise<void> {
+  await db.execute(sql`ALTER TABLE "dancers" ADD COLUMN IF NOT EXISTS "age" integer`);
+  await db.execute(sql`ALTER TABLE "dancers" ADD COLUMN IF NOT EXISTS "level" text`);
+  log("ensured dancers.age and dancers.level columns", "db");
+}
+
 export async function ensureDatabaseSchema(log?: Logger): Promise<void> {
   const logger: Logger =
     log ??
@@ -28,16 +34,19 @@ export async function ensureDatabaseSchema(log?: Logger): Promise<void> {
       `migrations folder not found at ${MIGRATIONS_FOLDER}; skipping schema bootstrap`,
       "db",
     );
+    await ensureDancerAgeLevelColumns(logger);
     return;
   }
 
   const coreTablesExist = await hasCoreTables();
   if (coreTablesExist) {
     logger("core tables already exist; skipping startup migrations", "db");
+    await ensureDancerAgeLevelColumns(logger);
     return;
   }
 
   logger("core tables missing; applying startup migrations", "db");
   await migrate(db, { migrationsFolder: MIGRATIONS_FOLDER });
+  await ensureDancerAgeLevelColumns(logger);
   logger("startup migrations applied", "db");
 }
