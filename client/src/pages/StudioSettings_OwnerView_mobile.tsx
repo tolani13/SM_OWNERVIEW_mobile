@@ -9,6 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  applyPrimaryTheme,
+  getStoredPrimaryThemeId,
+  persistPrimaryTheme,
+  PRIMARY_THEME_OPTIONS,
+  resolvePrimaryTheme,
+  type PrimaryThemeId,
+} from "@/lib/primaryTheme";
 
 const SETTINGS_SECTIONS: SettingsSection[] = [
   { id: "studio-profile", label: "Studio Profile", description: "Name, contact, and address" },
@@ -34,7 +42,7 @@ type SettingsFormState = {
   studioEmail: string;
   studioPhone: string;
   studioAddress: string;
-  primaryColor: string;
+  primaryColor: PrimaryThemeId;
   logoUrl: string;
   emailAnnouncements: boolean;
   smsReminders: boolean;
@@ -62,7 +70,7 @@ const DEFAULT_STATE: SettingsFormState = {
   studioEmail: "admin@studiomaestro.com",
   studioPhone: "(555) 010-1200",
   studioAddress: "123 Main Street, Palm Springs, CA",
-  primaryColor: "#FF9F7F",
+  primaryColor: getStoredPrimaryThemeId(),
   logoUrl: "",
   emailAnnouncements: true,
   smsReminders: false,
@@ -98,6 +106,13 @@ export default function StudioSettings() {
     toast.success(`${activeSectionMeta?.label ?? "Settings"} saved (local mock state).`);
   };
 
+  const handlePrimaryColorChange = (themeId: PrimaryThemeId) => {
+    setForm((prev) => ({ ...prev, primaryColor: themeId }));
+    applyPrimaryTheme(themeId);
+    persistPrimaryTheme(themeId);
+    toast.success(`Primary color set to ${resolvePrimaryTheme(themeId).label}.`);
+  };
+
   const renderSection = () => {
     switch (activeSection) {
       case "studio-profile":
@@ -126,7 +141,32 @@ export default function StudioSettings() {
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Primary Color</Label>
-              <Input value={form.primaryColor} onChange={(e) => setForm({ ...form, primaryColor: e.target.value })} />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {PRIMARY_THEME_OPTIONS.map((option) => {
+                  const isActive = form.primaryColor === option.id;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => handlePrimaryColorChange(option.id)}
+                      className={[
+                        "rounded-lg border px-3 py-2 text-left transition-colors",
+                        isActive
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border hover:border-primary/40",
+                      ].join(" ")}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span
+                          className="inline-block h-3 w-3 rounded-full border"
+                          style={{ backgroundColor: option.previewColor }}
+                        />
+                        <span className="text-sm font-medium">{option.label}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Logo URL</Label>
