@@ -56,29 +56,23 @@ function validateDancerPayload(
 ): { ok: true; data: Partial<InsertDancer> } | { ok: false; error: string } {
   const data: Partial<InsertDancer> = { ...payload };
 
-  const ageProvided = Object.prototype.hasOwnProperty.call(payload, "age");
-  if (mode === "create" || ageProvided) {
-    const parsedAge =
-      typeof payload.age === "number"
-        ? payload.age
-        : typeof payload.age === "string"
-          ? Number(payload.age)
-          : Number.NaN;
+  const parsedAge =
+    typeof payload.age === "number"
+      ? payload.age
+      : typeof payload.age === "string"
+        ? Number(payload.age)
+        : Number.NaN;
 
-    if (!Number.isInteger(parsedAge) || parsedAge < 2 || parsedAge > 25) {
-      return { ok: false, error: "Age is required and must be an integer between 2 and 25." };
-    }
-    data.age = parsedAge;
+  if (!Number.isInteger(parsedAge) || parsedAge < 2 || parsedAge > 25) {
+    return { ok: false, error: "Age is required and must be an integer between 2 and 25." };
   }
+  data.age = parsedAge;
 
-  const levelProvided = Object.prototype.hasOwnProperty.call(payload, "level");
-  if (mode === "create" || levelProvided) {
-    const normalizedLevel = normalizeDancerLevel(payload.level);
-    if (!normalizedLevel) {
-      return { ok: false, error: `Level is required and must be one of: ${DANCER_LEVEL_OPTIONS.join(", ")}.` };
-    }
-    data.level = normalizedLevel;
+  const normalizedLevel = normalizeDancerLevel(payload.level);
+  if (!normalizedLevel) {
+    return { ok: false, error: `Level is required and must be one of: ${DANCER_LEVEL_OPTIONS.join(", ")}.` };
   }
+  data.level = normalizedLevel;
 
   return { ok: true, data };
 }
