@@ -4,6 +4,8 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
+import LoginPage from "@/pages/Login";
+import { AuthProvider, useAuth } from "@/lib/auth";
 
 import Dashboard from "@/pages/Dashboard_OwnerView_mobile";
 import Studio from "@/pages/Studio_OwnerView_mobile";
@@ -19,8 +21,15 @@ import RecitalListPage from "@/pages/recitals/RecitalListPage";
 import RecitalEditorPage from "@/pages/recitals/RecitalEditorPage";
 
 function Router() {
+  const { isAuthenticated } = useAuth();
+
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
+
   return (
     <Switch>
+      <Route path="/login" component={Dashboard} />
       <Route path="/" component={Dashboard} />
       <Route path="/studio" component={Studio} />
       <Route path="/dancers" component={Dancers} />
@@ -41,10 +50,12 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
