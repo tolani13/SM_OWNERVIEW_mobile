@@ -50,7 +50,10 @@ export default function MessagesOwnerViewMobile() {
   const canCreateCompChat = actorRole === "owner" || actorRole === "manager";
   const canSendCompChatBroadcast = canCreateCompChat;
 
-  const { data: threads = [], isLoading: loadingThreads, error: threadsError } = useChatThreads(actor ?? undefined);
+  const { data: threads = [], isLoading: loadingThreads, error: threadsError } = useChatThreads(
+    actor?.id,
+    actor?.role,
+  );
   const createThread = useCreateChatThread();
   const createMessage = useCreateChatMessage();
   const markRead = useMarkChatMessageRead();
@@ -92,11 +95,11 @@ export default function MessagesOwnerViewMobile() {
     data: messages = [],
     isLoading: loadingMessages,
     error: messagesError,
-  } = useChatThreadMessages(safeSelectedThreadId, actor ?? undefined);
+  } = useChatThreadMessages(safeSelectedThreadId);
   const {
     data: readSummary = {},
     error: readSummaryError,
-  } = useChatThreadReadSummary(safeSelectedThreadId, actor ?? undefined);
+  } = useChatThreadReadSummary(safeSelectedThreadId);
 
   const grouped = useMemo(() => {
     return {
@@ -218,8 +221,11 @@ export default function MessagesOwnerViewMobile() {
         messages.map((m) =>
           markRead.mutateAsync({
             messageId: m.id,
-            threadId: selectedThread.id,
-            actor,
+            reader: {
+              readerId: actor.id,
+              readerName: actor.name,
+              readerRole: actor.role,
+            },
           }),
         ),
       );
