@@ -172,11 +172,16 @@ async function ensureFinanceHubSchema(log: Logger): Promise<void> {
       "label" text NOT NULL,
       "default_quickbooks_item_id" text,
       "default_quickbooks_account_id" text,
+      "default_xero_revenue_account_code" text,
+      "default_xero_payment_account_code" text,
       "default_wave_income_account_id" text,
       "created_at" timestamp NOT NULL DEFAULT now(),
       "updated_at" timestamp NOT NULL DEFAULT now()
     )
   `);
+
+  await db.execute(sql`ALTER TABLE "fee_types" ADD COLUMN IF NOT EXISTS "default_xero_revenue_account_code" text`);
+  await db.execute(sql`ALTER TABLE "fee_types" ADD COLUMN IF NOT EXISTS "default_xero_payment_account_code" text`);
 
   await db.execute(sql`
     INSERT INTO "fee_types" ("fee_type", "label")
@@ -217,6 +222,82 @@ async function ensureFinanceHubSchema(log: Logger): Promise<void> {
   await db.execute(sql`CREATE INDEX IF NOT EXISTS "transactions_date_idx" ON "transactions"("date")`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS "transactions_event_fee_id_idx" ON "transactions"("event_fee_id")`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS "transactions_fee_type_idx" ON "transactions"("fee_type")`);
+
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS "accounting_connections" (
+      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      "studio_key" text NOT NULL DEFAULT 'default',
+      "provider" text NOT NULL,
+      "is_active" boolean NOT NULL DEFAULT false,
+      "status" text NOT NULL DEFAULT 'disconnected',
+      "oauth_type" text NOT NULL DEFAULT 'oauth2',
+      "access_token" text,
+      "refresh_token" text,
+      "token_expires_at" timestamp,
+      "refresh_token_expires_at" timestamp,
+      "scope" text,
+      "realm_id" text,
+      "tenant_id" text,
+      "tenant_name" text,
+      "external_user_id" text,
+      "last_synced_at" timestamp,
+      "last_error" text,
+      "created_at" timestamp NOT NULL DEFAULT now(),
+      "updated_at" timestamp NOT NULL DEFAULT now()
+    )
+  `);
+
+  await db.execute(sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS "accounting_connections_studio_provider_unique_idx"
+      ON "accounting_connections"("studio_key", "provider")
+  `);
+
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS "accounting_sync_records" (
+      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      "studio_key" text NOT NULL DEFAULT 'default',
+      "provider" text NOT NULL,
+      "connection_id" uuid,
+      "transaction_id" uuid NOT NULL,
+      "external_object_type" text NOT NULL DEFAULT 'other',
+      "external_object_id" text,
+      "idempotency_key" text NOT NULL,
+      "fingerprint" text NOT NULL,
+      "status" text NOT NULL DEFAULT 'pending',
+      "retry_count" integer NOT NULL DEFAULT 0,
+      "last_error" text,
+      "synced_at" timestamp,
+      "created_at" timestamp NOT NULL DEFAULT now(),
+      "updated_at" timestamp NOT NULL DEFAULT now(),
+      CONSTRAINT "accounting_sync_records_tx_fk" FOREIGN KEY ("transaction_id") REFERENCES "transactions"("id") ON DELETE cascade,
+      CONSTRAINT "accounting_sync_records_connection_fk" FOREIGN KEY ("connection_id") REFERENCES "accounting_connections"("id") ON DELETE set null
+    )
+  `);
+
+  await db.execute(sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS "accounting_sync_records_studio_provider_tx_unique_idx"
+      ON "accounting_sync_records"("studio_key", "provider", "transaction_id")
+  `);
+
+  await db.execute(sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS "accounting_sync_records_studio_provider_idem_unique_idx"
+      ON "accounting_sync_records"("studio_key", "provider", "idempotency_key")
+  `);
+
+  await db.execute(sql`
+    UPDATE "transactions"
+    SET "sync_status" = 'pending'
+    WHERE "sync_status" IS NULL
+      OR "sync_status" NOT IN ('pending', 'synced', 'failed')
+  `);
+
+  await db.execute(sql`
+    INSERT INTO "accounting_connections" ("studio_key", "provider", "is_active", "status", "oauth_type")
+    VALUES
+      ('default', 'quickbooks', false, 'disconnected', 'oauth2'),
+      ('default', 'xero', false, 'disconnected', 'oauth2_pkce')
+    ON CONFLICT ("studio_key", "provider") DO NOTHING
+  `);
 
   await db.execute(sql`
     INSERT INTO "transactions" (

@@ -1,5 +1,77 @@
 # Finance → Tuition Phase 1 Handoff (Owner Accounting Hub)
 
+Date: 2026-02-20 (accounting provider integration checkpoint)
+
+## ✅ Latest implementation checkpoint (new)
+
+This handoff was updated after implementing **QuickBooks + Xero provider plumbing** for Finance sync.
+
+### What is now implemented
+
+- Added provider-agnostic accounting integration schema in `server/schema.ts`:
+  - `accounting_connections`
+    - one row per studio/provider
+    - supports `quickbooks` and `xero`
+    - tracks active provider lock (`is_active`), token state, tenant/realm metadata, and last error/sync timestamps
+  - `accounting_sync_records`
+    - per-transaction provider mapping
+    - idempotency key + fingerprint safeguards
+    - external object ID tracking (invoice/payment)
+    - retry/error status model
+  - Added Xero defaults on `fee_types`:
+    - `default_xero_revenue_account_code`
+    - `default_xero_payment_account_code`
+
+- Extended startup migration logic in `server/migrations.ts` to auto-ensure:
+  - new `fee_types` Xero columns
+  - `accounting_connections` + unique `(studio_key, provider)` index
+  - `accounting_sync_records` + unique `(studio_key, provider, transaction_id)` and `(studio_key, provider, idempotency_key)` indexes
+  - default connection seeds for studio `default` with both providers disconnected
+
+- Added new backend route module `server/accounting-routes.ts` and wired it into `server/routes.ts`:
+  - OAuth/connect endpoints:
+    - `POST /api/accounting/connect/:provider`
+    - `GET /api/accounting/callback/quickbooks`
+    - `GET /api/accounting/callback/xero`
+  - connection management:
+    - `GET /api/accounting/connections`
+    - `POST /api/accounting/activate/:provider`
+    - `POST /api/accounting/disconnect/:provider`
+  - sync + reconciliation endpoints:
+    - `POST /api/accounting/sync/run`
+    - `GET /api/accounting/sync-records`
+
+### Provider architecture behavior
+
+- One active write provider per studio via `is_active` enforcement (`setActiveProvider`).
+- OAuth state and PKCE verifier handling for Xero in-memory state store (short-lived).
+- QuickBooks token exchange/refresh and realm-based API routing.
+- Xero PKCE token exchange/refresh plus tenant discovery via `/connections`.
+- Transaction sync adapter picks provider at runtime and maps:
+  - `charge` → external invoice
+  - `payment` → external payment/sales receipt flow
+- Sync is idempotent using stable key hash derived from studio/provider/transaction payload.
+- Sync writes back to:
+  - `accounting_sync_records` (status/external IDs/errors)
+  - `transactions.sync_status` (`pending|synced|failed`)
+  - `accounting_connections.last_error/last_synced_at/status`
+
+### Environment config template updated
+
+- `.env.example` now includes required QB/Xero vars for auth + sync defaults.
+
+### Notes / caveats
+
+- Existing local unrelated file edits are still present in working tree:
+  - `client/src/components/finance/TuitionHubPanel.tsx`
+  - `client/src/hooks/useData.ts`
+- New integration code is backend-first and API-driven; no Finance UI wiring added yet for these new endpoints.
+- Typecheck should be rerun after final env and any pending merge cleanup.
+
+---
+
+## Previous checkpoint (kept for context)
+
 Date: 2026-02-18 (late-night checkpoint)
 
 ## Current checkpoint

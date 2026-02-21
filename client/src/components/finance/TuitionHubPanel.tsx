@@ -29,10 +29,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  useCreateFinanceEvent,
+  useCreateFinanceEventFee,
   useFinanceDancerLedger,
   useFinanceDancers,
   useFinanceEvents,
   useRecordFinancePayment,
+  useUpdateFinanceEvent,
+  type FinanceEvent,
   type FinanceDancersQuery,
   type FinanceDancerLevel,
   type FinanceEventPaymentStatus,
@@ -54,6 +58,16 @@ const EVENT_STATUS_FILTER_OPTIONS: Array<{ label: string; value: "all" | Finance
   { label: "Paid", value: "paid" },
   { label: "Unpaid", value: "unpaid" },
   { label: "Partial", value: "partial" },
+];
+
+const EVENT_TYPE_OPTIONS: Array<{
+  label: string;
+  value: "competition" | "nationals" | "recital" | "other";
+}> = [
+  { label: "Competition", value: "competition" },
+  { label: "Nationals", value: "nationals" },
+  { label: "Recital", value: "recital" },
+  { label: "Other", value: "other" },
 ];
 
 const SORT_OPTIONS: Array<{
@@ -83,6 +97,31 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
   currency: "USD",
   minimumFractionDigits: 2,
 });
+
+type EventDraft = {
+  name: string;
+  type: "competition" | "nationals" | "recital" | "other";
+  seasonYear: string;
+  dueDate: string;
+};
+
+function defaultEventDraft(): EventDraft {
+  return {
+    name: "",
+    type: "competition",
+    seasonYear: String(new Date().getFullYear()),
+    dueDate: "",
+  };
+}
+
+function eventToDraft(event: FinanceEvent): EventDraft {
+  return {
+    name: event.name,
+    type: event.type,
+    seasonYear: String(event.seasonYear),
+    dueDate: event.dueDate ? event.dueDate.slice(0, 10) : "",
+  };
+}
 
 function formatMoney(value: number): string {
   return currencyFormatter.format(value || 0);
@@ -119,6 +158,16 @@ export function TuitionHubPanel() {
   const [paymentAmount, setPaymentAmount] = useState<string>("");
   const [paymentDate, setPaymentDate] = useState<string>(new Date().toISOString().slice(0, 10));
   const [paymentDescription, setPaymentDescription] = useState<string>("");
+  const [paymentEventFeeId, setPaymentEventFeeId] = useState<string>("none");
+
+  const [isAddEventFeeOpen, setIsAddEventFeeOpen] = useState(false);
+  const [newEventFeeEventId, setNewEventFeeEventId] = useState<string>("");
+  const [newEventFeeAmount, setNewEventFeeAmount] = useState<string>("");
+  const [newEventFeeDescription, setNewEventFeeDescription] = useState<string>("");
+
+  const [isManageEventsOpen, setIsManageEventsOpen] = useState(false);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [eventDraft, setEventDraft] = useState<EventDraft>(defaultEventDraft());
 
   const sortOption = SORT_OPTIONS.find((option) => option.value === selectedSort) ?? SORT_OPTIONS[0];
 
@@ -140,6 +189,9 @@ export function TuitionHubPanel() {
     data: ledger,
     isLoading: ledgerLoading,
   } = useFinanceDancerLedger(selectedDancerId);
+  const createEvent = useCreateFinanceEvent();
+  const updateEvent = useUpdateFinanceEvent();
+  const createEventFee = useCreateFinanceEventFee();
   const recordPayment = useRecordFinancePayment();
 
   useEffect(() => {
@@ -152,6 +204,17 @@ export function TuitionHubPanel() {
       setSelectedDancerId(dancers[0].id);
     }
   }, [dancers, selectedDancerId]);
+
+  useEffect(() => {
+    if (!events.length) {
+      setNewEventFeeEventId("");
+      return;
+    }
+
+    if (!newEventFeeEventId || !events.some((event) => event.id === newEventFeeEventId)) {
+      setNewEventFeeEventId(events[0].id);
+    }
+  }, [events, newEventFeeEventId]);
 
   const selectedDancer = useMemo(
     () => dancers.find((dancer) => dancer.id === selectedDancerId) ?? null,
@@ -181,6 +244,152 @@ export function TuitionHubPanel() {
     return map;
   }, [events]);
 
+  const eventFeeBalances = useMemo(() => {
+    const balancesByEventFeeId = new Map<
+      string,
+      {
+        eventFeeId: string;
+        eventId: string | null;
+        eventName: string;
+        charged: number;
+        paid: number;
+        balance: number;
+      }
+    >();
+
+    for (const entry of ledger?.entries ?? []) {
+      if (!entry.eventFeeId) continue;
+
+      const existing = balancesByEventFeeId.get(entry.eventFeeId) ?? {
+        eventFeeId: entry.eventFeeId,
+        eventId: entry.eventId,
+        eventName:
+          entry.eventName ||
+          (entry.eventId ? selectedEventNameById.get(entry.eventId) || "Event fee" : "Event fee"),
+        charged: 0,
+        paid: 0,
+        balance: 0,
+      };
+
+      if (entry.type === "charge") {
+        existing.charged += entry.amount;
+      } else {
+        existing.paid += entry.amount;
+      }
+
+      existing.balance = Number(Math.max(0, existing.charged - existing.paid).toFixed(2));
+      balancesByEventFeeId.set(entry.eventFeeId, existing);
+    }
+
+    return Array.from(balancesByEventFeeId.values()).sort((a, b) => {
+      const balanceDiff = b.balance - a.balance;
+      if (Math.abs(balanceDiff) > 0.009) return balanceDiff;
+      return a.eventName.localeCompare(b.eventName);
+    });
+  }, [ledger?.entries, selectedEventNameById]);
+
+  const openManageEventsCreate = () => {
+    setEditingEventId(null);
+    setEventDraft(defaultEventDraft());
+    setIsManageEventsOpen(true);
+  };
+
+  const openManageEventsEdit = (event: FinanceEvent) => {
+    setEditingEventId(event.id);
+    setEventDraft(eventToDraft(event));
+    setIsManageEventsOpen(true);
+  };
+
+  const handleSaveEvent = async () => {
+    const name = eventDraft.name.trim();
+    const seasonYear = Number(eventDraft.seasonYear);
+
+    if (!name) {
+      toast.error("Event name is required.");
+      return;
+    }
+
+    if (!Number.isFinite(seasonYear) || seasonYear < 2000 || seasonYear > 2100) {
+      toast.error("Enter a valid season year.");
+      return;
+    }
+
+    const payload = {
+      name,
+      type: eventDraft.type,
+      seasonYear: Math.trunc(seasonYear),
+      dueDate: eventDraft.dueDate || null,
+    };
+
+    try {
+      if (editingEventId) {
+        await updateEvent.mutateAsync({ id: editingEventId, data: payload });
+        toast.success("Event updated.");
+      } else {
+        await createEvent.mutateAsync(payload);
+        toast.success("Event created.");
+      }
+
+      setIsManageEventsOpen(false);
+      setEditingEventId(null);
+      setEventDraft(defaultEventDraft());
+    } catch (error: any) {
+      toast.error(error?.message || "Unable to save event.");
+    }
+  };
+
+  const openRecordPaymentForDancer = (dancerId: string) => {
+    const isCurrentDancer = dancerId === selectedDancerId;
+    setSelectedDancerId(dancerId);
+    if (isCurrentDancer) {
+      const firstOpenFee = eventFeeBalances.find((entry) => entry.balance > 0.009);
+      setPaymentEventFeeId(firstOpenFee?.eventFeeId ?? "none");
+    } else {
+      setPaymentEventFeeId("none");
+    }
+    setIsRecordPaymentOpen(true);
+  };
+
+  const openAddEventFeeForDancer = (dancerId: string) => {
+    setSelectedDancerId(dancerId);
+    setIsAddEventFeeOpen(true);
+  };
+
+  const handleCreateEventFee = async () => {
+    const amount = Number(newEventFeeAmount);
+
+    if (!selectedDancerId) {
+      toast.error("Select a dancer account first.");
+      return;
+    }
+
+    if (!newEventFeeEventId) {
+      toast.error("Choose an event.");
+      return;
+    }
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.error("Please enter a valid fee amount.");
+      return;
+    }
+
+    try {
+      await createEventFee.mutateAsync({
+        dancerId: selectedDancerId,
+        eventId: newEventFeeEventId,
+        amount,
+        description: newEventFeeDescription.trim() || undefined,
+      });
+
+      toast.success("Event fee added.");
+      setIsAddEventFeeOpen(false);
+      setNewEventFeeAmount("");
+      setNewEventFeeDescription("");
+    } catch (error: any) {
+      toast.error(error?.message || "Unable to add event fee.");
+    }
+  };
+
   const handleRecordPayment = async () => {
     const amount = Number(paymentAmount);
     if (!selectedDancerId) {
@@ -198,7 +407,8 @@ export function TuitionHubPanel() {
         dancerId: selectedDancerId,
         amount,
         date: paymentDate,
-        description: paymentDescription.trim() || "Payment received",
+        description: paymentDescription.trim() || undefined,
+        eventFeeId: paymentEventFeeId !== "none" ? paymentEventFeeId : undefined,
       });
 
       toast.success("Payment recorded.");
@@ -206,6 +416,7 @@ export function TuitionHubPanel() {
       setPaymentAmount("");
       setPaymentDescription("");
       setPaymentDate(new Date().toISOString().slice(0, 10));
+      setPaymentEventFeeId("none");
     } catch (error: any) {
       toast.error(error?.message || "Unable to record payment.");
     }
@@ -270,7 +481,37 @@ export function TuitionHubPanel() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                <div className="sm:pt-5">
+                  <Button variant="outline" onClick={openManageEventsCreate}>
+                    Manage events
+                  </Button>
+                </div>
               </div>
+
+              {events.length > 0 ? (
+                <div className="rounded-lg border bg-secondary/15 p-3">
+                  <div className="flex flex-wrap gap-2">
+                    {events.map((event) => (
+                      <button
+                        key={event.id}
+                        type="button"
+                        className={cn(
+                          "inline-flex items-center gap-2 rounded-md border px-2 py-1 text-xs",
+                          "hover:bg-white transition-colors",
+                          selectedEventId === event.id
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border bg-white text-foreground",
+                        )}
+                        onClick={() => openManageEventsEdit(event)}
+                      >
+                        <span className="font-medium">{event.name}</span>
+                        <span className="text-muted-foreground">{event.seasonYear}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
 
               <div className="flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
                 <div className="flex flex-wrap gap-4">
@@ -356,16 +597,38 @@ export function TuitionHubPanel() {
                             <div className="flex flex-wrap gap-1.5">{statusChips}</div>
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant={isSelected ? "default" : "outline"}
-                              size="sm"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                setSelectedDancerId(dancer.id);
-                              }}
-                            >
-                              View account
-                            </Button>
+                            <div className="flex flex-wrap gap-2 justify-end">
+                              <Button
+                                variant={isSelected ? "default" : "outline"}
+                                size="sm"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  setSelectedDancerId(dancer.id);
+                                }}
+                              >
+                                View
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  openAddEventFeeForDancer(dancer.id);
+                                }}
+                              >
+                                + Fee
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  openRecordPaymentForDancer(dancer.id);
+                                }}
+                              >
+                                + Payment
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       );
@@ -392,10 +655,45 @@ export function TuitionHubPanel() {
                 <p>
                   Last payment date: <span className="font-medium text-foreground">{formatDate(ledger?.lastPaymentDate)}</span>
                 </p>
+
+                {eventFeeBalances.length ? (
+                  <div className="space-y-1.5 pt-2">
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">
+                      Event balances
+                    </p>
+                    <div className="space-y-1.5">
+                      {eventFeeBalances.map((eventFee) => (
+                        <div
+                          key={eventFee.eventFeeId}
+                          className="rounded-md border bg-secondary/20 px-2 py-1.5 text-xs flex items-center justify-between gap-2"
+                        >
+                          <span className="truncate">{eventFee.eventName}</span>
+                          <span className={cn("font-semibold", eventFee.balance <= 0.009 ? "text-green-700" : "text-red-700")}> 
+                            {eventFee.balance <= 0.009 ? "Paid" : formatMoney(eventFee.balance)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground pt-2">No event fees assigned yet.</p>
+                )}
               </div>
-              <Button disabled={!selectedDancerId} onClick={() => setIsRecordPaymentOpen(true)}>
-                Record payment
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  disabled={!selectedDancerId}
+                  onClick={() => selectedDancerId && openRecordPaymentForDancer(selectedDancerId)}
+                >
+                  Record payment
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={!selectedDancerId}
+                  onClick={() => setIsAddEventFeeOpen(true)}
+                >
+                  Add event fee
+                </Button>
+              </div>
             </CardHeader>
           </Card>
 
@@ -455,6 +753,182 @@ export function TuitionHubPanel() {
         </div>
       </div>
 
+      <Dialog
+        open={isAddEventFeeOpen}
+        onOpenChange={(open) => {
+          setIsAddEventFeeOpen(open);
+          if (!open) {
+            setNewEventFeeAmount("");
+            setNewEventFeeDescription("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Add event fee</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="event-fee-event">Event</Label>
+              <Select
+                value={newEventFeeEventId || undefined}
+                onValueChange={setNewEventFeeEventId}
+                disabled={!events.length}
+              >
+                <SelectTrigger id="event-fee-event">
+                  <SelectValue placeholder={events.length ? "Select event" : "No events available"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {events.map((event) => (
+                    <SelectItem key={event.id} value={event.id}>
+                      {event.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="event-fee-amount">Amount</Label>
+              <Input
+                id="event-fee-amount"
+                type="number"
+                min="0"
+                step="0.01"
+                value={newEventFeeAmount}
+                onChange={(event) => setNewEventFeeAmount(event.target.value)}
+                placeholder="0.00"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="event-fee-description">Description</Label>
+              <Input
+                id="event-fee-description"
+                value={newEventFeeDescription}
+                onChange={(event) => setNewEventFeeDescription(event.target.value)}
+                placeholder="Optional note"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddEventFeeOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateEventFee} disabled={createEventFee.isPending || !events.length}>
+              {createEventFee.isPending ? "Saving..." : "Add event fee"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isManageEventsOpen}
+        onOpenChange={(open) => {
+          setIsManageEventsOpen(open);
+          if (!open) {
+            setEditingEventId(null);
+            setEventDraft(defaultEventDraft());
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[460px]">
+          <DialogHeader>
+            <DialogTitle>{editingEventId ? "Edit event" : "Create event"}</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="event-name">Event name</Label>
+              <Input
+                id="event-name"
+                value={eventDraft.name}
+                onChange={(event) =>
+                  setEventDraft((prev) => ({
+                    ...prev,
+                    name: event.target.value,
+                  }))
+                }
+                placeholder="Regional competition"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="event-type">Type</Label>
+                <Select
+                  value={eventDraft.type}
+                  onValueChange={(value) =>
+                    setEventDraft((prev) => ({
+                      ...prev,
+                      type: value as EventDraft["type"],
+                    }))
+                  }
+                >
+                  <SelectTrigger id="event-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {EVENT_TYPE_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="event-season-year">Season year</Label>
+                <Input
+                  id="event-season-year"
+                  type="number"
+                  min="2000"
+                  max="2100"
+                  value={eventDraft.seasonYear}
+                  onChange={(event) =>
+                    setEventDraft((prev) => ({
+                      ...prev,
+                      seasonYear: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="event-due-date">Due date</Label>
+              <Input
+                id="event-due-date"
+                type="date"
+                value={eventDraft.dueDate}
+                onChange={(event) =>
+                  setEventDraft((prev) => ({
+                    ...prev,
+                    dueDate: event.target.value,
+                  }))
+                }
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsManageEventsOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEvent} disabled={createEvent.isPending || updateEvent.isPending}>
+              {createEvent.isPending || updateEvent.isPending
+                ? "Saving..."
+                : editingEventId
+                  ? "Save event"
+                  : "Create event"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isRecordPaymentOpen} onOpenChange={setIsRecordPaymentOpen}>
         <DialogContent className="sm:max-w-[420px]">
           <DialogHeader>
@@ -462,6 +936,23 @@ export function TuitionHubPanel() {
           </DialogHeader>
 
           <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="payment-event-fee">Apply to</Label>
+              <Select value={paymentEventFeeId} onValueChange={setPaymentEventFeeId}>
+                <SelectTrigger id="payment-event-fee">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">General payment (no event)</SelectItem>
+                  {eventFeeBalances.map((eventFee) => (
+                    <SelectItem key={eventFee.eventFeeId} value={eventFee.eventFeeId}>
+                      {eventFee.eventName} · {eventFee.balance <= 0.009 ? "Paid" : `${formatMoney(eventFee.balance)} due`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="payment-amount">Amount</Label>
               <Input

@@ -747,11 +747,23 @@ export class Storage {
   }
 
   async getFinanceDancers(query: FinanceDancersQuery): Promise<FinanceDancerListRow[]> {
-    const [allDancers, allTransactions, allEventFees] = await Promise.all([
+    const [allDancers, allTransactions, allEventFees, allCompetitionRegistrations] = await Promise.all([
       this.getDancers(),
       this.getTransactions(),
       this.db.select().from(eventFees),
+      this.db.select({ dancerId: competitionRegistrations.dancerId }).from(competitionRegistrations),
     ]);
+
+    const inferredCompetitionDancerIds = new Set<string>();
+    for (const registration of allCompetitionRegistrations) {
+      inferredCompetitionDancerIds.add(registration.dancerId);
+    }
+
+    for (const transaction of allTransactions) {
+      if (transaction.feeType === "competition") {
+        inferredCompetitionDancerIds.add(transaction.dancerId);
+      }
+    }
 
     const balances = new Map<string, number>();
     for (const transaction of allTransactions) {
@@ -782,7 +794,8 @@ export class Storage {
         level,
         birthdate,
         age,
-        isCompetitionDancer: Boolean((dancer as any).isCompetitionDancer),
+        isCompetitionDancer:
+          Boolean((dancer as any).isCompetitionDancer) || inferredCompetitionDancerIds.has(dancer.id),
         currentBalance: Number((balances.get(dancer.id) ?? 0).toFixed(2)),
         eventStatuses: eventStatusesByDancer.get(dancer.id) ?? {},
       };
