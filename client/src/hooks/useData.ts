@@ -999,13 +999,14 @@ export function useDeleteMessage() {
 export type ChatActorContext = {
   id: string;
   name: string;
-  role: "owner" | "staff" | "parent";
+  role: "owner" | "manager" | "staff" | "parent";
+  studioKey?: string;
 };
 
 export type NewThreadParticipantInput = {
   participantId: string;
   participantName: string;
-  participantRole: "owner" | "staff" | "parent";
+  participantRole: "owner" | "manager" | "staff" | "parent";
   authorized?: boolean;
 };
 
