@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, MessageCircle, Plus, Send, ShieldCheck, Users, CheckCheck } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { toast } from "react-hot-toast";
+import { useAuth } from "@/lib/auth";
 import {
   type ChatActorContext,
   type NewThreadParticipantInput,
@@ -31,17 +32,25 @@ import {
 
 type ThreadType = "direct_parent_staff" | "compchat" | "group_broadcast";
 
-const actorPresets: Record<string, ChatActorContext> = {
-  owner: { id: "owner-1", name: "Studio Owner", role: "owner" },
-  staff: { id: "staff-1", name: "Front Desk Staff", role: "staff" },
-  parent: { id: "parent-1", name: "Parent User", role: "parent" },
-};
-
 export default function MessagesOwnerViewMobile() {
-  const [actorKey, setActorKey] = useState<keyof typeof actorPresets>("owner");
-  const actor = actorPresets[actorKey];
+  const { currentUser } = useAuth();
 
-  const { data: threads = [], isLoading: loadingThreads } = useChatThreads(actor.id, actor.role);
+  const actor = useMemo<ChatActorContext | null>(() => {
+    if (!currentUser) return null;
+    return {
+      id: currentUser.id,
+      name: currentUser.name,
+      role: currentUser.role,
+      studioKey: currentUser.studioKey,
+    };
+  }, [currentUser]);
+
+  const actorRole = actor?.role ?? "parent";
+
+  const canCreateCompChat = actorRole === "owner" || actorRole === "manager";
+  const canSendCompChatBroadcast = canCreateCompChat;
+
+  const { data: threads = [], isLoading: loadingThreads, error: threadsError } = useChatThreads(actor ?? undefined);
   const createThread = useCreateChatThread();
   const createMessage = useCreateChatMessage();
   const markRead = useMarkChatMessageRead();
@@ -66,8 +75,28 @@ export default function MessagesOwnerViewMobile() {
     [threads, selectedThreadId],
   );
 
-  const { data: messages = [], isLoading: loadingMessages } = useChatThreadMessages(selectedThreadId || undefined);
-  const { data: readSummary = {} } = useChatThreadReadSummary(selectedThreadId || undefined);
+  const safeSelectedThreadId = selectedThread?.id;
+
+  useEffect(() => {
+    if (!threads.length) {
+      if (selectedThreadId) setSelectedThreadId("");
+      return;
+    }
+
+    if (!threads.some((thread) => thread.id === selectedThreadId)) {
+      setSelectedThreadId(threads[0].id);
+    }
+  }, [threads, selectedThreadId]);
+
+  const {
+    data: messages = [],
+    isLoading: loadingMessages,
+    error: messagesError,
+  } = useChatThreadMessages(safeSelectedThreadId, actor ?? undefined);
+  const {
+    data: readSummary = {},
+    error: readSummaryError,
+  } = useChatThreadReadSummary(safeSelectedThreadId, actor ?? undefined);
 
   const grouped = useMemo(() => {
     return {
@@ -77,12 +106,15 @@ export default function MessagesOwnerViewMobile() {
     };
   }, [threads]);
 
-  const canCreateCompChat = actor.role === "owner" || actor.role === "staff";
-
   const handleCreateThread = async () => {
+    if (!actor) {
+      toast.error("You must be signed in to create a thread");
+      return;
+    }
+
     if (!threadDraft.title.trim()) return toast.error("Thread title is required");
     if (threadDraft.type === "compchat" && !canCreateCompChat) {
-      return toast.error("Only studio staff can create CompChat broadcasts");
+      return toast.error("Only owner/manager can create CompChat broadcasts");
     }
 
     try {
@@ -134,11 +166,16 @@ export default function MessagesOwnerViewMobile() {
   };
 
   const handleSendMessage = async () => {
+    if (!actor) {
+      toast.error("You must be signed in to send a message");
+      return;
+    }
+
     if (!selectedThread) return;
     if (!messageDraft.trim()) return toast.error("Message cannot be empty");
 
-    if (sendAsStaffBroadcast && !(actor.role === "owner" || actor.role === "staff")) {
-      return toast.error("Only studio staff can send broadcast messages");
+    if (sendAsStaffBroadcast && !canSendCompChatBroadcast) {
+      return toast.error("Only owner/manager can send CompChat broadcasts");
     }
 
     try {
@@ -161,20 +198,34 @@ export default function MessagesOwnerViewMobile() {
   };
 
   const handleMarkThreadRead = async () => {
+    if (!actor) {
+      toast.error("You must be signed in to mark messages read");
+      return;
+    }
+
+    if (!selectedThread) {
+      toast.error("Select a thread first");
+      return;
+    }
+
+    if (!messages.length) {
+      toast("No messages to mark as read");
+      return;
+    }
+
     try {
-      for (const m of messages) {
-        await markRead.mutateAsync({
-          messageId: m.id,
-          reader: {
-            readerId: actor.id,
-            readerName: actor.name,
-            readerRole: actor.role,
-          },
-        });
-      }
+      await Promise.all(
+        messages.map((m) =>
+          markRead.mutateAsync({
+            messageId: m.id,
+            threadId: selectedThread.id,
+            actor,
+          }),
+        ),
+      );
       toast.success("Marked as read");
-    } catch {
-      toast.error("Failed to mark read");
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to mark read");
     }
   };
 
@@ -215,24 +266,19 @@ export default function MessagesOwnerViewMobile() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-3xl font-display font-bold">Messages / CompChat</h1>
-            <p className="text-muted-foreground">Parent ↔ studio chat with staff-controlled CompChat broadcasts and read tracking.</p>
+            <p className="text-muted-foreground">
+              Parent ↔ studio chat with owner/manager-controlled CompChat broadcasts and read tracking.
+            </p>
           </div>
 
           <div className="flex items-center gap-2">
-            <Label className="text-sm">Viewing as</Label>
-            <select
-              className="h-9 rounded-md border px-2 text-sm bg-background"
-              value={actorKey}
-              onChange={(e) => setActorKey(e.target.value as keyof typeof actorPresets)}
-            >
-              <option value="owner">Owner</option>
-              <option value="staff">Staff</option>
-              <option value="parent">Parent</option>
-            </select>
+            <Badge variant="outline" className="capitalize">
+              Signed in as: {currentUser?.name ?? "Unknown"} ({currentUser?.role ?? "guest"})
+            </Badge>
 
             <Dialog open={openNewThread} onOpenChange={setOpenNewThread}>
               <DialogTrigger asChild>
-                <Button>
+                <Button disabled={!actor}>
                   <Plus className="w-4 h-4 mr-2" /> New Thread
                 </Button>
               </DialogTrigger>
@@ -240,7 +286,7 @@ export default function MessagesOwnerViewMobile() {
                 <DialogHeader>
                   <DialogTitle>Create Chat Thread</DialogTitle>
                   <DialogDescription>
-                    CompChat is studio-staff initiated. Parents can still reply inside authorized threads.
+                    CompChat is owner/manager initiated. Parents can still reply inside authorized threads.
                   </DialogDescription>
                 </DialogHeader>
 
@@ -258,7 +304,7 @@ export default function MessagesOwnerViewMobile() {
                       onChange={(e) => setThreadDraft({ ...threadDraft, type: e.target.value as ThreadType })}
                     >
                       <option value="direct_parent_staff">Direct Parent + Staff</option>
-                      <option value="compchat">CompChat (Staff Broadcast)</option>
+                      <option value="compchat" disabled={!canCreateCompChat}>CompChat (Owner/Manager Broadcast)</option>
                       <option value="group_broadcast">Group Broadcast</option>
                     </select>
                   </div>
@@ -320,7 +366,9 @@ export default function MessagesOwnerViewMobile() {
                   <TabsTrigger value="compchat">CompChat</TabsTrigger>
                   <TabsTrigger value="direct">Direct</TabsTrigger>
                 </TabsList>
-                {loadingThreads ? (
+                {threadsError ? (
+                  <p className="text-sm text-destructive">Unable to load threads. Try again.</p>
+                ) : loadingThreads ? (
                   <p className="text-sm text-muted-foreground">Loading threads...</p>
                 ) : (
                   <>
@@ -346,13 +394,22 @@ export default function MessagesOwnerViewMobile() {
               ) : (
                 <>
                   <div className="flex justify-end">
-                    <Button size="sm" variant="outline" onClick={handleMarkThreadRead}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleMarkThreadRead}
+                      disabled={!messages.length || markRead.isPending}
+                    >
                       <CheckCheck className="w-4 h-4 mr-2" /> Mark Thread Read
                     </Button>
                   </div>
 
                   <div className="space-y-3 max-h-[420px] overflow-auto pr-1">
-                    {loadingMessages ? (
+                    {messagesError ? (
+                      <p className="text-sm text-destructive">Unable to load this conversation.</p>
+                    ) : readSummaryError ? (
+                      <p className="text-sm text-destructive">Unable to load read status.</p>
+                    ) : loadingMessages ? (
                       <p className="text-sm text-muted-foreground">Loading messages...</p>
                     ) : messages.length === 0 ? (
                       <p className="text-sm text-muted-foreground">No messages yet.</p>
@@ -393,11 +450,11 @@ export default function MessagesOwnerViewMobile() {
                         <Switch
                           checked={sendAsStaffBroadcast}
                           onCheckedChange={setSendAsStaffBroadcast}
-                          disabled={!(actor.role === "owner" || actor.role === "staff")}
+                          disabled={!canSendCompChatBroadcast}
                         />
-                        <span className="text-sm">Send as staff broadcast</span>
+                        <span className="text-sm">Send as CompChat broadcast</span>
                       </div>
-                      <Button onClick={handleSendMessage}>
+                      <Button onClick={handleSendMessage} disabled={createMessage.isPending || !actor}>
                         <Send className="w-4 h-4 mr-2" /> Send
                       </Button>
                     </div>

@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { type Server } from "http";
 import { storage } from "./storage";
+import { registerAccountingRoutes } from "./accounting-routes";
 import { registerPDFParserRoutes } from "./pdf-parser-routes";
 import { registerRunSheetRoutes } from "./run-sheet-routes";
 import { z } from "zod";
@@ -29,20 +30,35 @@ import type {
   FeeType,
 } from "./schema";
 
-type ActorRole = "owner" | "staff" | "parent";
+type ActorRole = "owner" | "manager" | "staff" | "parent";
 
 function getActor(req: any): { id: string; name: string; role: ActorRole } {
   const role = (req.headers["x-user-role"] || "owner") as ActorRole;
   return {
     id: (req.headers["x-user-id"] as string) || "owner-1",
     name: (req.headers["x-user-name"] as string) || "Studio Owner",
-    role: ["owner", "staff", "parent"].includes(role) ? role : "owner",
+    role: ["owner", "manager", "staff", "parent"].includes(role) ? role : "owner",
   };
 }
 
 function isStudioStaff(role: string): boolean {
-  return role === "owner" || role === "staff";
+  return role === "owner" || role === "manager" || role === "staff";
 }
+
+function canCreateCompChat(role: ActorRole): boolean {
+  return role === "owner" || role === "manager";
+}
+
+const DEFAULT_STUDIO_COMPCHAT_RECIPIENTS: Array<{
+  participantId: string;
+  participantName: string;
+  participantRole: ActorRole;
+}> = [
+  { participantId: "owner-1", participantName: "Studio Owner", participantRole: "owner" },
+  { participantId: "manager-1", participantName: "Studio Manager", participantRole: "manager" },
+  { participantId: "staff-1", participantName: "Front Desk Staff", participantRole: "staff" },
+  { participantId: "parent-1", participantName: "Parent User", participantRole: "parent" },
+];
 
 const CLASS_PROGRAM_TYPES = ["REC", "COMP", "BOTH"] as const;
 type ClassProgramType = (typeof CLASS_PROGRAM_TYPES)[number];
@@ -1131,19 +1147,14 @@ export async function registerRoutes(
   // ========== CHAT THREADS ==========
   app.get("/api/chat/threads", async (req, res) => {
     try {
-      const participantId = req.query.participantId as string | undefined;
-      const role = (req.query.role as string | undefined) || "owner";
+      const actor = getActor(req);
       const allThreads = await storage.getChatThreads();
-
-      if (!participantId) {
-        return res.json(allThreads);
-      }
 
       const visible: typeof allThreads = [];
       for (const thread of allThreads) {
         const participants = await storage.getChatThreadParticipants(thread.id);
-        const isParticipant = participants.some((p) => p.participantId === participantId && p.authorized);
-        if (isParticipant || isStudioStaff(role)) {
+        const isParticipant = participants.some((p) => p.participantId === actor.id && p.authorized);
+        if (isParticipant || isStudioStaff(actor.role)) {
           visible.push(thread);
         }
       }
@@ -1180,8 +1191,12 @@ export async function registerRoutes(
 
       const requestedType = payload.type || "direct_parent_staff";
       const staffOnlyBroadcast = !!payload.staffOnlyBroadcast || requestedType === "compchat";
+      if (requestedType === "compchat" && !canCreateCompChat(actor.role)) {
+        return res.status(403).json({ error: "Only owner/manager can create CompChat broadcasts" });
+      }
+
       if (staffOnlyBroadcast && !isStudioStaff(actor.role)) {
-        return res.status(403).json({ error: "Only studio staff can create staff broadcasts" });
+        return res.status(403).json({ error: "Only studio staff can create broadcasts" });
       }
 
       const thread = await storage.createChatThread({
@@ -1290,8 +1305,8 @@ export async function registerRoutes(
       }
 
       const isStaffBroadcast = !!payload.isStaffBroadcast;
-      if (isStaffBroadcast && !isStudioStaff(actor.role)) {
-        return res.status(403).json({ error: "Only staff can send broadcasts" });
+      if (isStaffBroadcast && !(thread.type === "compchat" && canCreateCompChat(actor.role))) {
+        return res.status(403).json({ error: "Only owner/manager can send CompChat broadcasts" });
       }
 
       const message = await storage.createChatMessage({
@@ -1781,6 +1796,9 @@ export async function registerRoutes(
 
   // ========== RUN SHEET ROUTES (NEW SIMPLIFIED APPROACH) ==========
   registerRunSheetRoutes(app);
+
+  // ========== ACCOUNTING INTEGRATION ROUTES (QB + XERO) ==========
+  registerAccountingRoutes(app);
 
   return httpServer;
 }

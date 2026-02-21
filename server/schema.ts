@@ -10,6 +10,7 @@ import {
   date,
   uuid,
   primaryKey,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { createId } from "@paralleldrive/cuid2";
 import { relations } from "drizzle-orm";
@@ -454,6 +455,18 @@ export type TransactionType = (typeof transactionTypeValues)[number];
 export const syncStatusValues = ["pending", "synced", "failed"] as const;
 export type SyncStatus = (typeof syncStatusValues)[number];
 
+export const accountingProviderValues = ["quickbooks", "xero"] as const;
+export type AccountingProvider = (typeof accountingProviderValues)[number];
+
+export const accountingConnectionStatusValues = ["disconnected", "connected", "error"] as const;
+export type AccountingConnectionStatus = (typeof accountingConnectionStatusValues)[number];
+
+export const accountingSyncRecordStatusValues = ["pending", "synced", "failed", "skipped"] as const;
+export type AccountingSyncRecordStatus = (typeof accountingSyncRecordStatusValues)[number];
+
+export const accountingObjectTypeValues = ["invoice", "payment", "bank_transaction", "other"] as const;
+export type AccountingObjectType = (typeof accountingObjectTypeValues)[number];
+
 export const events = pgTable("events", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
@@ -504,11 +517,75 @@ export const transactions = pgTable("transactions", {
 export type Transaction = typeof transactions.$inferSelect;
 export type InsertTransaction = typeof transactions.$inferInsert;
 
+export const accountingConnections = pgTable("accounting_connections", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  studioKey: text("studio_key").notNull().default("default"),
+  provider: text("provider").$type<AccountingProvider>().notNull(),
+  isActive: boolean("is_active").notNull().default(false),
+  status: text("status").$type<AccountingConnectionStatus>().notNull().default("disconnected"),
+  oauthType: text("oauth_type").notNull().default("oauth2"),
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  tokenExpiresAt: timestamp("token_expires_at"),
+  refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
+  scope: text("scope"),
+  realmId: text("realm_id"),
+  tenantId: text("tenant_id"),
+  tenantName: text("tenant_name"),
+  externalUserId: text("external_user_id"),
+  lastSyncedAt: timestamp("last_synced_at"),
+  lastError: text("last_error"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  studioProviderUniqueIdx: uniqueIndex("accounting_connections_studio_provider_unique_idx").on(
+    table.studioKey,
+    table.provider,
+  ),
+}));
+
+export type AccountingConnection = typeof accountingConnections.$inferSelect;
+export type InsertAccountingConnection = typeof accountingConnections.$inferInsert;
+
+export const accountingSyncRecords = pgTable("accounting_sync_records", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  studioKey: text("studio_key").notNull().default("default"),
+  provider: text("provider").$type<AccountingProvider>().notNull(),
+  connectionId: uuid("connection_id").references(() => accountingConnections.id, { onDelete: "set null" }),
+  transactionId: uuid("transaction_id").notNull().references(() => transactions.id, { onDelete: "cascade" }),
+  externalObjectType: text("external_object_type").$type<AccountingObjectType>().notNull().default("other"),
+  externalObjectId: text("external_object_id"),
+  idempotencyKey: text("idempotency_key").notNull(),
+  fingerprint: text("fingerprint").notNull(),
+  status: text("status").$type<AccountingSyncRecordStatus>().notNull().default("pending"),
+  retryCount: integer("retry_count").notNull().default(0),
+  lastError: text("last_error"),
+  syncedAt: timestamp("synced_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  studioProviderTransactionUniqueIdx: uniqueIndex("accounting_sync_records_studio_provider_tx_unique_idx").on(
+    table.studioKey,
+    table.provider,
+    table.transactionId,
+  ),
+  studioProviderIdempotencyUniqueIdx: uniqueIndex("accounting_sync_records_studio_provider_idem_unique_idx").on(
+    table.studioKey,
+    table.provider,
+    table.idempotencyKey,
+  ),
+}));
+
+export type AccountingSyncRecord = typeof accountingSyncRecords.$inferSelect;
+export type InsertAccountingSyncRecord = typeof accountingSyncRecords.$inferInsert;
+
 export const feeTypes = pgTable("fee_types", {
   feeType: text("fee_type").$type<FeeType>().primaryKey(),
   label: text("label").notNull(),
   defaultQuickbooksItemId: text("default_quickbooks_item_id"),
   defaultQuickbooksAccountId: text("default_quickbooks_account_id"),
+  defaultXeroRevenueAccountCode: text("default_xero_revenue_account_code"),
+  defaultXeroPaymentAccountCode: text("default_xero_payment_account_code"),
   defaultWaveIncomeAccountId: text("default_wave_income_account_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -541,6 +618,21 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
   eventFee: one(eventFees, {
     fields: [transactions.eventFeeId],
     references: [eventFees.id],
+  }),
+}));
+
+export const accountingConnectionsRelations = relations(accountingConnections, ({ many }) => ({
+  syncRecords: many(accountingSyncRecords),
+}));
+
+export const accountingSyncRecordsRelations = relations(accountingSyncRecords, ({ one }) => ({
+  connection: one(accountingConnections, {
+    fields: [accountingSyncRecords.connectionId],
+    references: [accountingConnections.id],
+  }),
+  transaction: one(transactions, {
+    fields: [accountingSyncRecords.transactionId],
+    references: [transactions.id],
   }),
 }));
 

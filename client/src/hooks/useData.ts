@@ -122,6 +122,13 @@ export type FinanceEvent = {
   updatedAt: string;
 };
 
+export type FinanceEventPayload = {
+  name: string;
+  type: FinanceEvent["type"];
+  seasonYear: number;
+  dueDate?: string | null;
+};
+
 export type FinanceEventFeeStatus = "unbilled" | "billed" | "paid" | "partial";
 
 export type FinanceEventFee = {
@@ -144,6 +151,92 @@ export type FinancePaymentPayload = {
   eventFeeId?: string;
 };
 
+export type AccountingProvider = "quickbooks" | "xero";
+
+export type AccountingConnectionStatus = "connected" | "disconnected" | "error";
+
+export type AccountingConnection = {
+  id: string;
+  studioKey: string;
+  provider: AccountingProvider;
+  oauthType: string;
+  status: AccountingConnectionStatus;
+  isActive: boolean;
+  realmId: string | null;
+  tenantId: string | null;
+  tenantName: string | null;
+  externalUserId: string | null;
+  scope: string | null;
+  tokenExpiresAt: string | null;
+  refreshTokenExpiresAt: string | null;
+  lastSyncedAt: string | null;
+  lastError: string | null;
+  hasAccessToken: boolean;
+  hasRefreshToken: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AccountingConnectResponse = {
+  provider: AccountingProvider;
+  authUrl: string;
+  state: string;
+};
+
+export type AccountingObjectType = "invoice" | "payment" | "bank_transaction" | "other";
+
+export type AccountingSyncRecordStatus = "pending" | "synced" | "failed" | "skipped";
+
+export type AccountingSyncRecord = {
+  id: string;
+  studioKey: string;
+  provider: AccountingProvider;
+  connectionId: string;
+  transactionId: string;
+  externalObjectType: AccountingObjectType;
+  externalObjectId: string | null;
+  idempotencyKey: string;
+  fingerprint: string;
+  status: AccountingSyncRecordStatus;
+  retryCount: number;
+  lastError: string | null;
+  syncedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AccountingSyncRunItem = {
+  transactionId: string;
+  status: "synced" | "failed" | "skipped";
+  provider: AccountingProvider;
+  externalObjectType?: AccountingObjectType;
+  externalObjectId?: string;
+  message?: string;
+};
+
+export type AccountingSyncRunPayload = {
+  provider?: AccountingProvider;
+  transactionIds?: string[];
+  limit?: number;
+  dryRun?: boolean;
+};
+
+export type AccountingSyncRunResponse = {
+  success: boolean;
+  provider: AccountingProvider;
+  dryRun: boolean;
+  synced: number;
+  failed: number;
+  skipped: number;
+  results: AccountingSyncRunItem[];
+};
+
+export type AccountingSyncRecordsQuery = {
+  provider?: AccountingProvider;
+  status?: AccountingSyncRecordStatus;
+  limit?: number;
+};
+
 function buildFinanceDancersQueryString(query?: FinanceDancersQuery): string {
   if (!query) return "";
 
@@ -163,6 +256,12 @@ function buildFinanceDancersQueryString(query?: FinanceDancersQuery): string {
 
   const raw = params.toString();
   return raw ? `?${raw}` : "";
+}
+
+function appendStudioKey(url: string, studioKey?: string): string {
+  if (!studioKey?.trim()) return url;
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}studioKey=${encodeURIComponent(studioKey.trim())}`;
 }
 
 const RAW_API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) || "/api";
@@ -196,6 +295,22 @@ function safeJsonFetch<T>(url: string): Promise<T> {
     }
     return res.json();
   });
+}
+
+async function extractErrorMessage(res: Response): Promise<string> {
+  const raw = await res.text();
+  if (!raw) return `Request failed: ${res.status}`;
+
+  try {
+    const parsed = JSON.parse(raw) as { error?: unknown };
+    if (typeof parsed.error === "string" && parsed.error.trim()) {
+      return parsed.error;
+    }
+  } catch {
+    // noop
+  }
+
+  return raw;
 }
 
 // Dancers
@@ -1184,6 +1299,46 @@ export function useFinanceEvents(seasonYear?: number) {
   });
 }
 
+export function useCreateFinanceEvent() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: FinanceEventPayload) => {
+      const res = await fetch("/api/finance/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) throw new Error(await res.text());
+      return res.json() as Promise<FinanceEvent>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["finance"] });
+    },
+  });
+}
+
+export function useUpdateFinanceEvent() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<FinanceEventPayload> }) => {
+      const res = await fetch(`/api/finance/events/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) throw new Error(await res.text());
+      return res.json() as Promise<FinanceEvent>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["finance"] });
+    },
+  });
+}
+
 export function useCreateFinanceEventFee() {
   const queryClient = useQueryClient();
 
@@ -1243,6 +1398,109 @@ export function useRecordFinancePayment() {
       queryClient.invalidateQueries({ queryKey: ["finance"] });
       queryClient.invalidateQueries({ queryKey: ["fees"] });
     },
+  });
+}
+
+export function useAccountingConnections(studioKey?: string) {
+  return useQuery({
+    queryKey: ["accounting", "connections", studioKey ?? "default"],
+    queryFn: async () => safeJsonFetch<AccountingConnection[]>(appendStudioKey("/api/accounting/connections", studioKey)),
+    placeholderData: [],
+  });
+}
+
+export function useStartAccountingConnect(studioKey?: string) {
+  return useMutation({
+    mutationFn: async ({
+      provider,
+      activateOnConnect = true,
+    }: {
+      provider: AccountingProvider;
+      activateOnConnect?: boolean;
+    }) => {
+      const res = await fetch(appendStudioKey(`/api/accounting/connect/${provider}`, studioKey), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ activateOnConnect }),
+      });
+
+      if (!res.ok) throw new Error(await extractErrorMessage(res));
+      return res.json() as Promise<AccountingConnectResponse>;
+    },
+  });
+}
+
+export function useActivateAccountingProvider(studioKey?: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (provider: AccountingProvider) => {
+      const res = await fetch(appendStudioKey(`/api/accounting/activate/${provider}`, studioKey), {
+        method: "POST",
+      });
+
+      if (!res.ok) throw new Error(await extractErrorMessage(res));
+      return res.json() as Promise<{ success: boolean; activeProvider: AccountingProvider }>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["accounting", "connections"] });
+    },
+  });
+}
+
+export function useDisconnectAccountingProvider(studioKey?: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (provider: AccountingProvider) => {
+      const res = await fetch(appendStudioKey(`/api/accounting/disconnect/${provider}`, studioKey), {
+        method: "POST",
+      });
+
+      if (!res.ok) throw new Error(await extractErrorMessage(res));
+      return res.json() as Promise<{ success: boolean; provider: AccountingProvider; studioKey: string }>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["accounting"] });
+    },
+  });
+}
+
+export function useRunAccountingSync(studioKey?: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: AccountingSyncRunPayload = {}) => {
+      const res = await fetch(appendStudioKey("/api/accounting/sync/run", studioKey), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error(await extractErrorMessage(res));
+      return res.json() as Promise<AccountingSyncRunResponse>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["accounting"] });
+      queryClient.invalidateQueries({ queryKey: ["finance"] });
+    },
+  });
+}
+
+export function useAccountingSyncRecords(query: AccountingSyncRecordsQuery = {}, studioKey?: string) {
+  return useQuery({
+    queryKey: ["accounting", "sync-records", studioKey ?? "default", query],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (query.provider) params.set("provider", query.provider);
+      if (query.status) params.set("status", query.status);
+      if (typeof query.limit === "number") params.set("limit", String(query.limit));
+      if (studioKey?.trim()) params.set("studioKey", studioKey.trim());
+
+      const suffix = params.toString() ? `?${params.toString()}` : "";
+      return safeJsonFetch<AccountingSyncRecord[]>(`/api/accounting/sync-records${suffix}`);
+    },
+    placeholderData: [],
   });
 }
 
