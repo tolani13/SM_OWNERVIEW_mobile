@@ -127,16 +127,16 @@ function toIsoDate(value: string | Date | null | undefined): string {
   return new Date().toISOString();
 }
 
-function toSqlDate(value: string | Date | null | undefined): string {
-  if (!value) return new Date().toISOString().slice(0, 10);
-  if (value instanceof Date) return value.toISOString().slice(0, 10);
+function toSqlDate(value: string | Date | null | undefined): Date {
+  if (!value) return new Date();
+  if (value instanceof Date) return value;
 
   const parsed = Date.parse(value);
   if (!Number.isNaN(parsed)) {
-    return new Date(parsed).toISOString().slice(0, 10);
+    return new Date(parsed);
   }
 
-  return new Date().toISOString().slice(0, 10);
+  return new Date();
 }
 
 function computeAgeFromBirthdate(birthdate: string | null | undefined): number | null {
@@ -215,6 +215,17 @@ export class Storage {
   constructor(databaseUrl: string) {
     const client = postgres(databaseUrl);
     this.db = drizzle(client);
+  }
+
+  private async syncLegacyFeeTransactionsSafely(fee: Fee): Promise<void> {
+    try {
+      await this.upsertLegacyFeeTransactions(fee);
+    } catch (error) {
+      console.error("Fee ledger sync warning (fee record saved, ledger sync skipped):", {
+        feeId: fee.id,
+        error,
+      });
+    }
   }
 
   // ========== DANCERS ==========
@@ -571,14 +582,14 @@ export class Storage {
 
   async createFee(data: InsertFee): Promise<Fee> {
     const [fee] = await this.db.insert(fees).values(data).returning();
-    await this.upsertLegacyFeeTransactions(fee);
+    await this.syncLegacyFeeTransactionsSafely(fee);
     return fee;
   }
 
   async updateFee(id: string, data: Partial<InsertFee>): Promise<Fee | undefined> {
     const [fee] = await this.db.update(fees).set(data).where(eq(fees.id, id)).returning();
     if (fee) {
-      await this.upsertLegacyFeeTransactions(fee);
+      await this.syncLegacyFeeTransactionsSafely(fee);
     }
     return fee;
   }
