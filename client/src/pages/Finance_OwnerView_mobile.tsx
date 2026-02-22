@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { TuitionHubPanel } from "@/components/finance/TuitionHubPanel";
+import { FinanceAccountingPanel } from "@/components/finance/FinanceAccountingPanel";
 import {
   Dialog,
   DialogContent,
@@ -321,6 +322,8 @@ export default function Finance() {
             Track studio tuition, costumes, and competition fees.
           </p>
         </div>
+
+        <FinanceAccountingPanel />
 
         <Tabs defaultValue="studio" className="w-full">
           <TabsList className="bg-white/50 border p-1 h-auto mb-6">
