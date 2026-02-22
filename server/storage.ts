@@ -589,6 +589,22 @@ export class Storage {
   }
 
   async deleteCompetitionFees(competitionId: string): Promise<void> {
+    const competitionFeeRows = await this.db
+      .select({ id: fees.id })
+      .from(fees)
+      .where(
+        and(
+          eq(fees.competitionId, competitionId),
+          eq(fees.type, "Competition"),
+        ),
+      );
+
+    const legacyFeeIds = competitionFeeRows.map((row) => row.id);
+
+    if (legacyFeeIds.length > 0) {
+      await this.db.delete(transactions).where(inArray(transactions.legacyFeeId, legacyFeeIds));
+    }
+
     await this.db
       .delete(fees)
       .where(

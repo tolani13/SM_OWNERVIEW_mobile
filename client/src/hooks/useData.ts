@@ -231,10 +231,72 @@ export type AccountingSyncRunResponse = {
   results: AccountingSyncRunItem[];
 };
 
+export type AccountingRetryFailedResponse = {
+  success: boolean;
+  retried: number;
+  provider: AccountingProvider | null;
+  synced: number;
+  failed: number;
+  skipped: number;
+  results: AccountingSyncRunItem[];
+  message?: string;
+};
+
+export type AccountingReconciliationOutstandingItem = {
+  id: string;
+  amount: string;
+  type: "charge" | "payment";
+  feeType: "tuition" | "costume" | "competition" | "recital" | "other";
+  syncStatus: "pending" | "synced" | "failed";
+  updatedAt: string;
+};
+
+export type AccountingReconciliationSummary = {
+  studioKey: string;
+  provider: AccountingProvider | null;
+  syncedCounts: {
+    total: number;
+    charges: number;
+    payments: number;
+  };
+  syncedTotals: {
+    charges: number;
+    payments: number;
+    net: number;
+  };
+  outstanding: {
+    count: number;
+    total: number;
+    items: AccountingReconciliationOutstandingItem[];
+  };
+};
+
 export type AccountingSyncRecordsQuery = {
   provider?: AccountingProvider;
   status?: AccountingSyncRecordStatus;
   limit?: number;
+};
+
+export type AccountingFeeTypeDefault = {
+  feeType: "tuition" | "costume" | "competition" | "recital" | "other";
+  label: string;
+  defaultQuickbooksItemId: string | null;
+  defaultQuickbooksAccountId: string | null;
+  defaultXeroRevenueAccountCode: string | null;
+  defaultXeroPaymentAccountCode: string | null;
+  defaultWaveIncomeAccountId: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type UpdateAccountingFeeTypeDefaultPayload = {
+  feeType: AccountingFeeTypeDefault["feeType"];
+  label?: string;
+  defaultQuickbooksItemId?: string | null;
+  defaultQuickbooksAccountId?: string | null;
+  defaultXeroRevenueAccountCode?: string | null;
+  defaultXeroPaymentAccountCode?: string | null;
+  defaultWaveIncomeAccountId?: string | null;
 };
 
 function buildFinanceDancersQueryString(query?: FinanceDancersQuery): string {
@@ -1502,6 +1564,69 @@ export function useAccountingSyncRecords(query: AccountingSyncRecordsQuery = {},
       return safeJsonFetch<AccountingSyncRecord[]>(`/api/accounting/sync-records${suffix}`);
     },
     placeholderData: [],
+  });
+}
+
+export function useRetryFailedAccountingSync(studioKey?: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: { provider?: AccountingProvider } = {}) => {
+      const res = await fetch(appendStudioKey("/api/accounting/sync/retry-failed", studioKey), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error(await extractErrorMessage(res));
+      return res.json() as Promise<AccountingRetryFailedResponse>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["accounting"] });
+      queryClient.invalidateQueries({ queryKey: ["finance"] });
+    },
+  });
+}
+
+export function useAccountingReconciliationSummary(provider?: AccountingProvider, studioKey?: string) {
+  return useQuery({
+    queryKey: ["accounting", "reconciliation-summary", studioKey ?? "default", provider ?? null],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (provider) params.set("provider", provider);
+      if (studioKey?.trim()) params.set("studioKey", studioKey.trim());
+
+      const suffix = params.toString() ? `?${params.toString()}` : "";
+      return safeJsonFetch<AccountingReconciliationSummary>(`/api/accounting/reconciliation-summary${suffix}`);
+    },
+  });
+}
+
+export function useAccountingFeeTypeDefaults() {
+  return useQuery({
+    queryKey: ["accounting", "fee-type-defaults"],
+    queryFn: async () => safeJsonFetch<AccountingFeeTypeDefault[]>("/api/accounting/fee-type-defaults"),
+    placeholderData: [],
+  });
+}
+
+export function useUpdateAccountingFeeTypeDefault() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ feeType, ...payload }: UpdateAccountingFeeTypeDefaultPayload) => {
+      const res = await fetch(`/api/accounting/fee-type-defaults/${feeType}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error(await extractErrorMessage(res));
+      return res.json() as Promise<AccountingFeeTypeDefault>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["accounting", "fee-type-defaults"] });
+    },
   });
 }
 

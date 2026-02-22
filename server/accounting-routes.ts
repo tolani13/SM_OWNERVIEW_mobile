@@ -1,12 +1,13 @@
 import type { Express, Request } from "express";
 import crypto from "crypto";
-import { and, asc, desc, eq, inArray, ne } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { db } from "./db";
 import {
   accountingConnections,
   accountingSyncRecords,
   dancers,
   feeTypes,
+  feeTypeValues,
   transactions,
   type AccountingConnection,
   type AccountingObjectType,
@@ -52,6 +53,14 @@ const QUICKBOOKS_SCOPE_DEFAULT = "com.intuit.quickbooks.accounting openid profil
 const XERO_SCOPE_DEFAULT =
   "openid profile email offline_access accounting.transactions accounting.contacts accounting.settings accounting.reports.read files";
 
+const FEE_TYPE_LABEL_DEFAULTS: Record<FeeType, string> = {
+  tuition: "Tuition",
+  costume: "Costume",
+  competition: "Competition Fee",
+  recital: "Recital Fee",
+  other: "Other",
+};
+
 function asProvider(value: unknown): AccountingProvider | null {
   if (value === "quickbooks" || value === "xero") return value;
   return null;
@@ -77,6 +86,134 @@ function boolFromUnknown(value: unknown, fallback = false): boolean {
     if (value.toLowerCase() === "false") return false;
   }
   return fallback;
+}
+
+function hasOwn(object: Record<string, unknown>, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(object, key);
+}
+
+function normalizeNullableText(value: unknown): string | null | undefined {
+  if (value === null) return null;
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : null;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function shouldReturnHtml(req: Request): boolean {
+  const responseMode = typeof req.query.response === "string" ? req.query.response.toLowerCase() : "";
+  if (responseMode === "json") return false;
+  if (responseMode === "html") return true;
+
+  const accept = req.headers.accept;
+  return typeof accept === "string" && accept.includes("text/html");
+}
+
+function renderOAuthCallbackSuccessHtml(input: {
+  providerLabel: string;
+  studioKey: string;
+  connectionLabel: string;
+}): string {
+  const provider = escapeHtml(input.providerLabel);
+  const studioKey = escapeHtml(input.studioKey);
+  const connectionLabel = escapeHtml(input.connectionLabel);
+
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${provider} Connected • Studio Maestro</title>
+    <style>
+      :root { color-scheme: light; }
+      body { margin: 0; font-family: Inter, Segoe UI, Arial, sans-serif; background: #f7f8fa; color: #111827; }
+      .wrap { max-width: 560px; margin: 8vh auto; background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; overflow: hidden; box-shadow: 0 8px 24px rgba(16,24,40,.08); }
+      .bar { height: 8px; background: #4f46e5; }
+      .content { padding: 24px; }
+      h1 { margin: 0 0 8px; font-size: 20px; }
+      p { margin: 0 0 10px; line-height: 1.5; color: #374151; }
+      .meta { margin-top: 14px; padding: 12px; border-radius: 10px; background: #f3f4f6; font-size: 13px; color: #374151; }
+      .ok { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #166534; background: #dcfce7; border: 1px solid #bbf7d0; border-radius: 999px; padding: 4px 10px; }
+      .foot { margin-top: 16px; font-size: 12px; color: #6b7280; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="bar"></div>
+      <div class="content">
+        <span class="ok">Connection established</span>
+        <h1>${provider} authorization completed</h1>
+        <p>${connectionLabel} is now connected to Studio Maestro and available for finance synchronization workflows.</p>
+        <div class="meta">
+          <div><strong>Studio key:</strong> ${studioKey}</div>
+          <div><strong>Provider:</strong> ${provider}</div>
+        </div>
+        <p class="foot">You may close this window and return to Finance in the Studio Maestro application.</p>
+      </div>
+    </div>
+    <script>
+      try {
+        if (window.opener && !window.opener.closed) {
+          window.opener.postMessage({ type: "studio-maestro-accounting-connected" }, "*");
+        }
+      } catch {}
+      setTimeout(() => window.close(), 1500);
+    </script>
+  </body>
+</html>`;
+}
+
+function renderOAuthCallbackErrorHtml(input: {
+  providerLabel: string;
+  errorMessage: string;
+}): string {
+  const provider = escapeHtml(input.providerLabel);
+  const errorMessage = escapeHtml(input.errorMessage);
+
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${provider} Connection Error • Studio Maestro</title>
+    <style>
+      body { margin: 0; font-family: Inter, Segoe UI, Arial, sans-serif; background: #f7f8fa; color: #111827; }
+      .wrap { max-width: 560px; margin: 8vh auto; background: #fff; border: 1px solid #fecaca; border-radius: 14px; overflow: hidden; box-shadow: 0 8px 24px rgba(16,24,40,.08); }
+      .bar { height: 8px; background: #dc2626; }
+      .content { padding: 24px; }
+      h1 { margin: 0 0 8px; font-size: 20px; }
+      p { margin: 0 0 10px; line-height: 1.5; color: #374151; }
+      .err { margin-top: 12px; padding: 12px; border-radius: 10px; background: #fef2f2; border: 1px solid #fecaca; font-size: 13px; color: #991b1b; }
+      .foot { margin-top: 16px; font-size: 12px; color: #6b7280; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="bar"></div>
+      <div class="content">
+        <h1>${provider} authorization could not be completed</h1>
+        <p>Studio Maestro was unable to finalize this provider connection. Review the details below and try again from Finance.</p>
+        <div class="err">${errorMessage}</div>
+        <p class="foot">You may close this window and return to Studio Maestro.</p>
+      </div>
+    </div>
+    <script>
+      try {
+        if (window.opener && !window.opener.closed) {
+          window.opener.postMessage({ type: "studio-maestro-accounting-connect-error" }, "*");
+        }
+      } catch {}
+    </script>
+  </body>
+</html>`;
 }
 
 function cleanupOAuthStateStore() {
@@ -534,6 +671,19 @@ async function xeroApiRequest(
 async function getFeeTypeDefaultsValue(feeTypeValue: FeeType) {
   const rows = await db.select().from(feeTypes).where(eq(feeTypes.feeType, feeTypeValue)).limit(1);
   return rows[0] ?? null;
+}
+
+async function ensureFeeTypeDefaultsSeedRows(): Promise<void> {
+  await db.execute(sql`
+    INSERT INTO "fee_types" ("fee_type", "label")
+    VALUES
+      ('tuition', 'Tuition'),
+      ('costume', 'Costume'),
+      ('competition', 'Competition Fee'),
+      ('recital', 'Recital Fee'),
+      ('other', 'Other')
+    ON CONFLICT ("fee_type") DO NOTHING
+  `);
 }
 
 async function getDancerDisplayName(dancerId: string): Promise<string> {
@@ -1071,6 +1221,55 @@ function toPublicConnection(connection: AccountingConnection): PublicAccountingC
   };
 }
 
+async function retryFailedSyncRecords(studioKey: string, provider?: AccountingProvider): Promise<{
+  retried: number;
+  failedRecordIds: string[];
+}> {
+  const conditions = [
+    eq(accountingSyncRecords.studioKey, studioKey),
+    eq(accountingSyncRecords.status, "failed"),
+  ];
+
+  if (provider) {
+    conditions.push(eq(accountingSyncRecords.provider, provider));
+  }
+
+  const failedRows = await db
+    .select({ id: accountingSyncRecords.id, transactionId: accountingSyncRecords.transactionId })
+    .from(accountingSyncRecords)
+    .where(and(...conditions))
+    .orderBy(desc(accountingSyncRecords.updatedAt))
+    .limit(500);
+
+  if (!failedRows.length) {
+    return { retried: 0, failedRecordIds: [] };
+  }
+
+  const transactionIds = Array.from(new Set(failedRows.map((row) => row.transactionId)));
+
+  await db
+    .update(transactions)
+    .set({
+      syncStatus: "pending",
+      updatedAt: new Date() as any,
+    })
+    .where(inArray(transactions.id, transactionIds));
+
+  await db
+    .update(accountingSyncRecords)
+    .set({
+      status: "pending",
+      lastError: null,
+      updatedAt: new Date() as any,
+    })
+    .where(inArray(accountingSyncRecords.id, failedRows.map((row) => row.id)));
+
+  return {
+    retried: transactionIds.length,
+    failedRecordIds: failedRows.map((row) => row.id),
+  };
+}
+
 export function registerAccountingRoutes(app: Express): void {
   app.get("/api/accounting/connections", async (req, res) => {
     try {
@@ -1132,6 +1331,80 @@ export function registerAccountingRoutes(app: Express): void {
     }
   });
 
+  app.get("/api/accounting/fee-type-defaults", async (_req, res) => {
+    try {
+      await ensureFeeTypeDefaultsSeedRows();
+      const rows = await db.select().from(feeTypes).orderBy(asc(feeTypes.feeType));
+      res.json(rows);
+    } catch (error: any) {
+      console.error("List accounting fee type defaults error:", error);
+      res.status(500).json({ error: error?.message || "Failed to list fee type defaults" });
+    }
+  });
+
+  app.patch("/api/accounting/fee-type-defaults/:feeType", async (req, res) => {
+    try {
+      const rawFeeType = typeof req.params.feeType === "string" ? req.params.feeType.toLowerCase() : "";
+      if (!feeTypeValues.includes(rawFeeType as FeeType)) {
+        return res.status(400).json({ error: "Invalid feeType. Must be one of tuition|costume|competition|recital|other" });
+      }
+
+      const feeType = rawFeeType as FeeType;
+      const body = ((req.body ?? {}) as Record<string, unknown>);
+
+      await ensureFeeTypeDefaultsSeedRows();
+
+      const [existing] = await db
+        .select()
+        .from(feeTypes)
+        .where(eq(feeTypes.feeType, feeType))
+        .limit(1);
+
+      if (!existing) {
+        await db.insert(feeTypes).values({
+          feeType,
+          label: FEE_TYPE_LABEL_DEFAULTS[feeType],
+          updatedAt: new Date() as any,
+        });
+      }
+
+      const patch: Record<string, unknown> = {
+        updatedAt: new Date() as any,
+      };
+
+      if (hasOwn(body, "label") && typeof body.label === "string") {
+        const trimmed = body.label.trim();
+        patch.label = trimmed.length ? trimmed : FEE_TYPE_LABEL_DEFAULTS[feeType];
+      }
+
+      const qbItem = normalizeNullableText(body.defaultQuickbooksItemId);
+      if (qbItem !== undefined) patch.defaultQuickbooksItemId = qbItem;
+
+      const qbAccount = normalizeNullableText(body.defaultQuickbooksAccountId);
+      if (qbAccount !== undefined) patch.defaultQuickbooksAccountId = qbAccount;
+
+      const xeroRevenue = normalizeNullableText(body.defaultXeroRevenueAccountCode);
+      if (xeroRevenue !== undefined) patch.defaultXeroRevenueAccountCode = xeroRevenue;
+
+      const xeroPayment = normalizeNullableText(body.defaultXeroPaymentAccountCode);
+      if (xeroPayment !== undefined) patch.defaultXeroPaymentAccountCode = xeroPayment;
+
+      const waveIncome = normalizeNullableText(body.defaultWaveIncomeAccountId);
+      if (waveIncome !== undefined) patch.defaultWaveIncomeAccountId = waveIncome;
+
+      const [updated] = await db
+        .update(feeTypes)
+        .set(patch)
+        .where(eq(feeTypes.feeType, feeType))
+        .returning();
+
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Update accounting fee type default error:", error);
+      res.status(500).json({ error: error?.message || "Failed to update fee type default" });
+    }
+  });
+
   app.get("/api/accounting/callback/quickbooks", async (req, res) => {
     try {
       cleanupOAuthStateStore();
@@ -1142,18 +1415,45 @@ export function registerAccountingRoutes(app: Express): void {
       const oauthError = typeof req.query.error === "string" ? req.query.error : "";
 
       if (oauthError) {
-        return res.status(400).json({ error: `QuickBooks OAuth error: ${oauthError}` });
+        const errorMessage = `QuickBooks OAuth error: ${oauthError}`;
+        if (shouldReturnHtml(req)) {
+          return res.status(400).type("html").send(
+            renderOAuthCallbackErrorHtml({
+              providerLabel: "QuickBooks",
+              errorMessage,
+            }),
+          );
+        }
+        return res.status(400).json({ error: errorMessage });
       }
 
       const stateRecord = oauthStateStore.get(stateParam);
       oauthStateStore.delete(stateParam);
 
       if (!stateRecord || stateRecord.provider !== "quickbooks") {
-        return res.status(400).json({ error: "Invalid or expired OAuth state for QuickBooks" });
+        const errorMessage = "Invalid or expired OAuth state for QuickBooks";
+        if (shouldReturnHtml(req)) {
+          return res.status(400).type("html").send(
+            renderOAuthCallbackErrorHtml({
+              providerLabel: "QuickBooks",
+              errorMessage,
+            }),
+          );
+        }
+        return res.status(400).json({ error: errorMessage });
       }
 
       if (!code) {
-        return res.status(400).json({ error: "Missing authorization code from QuickBooks" });
+        const errorMessage = "Missing authorization code from QuickBooks";
+        if (shouldReturnHtml(req)) {
+          return res.status(400).type("html").send(
+            renderOAuthCallbackErrorHtml({
+              providerLabel: "QuickBooks",
+              errorMessage,
+            }),
+          );
+        }
+        return res.status(400).json({ error: errorMessage });
       }
 
       const token = await exchangeQuickBooksCode(code);
@@ -1175,15 +1475,42 @@ export function registerAccountingRoutes(app: Express): void {
         await setActiveProvider(stateRecord.studioKey, "quickbooks");
       }
 
-      res.json({
+      const payload = {
         success: true,
         provider: "quickbooks",
         studioKey: stateRecord.studioKey,
         realmId: realmId || null,
-      });
+      };
+
+      if (shouldReturnHtml(req)) {
+        const connectionLabel = realmId
+          ? `QuickBooks realm ${realmId}`
+          : "QuickBooks";
+        return res
+          .status(200)
+          .type("html")
+          .send(
+            renderOAuthCallbackSuccessHtml({
+              providerLabel: "QuickBooks",
+              studioKey: stateRecord.studioKey,
+              connectionLabel,
+            }),
+          );
+      }
+
+      res.json(payload);
     } catch (error: any) {
       console.error("QuickBooks callback error:", error);
-      res.status(400).json({ error: error?.message || "QuickBooks callback failed" });
+      const errorMessage = error?.message || "QuickBooks callback failed";
+      if (shouldReturnHtml(req)) {
+        return res.status(400).type("html").send(
+          renderOAuthCallbackErrorHtml({
+            providerLabel: "QuickBooks",
+            errorMessage,
+          }),
+        );
+      }
+      res.status(400).json({ error: errorMessage });
     }
   });
 
@@ -1197,18 +1524,45 @@ export function registerAccountingRoutes(app: Express): void {
       const requestedTenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : "";
 
       if (oauthError) {
-        return res.status(400).json({ error: `Xero OAuth error: ${oauthError}` });
+        const errorMessage = `Xero OAuth error: ${oauthError}`;
+        if (shouldReturnHtml(req)) {
+          return res.status(400).type("html").send(
+            renderOAuthCallbackErrorHtml({
+              providerLabel: "Xero",
+              errorMessage,
+            }),
+          );
+        }
+        return res.status(400).json({ error: errorMessage });
       }
 
       const stateRecord = oauthStateStore.get(stateParam);
       oauthStateStore.delete(stateParam);
 
       if (!stateRecord || stateRecord.provider !== "xero") {
-        return res.status(400).json({ error: "Invalid or expired OAuth state for Xero" });
+        const errorMessage = "Invalid or expired OAuth state for Xero";
+        if (shouldReturnHtml(req)) {
+          return res.status(400).type("html").send(
+            renderOAuthCallbackErrorHtml({
+              providerLabel: "Xero",
+              errorMessage,
+            }),
+          );
+        }
+        return res.status(400).json({ error: errorMessage });
       }
 
       if (!code || !stateRecord.codeVerifier) {
-        return res.status(400).json({ error: "Missing authorization code or PKCE verifier for Xero" });
+        const errorMessage = "Missing authorization code or PKCE verifier for Xero";
+        if (shouldReturnHtml(req)) {
+          return res.status(400).type("html").send(
+            renderOAuthCallbackErrorHtml({
+              providerLabel: "Xero",
+              errorMessage,
+            }),
+          );
+        }
+        return res.status(400).json({ error: errorMessage });
       }
 
       const token = await exchangeXeroCode(code, stateRecord.codeVerifier);
@@ -1238,17 +1592,41 @@ export function registerAccountingRoutes(app: Express): void {
         await setActiveProvider(stateRecord.studioKey, "xero");
       }
 
-      res.json({
+      const payload = {
         success: true,
         provider: "xero",
         studioKey: stateRecord.studioKey,
         tenantId: selectedTenant.tenantId,
         tenantName: selectedTenant.tenantName,
         availableTenants: tenantConnections,
-      });
+      };
+
+      if (shouldReturnHtml(req)) {
+        return res
+          .status(200)
+          .type("html")
+          .send(
+            renderOAuthCallbackSuccessHtml({
+              providerLabel: "Xero",
+              studioKey: stateRecord.studioKey,
+              connectionLabel: selectedTenant.tenantName || selectedTenant.tenantId,
+            }),
+          );
+      }
+
+      res.json(payload);
     } catch (error: any) {
       console.error("Xero callback error:", error);
-      res.status(400).json({ error: error?.message || "Xero callback failed" });
+      const errorMessage = error?.message || "Xero callback failed";
+      if (shouldReturnHtml(req)) {
+        return res.status(400).type("html").send(
+          renderOAuthCallbackErrorHtml({
+            providerLabel: "Xero",
+            errorMessage,
+          }),
+        );
+      }
+      res.status(400).json({ error: errorMessage });
     }
   });
 
@@ -1347,6 +1725,132 @@ export function registerAccountingRoutes(app: Express): void {
     } catch (error: any) {
       console.error("List accounting sync records error:", error);
       res.status(500).json({ error: error?.message || "Failed to list accounting sync records" });
+    }
+  });
+
+  app.post("/api/accounting/sync/retry-failed", async (req, res) => {
+    try {
+      const studioKey = getStudioKey(req);
+      const provider = asProvider((req.body as any)?.provider ?? req.query.provider);
+
+      const retryResult = await retryFailedSyncRecords(studioKey, provider ?? undefined);
+
+      if (retryResult.retried === 0) {
+        return res.json({
+          success: true,
+          retried: 0,
+          synced: 0,
+          failed: 0,
+          skipped: 0,
+          provider: provider ?? null,
+          results: [],
+          message: "No failed sync records found.",
+        });
+      }
+
+      const activeConnection = await getActiveConnection(studioKey, provider ?? undefined);
+      if (!activeConnection || activeConnection.status !== "connected") {
+        return res.status(400).json({
+          error:
+            "Failed records were reset to pending, but no connected provider is active for retry execution.",
+          retried: retryResult.retried,
+        });
+      }
+
+      const toSync = await getTransactionsForSync(studioKey, {
+        limit: Math.min(200, Math.max(1, retryResult.retried)),
+      });
+
+      const results = await syncTransactions(studioKey, activeConnection, toSync, false);
+      const summary = {
+        synced: results.filter((r) => r.status === "synced").length,
+        failed: results.filter((r) => r.status === "failed").length,
+        skipped: results.filter((r) => r.status === "skipped").length,
+      };
+
+      res.json({
+        success: summary.failed === 0,
+        retried: retryResult.retried,
+        provider: activeConnection.provider,
+        ...summary,
+        results,
+      });
+    } catch (error: any) {
+      console.error("Retry failed sync records error:", error);
+      res.status(500).json({ error: error?.message || "Failed to retry failed sync records" });
+    }
+  });
+
+  app.get("/api/accounting/reconciliation-summary", async (req, res) => {
+    try {
+      const studioKey = getStudioKey(req);
+      const provider = asProvider(req.query.provider);
+
+      const syncedRows = await db
+        .select({
+          provider: accountingSyncRecords.provider,
+          transactionId: accountingSyncRecords.transactionId,
+          amount: transactions.amount,
+          type: transactions.type,
+        })
+        .from(accountingSyncRecords)
+        .innerJoin(transactions, eq(transactions.id, accountingSyncRecords.transactionId))
+        .where(
+          and(
+            eq(accountingSyncRecords.studioKey, studioKey),
+            eq(accountingSyncRecords.status, "synced"),
+            ...(provider ? [eq(accountingSyncRecords.provider, provider)] : []),
+          ),
+        );
+
+      const pendingRows = await db
+        .select({
+          id: transactions.id,
+          amount: transactions.amount,
+          type: transactions.type,
+          feeType: transactions.feeType,
+          syncStatus: transactions.syncStatus,
+          updatedAt: transactions.updatedAt,
+        })
+        .from(transactions)
+        .where(ne(transactions.syncStatus, "synced"))
+        .orderBy(desc(transactions.updatedAt))
+        .limit(50);
+
+      let syncedChargeTotal = 0;
+      let syncedPaymentTotal = 0;
+      for (const row of syncedRows) {
+        const amount = parseMoney(row.amount);
+        if (row.type === "charge") syncedChargeTotal += amount;
+        if (row.type === "payment") syncedPaymentTotal += amount;
+      }
+
+      res.json({
+        studioKey,
+        provider: provider ?? null,
+        syncedCounts: {
+          total: syncedRows.length,
+          charges: syncedRows.filter((row) => row.type === "charge").length,
+          payments: syncedRows.filter((row) => row.type === "payment").length,
+        },
+        syncedTotals: {
+          charges: Number(syncedChargeTotal.toFixed(2)),
+          payments: Number(syncedPaymentTotal.toFixed(2)),
+          net: Number((syncedChargeTotal - syncedPaymentTotal).toFixed(2)),
+        },
+        outstanding: {
+          count: pendingRows.length,
+          total: Number(
+            pendingRows
+              .reduce((sum, row) => sum + parseMoney(row.amount), 0)
+              .toFixed(2),
+          ),
+          items: pendingRows,
+        },
+      });
+    } catch (error: any) {
+      console.error("Reconciliation summary error:", error);
+      res.status(500).json({ error: error?.message || "Failed to load reconciliation summary" });
     }
   });
 
