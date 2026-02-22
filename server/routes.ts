@@ -218,6 +218,34 @@ function parseMoney(value: unknown, fallback = "0.00"): string {
   return fallback;
 }
 
+function normalizeBirthdate(value: unknown, fallbackAge?: unknown): string {
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Date.parse(value);
+    if (!Number.isNaN(parsed)) {
+      return new Date(parsed).toISOString().slice(0, 10);
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value.trim())) {
+      return value.trim();
+    }
+  }
+
+  const parsedAge =
+    typeof fallbackAge === "number"
+      ? fallbackAge
+      : typeof fallbackAge === "string"
+        ? Number(fallbackAge)
+        : Number.NaN;
+
+  if (Number.isFinite(parsedAge) && parsedAge > 0) {
+    const derived = new Date();
+    derived.setFullYear(derived.getFullYear() - Math.trunc(parsedAge));
+    return derived.toISOString().slice(0, 10);
+  }
+
+  return "2015-01-01";
+}
+
 function parseTimeTo24Hour(value: unknown, fallback = "00:00"): string {
   if (typeof value !== "string") return fallback;
 
@@ -353,12 +381,30 @@ export async function registerRoutes(
 
   app.post("/api/dancers", async (req, res) => {
     try {
-      const validation = validateDancerPayload(req.body as Partial<InsertDancer>, "create");
+      const payload = req.body as Partial<InsertDancer>;
+      const validation = validateDancerPayload(payload, "create");
       if (!validation.ok) {
         return res.status(400).json({ error: validation.error });
       }
 
-      const dancer = await storage.createDancer(validation.data as InsertDancer);
+      const birthdate = normalizeBirthdate(
+        payload.birthdate ?? payload.dateOfBirth,
+        validation.data.age,
+      );
+
+      const dancerPayload: InsertDancer = {
+        ...(payload as InsertDancer),
+        ...validation.data,
+        firstName: payload.firstName?.trim() || "New",
+        lastName: payload.lastName?.trim() || "Dancer",
+        birthdate,
+        dateOfBirth:
+          (typeof payload.dateOfBirth === "string" && payload.dateOfBirth.trim())
+            ? payload.dateOfBirth
+            : birthdate,
+      };
+
+      const dancer = await storage.createDancer(dancerPayload);
       res.status(201).json(dancer);
     } catch (error: any) {
       console.error("Create dancer error:", error);
@@ -368,19 +414,48 @@ export async function registerRoutes(
 
   app.patch("/api/dancers/:id", async (req, res) => {
     try {
-      const validation = validateDancerPayload(req.body as Partial<InsertDancer>, "update");
+      const payload = req.body as Partial<InsertDancer>;
+      const validation = validateDancerPayload(payload, "update");
       if (!validation.ok) {
         return res.status(400).json({ error: validation.error });
       }
 
-      const dancer = await storage.updateDancer(req.params.id, validation.data);
+      const updatePayload: Partial<InsertDancer> = {
+        ...payload,
+        ...validation.data,
+      };
+
+      const hasBirthdateInput =
+        Object.prototype.hasOwnProperty.call(payload, "birthdate") ||
+        Object.prototype.hasOwnProperty.call(payload, "dateOfBirth") ||
+        Object.prototype.hasOwnProperty.call(payload, "age");
+
+      if (hasBirthdateInput) {
+        const birthdate = normalizeBirthdate(
+          payload.birthdate ?? payload.dateOfBirth,
+          validation.data.age ?? payload.age,
+        );
+        updatePayload.birthdate = birthdate;
+
+        if (
+          Object.prototype.hasOwnProperty.call(payload, "dateOfBirth") ||
+          Object.prototype.hasOwnProperty.call(payload, "birthdate")
+        ) {
+          updatePayload.dateOfBirth =
+            (typeof payload.dateOfBirth === "string" && payload.dateOfBirth.trim())
+              ? payload.dateOfBirth
+              : birthdate;
+        }
+      }
+
+      const dancer = await storage.updateDancer(req.params.id, updatePayload);
       if (!dancer) {
         return res.status(404).json({ error: "Dancer not found" });
       }
       res.json(dancer);
     } catch (error: any) {
       console.error("Update dancer error:", error);
-      res.status(400).json({ error: "Failed to update dancer" });
+      res.status(400).json({ error: error?.message || "Failed to update dancer" });
     }
   });
 
@@ -465,29 +540,50 @@ export async function registerRoutes(
   app.post("/api/routines", async (req, res) => {
     try {
       const routine = await storage.createRoutine(req.body as InsertRoutine);
-      
+
+      let feeSyncWarning: string | null = null;
+
       // Auto-create costume fees for each dancer
       if (routine.costumeFee && parseFloat(routine.costumeFee) > 0 && routine.dancerIds.length > 0) {
         const costumeFeeAmount = routine.costumeFee;
         const dueDate = new Date();
         dueDate.setDate(dueDate.getDate() + 30);
-        
+
         for (const dancerId of routine.dancerIds) {
-          await storage.createFee({
-            type: "Costume",
-            amount: costumeFeeAmount,
-            paid: false,
-            dueDate: dueDate.toISOString().split('T')[0],
-            dancerId: dancerId,
-            routineId: routine.id
-          });
+          try {
+            await storage.createFee({
+              type: "Costume",
+              feeType: "costume",
+              amount: costumeFeeAmount,
+              paid: false,
+              dueDate: dueDate.toISOString().split('T')[0],
+              dancerId: dancerId,
+              routineId: routine.id
+            });
+          } catch (error: any) {
+            feeSyncWarning =
+              feeSyncWarning ||
+              (error?.message || "Routine saved, but costume fee sync failed.");
+            console.error("Routine costume fee sync warning:", {
+              routineId: routine.id,
+              dancerId,
+              error,
+            });
+          }
         }
       }
-      
+
+      if (feeSyncWarning) {
+        return res.status(201).json({
+          ...routine,
+          warning: "Routine saved, but one or more costume fees failed to sync.",
+        });
+      }
+
       res.status(201).json(routine);
     } catch (error: any) {
       console.error("Create routine error:", error);
-      res.status(400).json({ error: "Invalid routine data" });
+      res.status(400).json({ error: error?.message || "Invalid routine data" });
     }
   });
 
@@ -504,51 +600,82 @@ export async function registerRoutes(
       }
 
       // Sync costume fees if dancers or costumeFee changed
-      const dancersChanged = req.body.dancerIds && 
-        JSON.stringify(req.body.dancerIds.sort()) !== JSON.stringify(existingRoutine.dancerIds.sort());
-      const feeChanged = req.body.costumeFee && req.body.costumeFee !== existingRoutine.costumeFee;
+      const incomingDancerIds = Array.isArray(req.body.dancerIds)
+        ? [...req.body.dancerIds].sort()
+        : null;
+      const existingDancerIds = [...(existingRoutine.dancerIds || [])].sort();
+
+      const dancersChanged =
+        Array.isArray(incomingDancerIds) &&
+        JSON.stringify(incomingDancerIds) !== JSON.stringify(existingDancerIds);
+      const feeChanged =
+        Object.prototype.hasOwnProperty.call(req.body, "costumeFee") &&
+        req.body.costumeFee !== existingRoutine.costumeFee;
+
+      let feeSyncWarning: string | null = null;
 
       if (dancersChanged || feeChanged) {
-        const allFees = await storage.getFees();
-        const existingCostumeFees = allFees.filter(f => f.routineId === routine.id && f.type === "Costume");
-        
-        const currentDancerIds = routine.dancerIds || [];
-        const costumeFeeAmount = routine.costumeFee || "0";
-        const dueDate = new Date();
-        dueDate.setDate(dueDate.getDate() + 30);
+        try {
+          const allFees = await storage.getFees();
+          const existingCostumeFees = allFees.filter(f => f.routineId === routine.id && f.type === "Costume");
 
-        for (const fee of existingCostumeFees) {
-          if (!currentDancerIds.includes(fee.dancerId)) {
-            await storage.deleteFee(fee.id);
-          }
-        }
+          const currentDancerIds = routine.dancerIds || [];
+          const costumeFeeAmount = routine.costumeFee || "0";
+          const dueDate = new Date();
+          dueDate.setDate(dueDate.getDate() + 30);
 
-        if (parseFloat(costumeFeeAmount) > 0) {
-          for (const dancerId of currentDancerIds) {
-            const existingFee = existingCostumeFees.find(f => f.dancerId === dancerId);
-            
-            if (existingFee) {
-              if (feeChanged) {
-                await storage.updateFee(existingFee.id, { amount: costumeFeeAmount });
-              }
-            } else {
-              await storage.createFee({
-                type: "Costume",
-                amount: costumeFeeAmount,
-                paid: false,
-                dueDate: dueDate.toISOString().split('T')[0],
-                dancerId: dancerId,
-                routineId: routine.id
-              });
+          for (const fee of existingCostumeFees) {
+            if (!currentDancerIds.includes(fee.dancerId)) {
+              await storage.deleteFee(fee.id);
             }
           }
+
+          if (parseFloat(costumeFeeAmount) > 0) {
+            for (const dancerId of currentDancerIds) {
+              const existingFee = existingCostumeFees.find(f => f.dancerId === dancerId);
+
+              if (existingFee) {
+                if (feeChanged) {
+                  await storage.updateFee(existingFee.id, {
+                    amount: costumeFeeAmount,
+                    feeType: "costume",
+                  });
+                }
+              } else {
+                await storage.createFee({
+                  type: "Costume",
+                  feeType: "costume",
+                  amount: costumeFeeAmount,
+                  paid: false,
+                  dueDate: dueDate.toISOString().split('T')[0],
+                  dancerId: dancerId,
+                  routineId: routine.id
+                });
+              }
+            }
+          }
+        } catch (error: any) {
+          feeSyncWarning =
+            error?.message ||
+            "Routine saved, but one or more costume fees failed to sync.";
+          console.error("Update routine costume fee sync warning:", {
+            routineId: routine.id,
+            error,
+          });
         }
+      }
+
+      if (feeSyncWarning) {
+        return res.json({
+          ...routine,
+          warning: "Routine saved, but one or more costume fees failed to sync.",
+        });
       }
 
       res.json(routine);
     } catch (error: any) {
       console.error("Update routine error:", error);
-      res.status(400).json({ error: "Failed to update routine" });
+      res.status(400).json({ error: error?.message || "Failed to update routine" });
     }
   });
 
@@ -1402,7 +1529,7 @@ export async function registerRoutes(
       res.status(201).json(fee);
     } catch (error: any) {
       console.error("Create fee error:", error);
-      res.status(400).json({ error: "Invalid fee data" });
+      res.status(400).json({ error: error?.message || "Invalid fee data" });
     }
   });
 
@@ -1426,7 +1553,7 @@ export async function registerRoutes(
       res.json(fee);
     } catch (error: any) {
       console.error("Update fee error:", error);
-      res.status(400).json({ error: "Failed to update fee" });
+      res.status(400).json({ error: error?.message || "Failed to update fee" });
     }
   });
 

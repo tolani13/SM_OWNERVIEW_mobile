@@ -514,7 +514,7 @@ export function useCreateRoutine() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
-      if (!res.ok) throw new Error('Failed to create routine');
+      if (!res.ok) throw new Error(await extractErrorMessage(res));
       return res.json();
     },
     onSuccess: () => {
@@ -532,7 +532,7 @@ export function useUpdateRoutine() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
-      if (!res.ok) throw new Error('Failed to update routine');
+      if (!res.ok) throw new Error(await extractErrorMessage(res));
       return res.json();
     },
     onSuccess: () => {
@@ -546,7 +546,7 @@ export function useDeleteRoutine() {
   return useMutation({
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/routines/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete routine');
+      if (!res.ok) throw new Error(await extractErrorMessage(res));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["routines"] });
