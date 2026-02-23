@@ -8,6 +8,13 @@
       "when": 1771296996030,
       "tag": "0000_elite_magik",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1771801742000,
+      "tag": "0004_messaging_backbone",
+      "breakpoints": true
     }
   ]
 }

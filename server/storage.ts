@@ -1,6 +1,6 @@
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
-import { eq, and, asc, desc, inArray } from "drizzle-orm";
+import { eq, and, asc, desc, inArray, gte, gt, lt, isNull, ne, sql } from "drizzle-orm";
 import {
   dancers,
   teachers,
@@ -13,7 +13,11 @@ import {
   studioClasses,
   practiceBookings,
   announcements,
-  messages,
+  legacyMessages,
+  conversations,
+  conversationParticipants,
+  conversationMessages,
+  messageReads,
   chatThreads,
   chatThreadParticipants,
   chatMessages,
@@ -59,6 +63,15 @@ import {
   type InsertAnnouncement,
   type Message,
   type InsertMessage,
+  type Conversation,
+  type InsertConversation,
+  type ConversationParticipant,
+  type InsertConversationParticipant,
+  type ConversationMessage,
+  type InsertConversationMessage,
+  type MessageRead,
+  type ConversationParticipantRole,
+  type ConversationType,
   type ChatThread,
   type InsertChatThread,
   type ChatThreadParticipant,
@@ -208,6 +221,59 @@ export type FinanceLedgerResponse = {
   lastPaymentDate: string | null;
   entries: FinanceLedgerEntry[];
 };
+
+export type UserConversationSummary = {
+  id: string;
+  type: ConversationType;
+  name: string | null;
+  allowParentReplies: boolean;
+  lastMessagePreview: string | null;
+  lastMessageAt: Date | null;
+  unreadCount: number;
+};
+
+export type ConversationMessagesPageQuery = {
+  limit?: number;
+  before?: string;
+  after?: string;
+};
+
+export const GUARDIAN_MESSAGE_LIMITS = {
+  perHour: 5,
+  perDay: 20,
+} as const;
+
+export type MessagingStorageErrorCode =
+  | "CONVERSATION_NOT_FOUND"
+  | "CONVERSATION_FORBIDDEN"
+  | "MESSAGE_NOT_FOUND"
+  | "VALIDATION_ERROR"
+  | "GUARDIAN_HOURLY_LIMIT_EXCEEDED"
+  | "GUARDIAN_DAILY_LIMIT_EXCEEDED";
+
+export class MessagingStorageError extends Error {
+  public readonly code: MessagingStorageErrorCode;
+  public readonly statusCode: number;
+
+  constructor(code: MessagingStorageErrorCode, message: string, statusCode = 400) {
+    super(message);
+    this.code = code;
+    this.statusCode = statusCode;
+    this.name = "MessagingStorageError";
+  }
+}
+
+export class GuardianMessageLimitError extends MessagingStorageError {
+  public readonly limit: number;
+  public readonly window: "hour" | "day";
+
+  constructor(code: "GUARDIAN_HOURLY_LIMIT_EXCEEDED" | "GUARDIAN_DAILY_LIMIT_EXCEEDED", message: string, limit: number, window: "hour" | "day") {
+    super(code, message, 429);
+    this.limit = limit;
+    this.window = window;
+    this.name = "GuardianMessageLimitError";
+  }
+}
 
 export class Storage {
   private db;
@@ -476,23 +542,470 @@ export class Storage {
     return agreement;
   }
 
+  // ========== BAND-STYLE MESSAGING ==========
+  private sanitizeMessageBody(rawBody: string): string {
+    return rawBody.trim().replace(/\r\n/g, "\n");
+  }
+
+  private normalizeMessageLimit(rawLimit?: number): number {
+    if (typeof rawLimit !== "number" || Number.isNaN(rawLimit)) {
+      return 50;
+    }
+
+    return Math.min(200, Math.max(1, Math.trunc(rawLimit)));
+  }
+
+  private async getParticipant(conversationId: string, userId: string): Promise<ConversationParticipant | undefined> {
+    const [participant] = await this.db
+      .select()
+      .from(conversationParticipants)
+      .where(
+        and(
+          eq(conversationParticipants.conversationId, conversationId),
+          eq(conversationParticipants.userId, userId),
+        ),
+      );
+
+    return participant;
+  }
+
+  private async getConversationById(conversationId: string): Promise<Conversation | undefined> {
+    const [conversation] = await this.db
+      .select()
+      .from(conversations)
+      .where(eq(conversations.id, conversationId));
+
+    return conversation;
+  }
+
+  private async assertParticipant(conversationId: string, userId: string): Promise<ConversationParticipant> {
+    const participant = await this.getParticipant(conversationId, userId);
+    if (!participant) {
+      throw new MessagingStorageError(
+        "CONVERSATION_FORBIDDEN",
+        "You are not a participant in this conversation.",
+        403,
+      );
+    }
+
+    return participant;
+  }
+
+  private async countUserMessagesSince(senderUserId: string, since: Date): Promise<number> {
+    const rows = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(conversationMessages)
+      .where(
+        and(
+          eq(conversationMessages.senderUserId, senderUserId),
+          gte(conversationMessages.createdAt, since),
+          isNull(conversationMessages.deletedAt),
+        ),
+      );
+
+    return rows[0]?.count ?? 0;
+  }
+
+  private async enforceGuardianMessageLimits(senderUserId: string, role: ConversationParticipantRole): Promise<void> {
+    if (role !== "guardian") {
+      return;
+    }
+
+    const now = new Date();
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    const [hourCount, dayCount] = await Promise.all([
+      this.countUserMessagesSince(senderUserId, oneHourAgo),
+      this.countUserMessagesSince(senderUserId, oneDayAgo),
+    ]);
+
+    if (hourCount >= GUARDIAN_MESSAGE_LIMITS.perHour) {
+      throw new GuardianMessageLimitError(
+        "GUARDIAN_HOURLY_LIMIT_EXCEEDED",
+        `Guardians are limited to ${GUARDIAN_MESSAGE_LIMITS.perHour} messages per hour.",
+        GUARDIAN_MESSAGE_LIMITS.perHour,
+        "hour",
+      );
+    }
+
+    if (dayCount >= GUARDIAN_MESSAGE_LIMITS.perDay) {
+      throw new GuardianMessageLimitError(
+        "GUARDIAN_DAILY_LIMIT_EXCEEDED",
+        `Guardians are limited to ${GUARDIAN_MESSAGE_LIMITS.perDay} messages per day.",
+        GUARDIAN_MESSAGE_LIMITS.perDay,
+        "day",
+      );
+    }
+  }
+
+  async getUserConversations(userId: string, studioId: string): Promise<UserConversationSummary[]> {
+    const participantRows = await this.db
+      .select({ conversationId: conversationParticipants.conversationId })
+      .from(conversationParticipants)
+      .where(eq(conversationParticipants.userId, userId));
+
+    const conversationIds = participantRows.map((row) => row.conversationId);
+    if (!conversationIds.length) {
+      return [];
+    }
+
+    const conversationRows = await this.db
+      .select()
+      .from(conversations)
+      .where(
+        and(
+          inArray(conversations.id, conversationIds),
+          eq(conversations.studioId, studioId),
+          isNull(conversations.archivedAt),
+        ),
+      )
+      .orderBy(desc(conversations.updatedAt));
+
+    const summaries = await Promise.all(
+      conversationRows.map(async (conversation): Promise<UserConversationSummary> => {
+        const [lastMessage] = await this.db
+          .select()
+          .from(conversationMessages)
+          .where(
+            and(
+              eq(conversationMessages.conversationId, conversation.id),
+              isNull(conversationMessages.deletedAt),
+            ),
+          )
+          .orderBy(desc(conversationMessages.createdAt))
+          .limit(1);
+
+        const [readState] = await this.db
+          .select()
+          .from(messageReads)
+          .where(
+            and(
+              eq(messageReads.conversationId, conversation.id),
+              eq(messageReads.userId, userId),
+            ),
+          );
+
+        let unreadCount = 0;
+        if (lastMessage) {
+          if (!readState) {
+            const unreadRows = await this.db
+              .select({ count: sql<number>`count(*)::int` })
+              .from(conversationMessages)
+              .where(
+                and(
+                  eq(conversationMessages.conversationId, conversation.id),
+                  isNull(conversationMessages.deletedAt),
+                  ne(conversationMessages.senderUserId, userId),
+                ),
+              );
+
+            unreadCount = unreadRows[0]?.count ?? 0;
+          } else {
+            const [lastReadMessage] = await this.db
+              .select({ createdAt: conversationMessages.createdAt })
+              .from(conversationMessages)
+              .where(eq(conversationMessages.id, readState.lastReadMessageId))
+              .limit(1);
+
+            if (lastReadMessage) {
+              const unreadRows = await this.db
+                .select({ count: sql<number>`count(*)::int` })
+                .from(conversationMessages)
+                .where(
+                  and(
+                    eq(conversationMessages.conversationId, conversation.id),
+                    isNull(conversationMessages.deletedAt),
+                    gt(conversationMessages.createdAt, lastReadMessage.createdAt),
+                    ne(conversationMessages.senderUserId, userId),
+                  ),
+                );
+
+              unreadCount = unreadRows[0]?.count ?? 0;
+            }
+          }
+        }
+
+        return {
+          id: conversation.id,
+          type: conversation.type,
+          name: conversation.name,
+          allowParentReplies: conversation.allowParentReplies,
+          lastMessagePreview: lastMessage ? lastMessage.body.slice(0, 120) : null,
+          lastMessageAt: lastMessage?.createdAt ?? null,
+          unreadCount,
+        };
+      }),
+    );
+
+    return summaries;
+  }
+
+  async getConversationMessages(
+    conversationId: string,
+    userId: string,
+    query: ConversationMessagesPageQuery,
+  ): Promise<ConversationMessage[]> {
+    await this.assertParticipant(conversationId, userId);
+
+    const limit = this.normalizeMessageLimit(query.limit);
+
+    let whereClause = and(
+      eq(conversationMessages.conversationId, conversationId),
+      isNull(conversationMessages.deletedAt),
+    );
+
+    if (query.before) {
+      const beforeDate = new Date(query.before);
+      if (!Number.isNaN(beforeDate.getTime())) {
+        whereClause = and(whereClause, lt(conversationMessages.createdAt, beforeDate));
+      }
+    }
+
+    if (query.after) {
+      const afterDate = new Date(query.after);
+      if (!Number.isNaN(afterDate.getTime())) {
+        whereClause = and(whereClause, gt(conversationMessages.createdAt, afterDate));
+      }
+    }
+
+    return this.db
+      .select()
+      .from(conversationMessages)
+      .where(whereClause)
+      .orderBy(asc(conversationMessages.createdAt))
+      .limit(limit);
+  }
+
+  async createDirectConversation(studioId: string, creatorUserId: string, targetUserId: string): Promise<Conversation> {
+    if (creatorUserId === targetUserId) {
+      throw new MessagingStorageError("VALIDATION_ERROR", "Cannot create a direct conversation with yourself.", 400);
+    }
+
+    const creatorDirectIds = await this.db
+      .select({ conversationId: conversationParticipants.conversationId })
+      .from(conversationParticipants)
+      .where(eq(conversationParticipants.userId, creatorUserId));
+
+    const candidateIds = creatorDirectIds.map((row) => row.conversationId);
+    if (candidateIds.length) {
+      const candidates = await this.db
+        .select()
+        .from(conversations)
+        .where(
+          and(
+            inArray(conversations.id, candidateIds),
+            eq(conversations.studioId, studioId),
+            eq(conversations.type, "direct"),
+            isNull(conversations.archivedAt),
+          ),
+        );
+
+      for (const candidate of candidates) {
+        const participants = await this.db
+          .select({ userId: conversationParticipants.userId })
+          .from(conversationParticipants)
+          .where(eq(conversationParticipants.conversationId, candidate.id));
+
+        const userIds = participants.map((p) => p.userId);
+        if (userIds.length === 2 && userIds.includes(creatorUserId) && userIds.includes(targetUserId)) {
+          return candidate;
+        }
+      }
+    }
+
+    const [conversation] = await this.db
+      .insert(conversations)
+      .values({
+        studioId,
+        type: "direct",
+        name: null,
+        allowParentReplies: true,
+        createdByUserId: creatorUserId,
+        updatedAt: new Date(),
+      } satisfies InsertConversation)
+      .returning();
+
+    await this.db.insert(conversationParticipants).values([
+      {
+        conversationId: conversation.id,
+        userId: creatorUserId,
+        roleInConversation: "staff",
+        isMuted: false,
+        updatedAt: new Date(),
+      },
+      {
+        conversationId: conversation.id,
+        userId: targetUserId,
+        roleInConversation: "guardian",
+        isMuted: false,
+        updatedAt: new Date(),
+      },
+    ] satisfies InsertConversationParticipant[]);
+
+    return conversation;
+  }
+
+  async createBroadcastConversation(
+    studioId: string,
+    creatorUserId: string,
+    input: { name: string; allowParentReplies: boolean },
+  ): Promise<Conversation> {
+    const normalizedName = input.name.trim();
+    if (!normalizedName) {
+      throw new MessagingStorageError("VALIDATION_ERROR", "Broadcast name is required.", 400);
+    }
+
+    const [conversation] = await this.db
+      .insert(conversations)
+      .values({
+        studioId,
+        type: "broadcast",
+        name: normalizedName,
+        allowParentReplies: input.allowParentReplies,
+        createdByUserId: creatorUserId,
+        updatedAt: new Date(),
+      } satisfies InsertConversation)
+      .returning();
+
+    return conversation;
+  }
+
+  async addParticipantsForBroadcast(
+    conversationId: string,
+    userIds: string[],
+    roleInConversation: ConversationParticipantRole,
+  ): Promise<void> {
+    if (!userIds.length) {
+      return;
+    }
+
+    const uniqueUserIds = [...new Set(userIds)];
+    await this.db
+      .insert(conversationParticipants)
+      .values(
+        uniqueUserIds.map(
+          (userId): InsertConversationParticipant => ({
+            conversationId,
+            userId,
+            roleInConversation,
+            isMuted: false,
+            updatedAt: new Date(),
+          }),
+        ),
+      )
+      .onConflictDoNothing({
+        target: [conversationParticipants.conversationId, conversationParticipants.userId],
+      });
+  }
+
+  async sendMessage(conversationId: string, senderUserId: string, body: string): Promise<ConversationMessage> {
+    const conversation = await this.getConversationById(conversationId);
+    if (!conversation || conversation.archivedAt) {
+      throw new MessagingStorageError("CONVERSATION_NOT_FOUND", "Conversation not found.", 404);
+    }
+
+    const participant = await this.assertParticipant(conversationId, senderUserId);
+    await this.enforceGuardianMessageLimits(senderUserId, participant.roleInConversation);
+
+    const sanitizedBody = this.sanitizeMessageBody(body);
+    if (!sanitizedBody) {
+      throw new MessagingStorageError("VALIDATION_ERROR", "Message body is required.", 400);
+    }
+
+    const [message] = await this.db
+      .insert(conversationMessages)
+      .values({
+        conversationId,
+        studioId: conversation.studioId,
+        senderUserId,
+        body: sanitizedBody,
+        updatedAt: new Date(),
+      } satisfies InsertConversationMessage)
+      .returning();
+
+    await this.db
+      .update(conversations)
+      .set({
+        updatedAt: message.createdAt,
+      })
+      .where(eq(conversations.id, conversationId));
+
+    return message;
+  }
+
+  async markConversationRead(conversationId: string, userId: string, lastReadMessageId: string): Promise<MessageRead> {
+    await this.assertParticipant(conversationId, userId);
+
+    const [message] = await this.db
+      .select({ id: conversationMessages.id })
+      .from(conversationMessages)
+      .where(
+        and(
+          eq(conversationMessages.id, lastReadMessageId),
+          eq(conversationMessages.conversationId, conversationId),
+          isNull(conversationMessages.deletedAt),
+        ),
+      )
+      .limit(1);
+
+    if (!message) {
+      throw new MessagingStorageError("MESSAGE_NOT_FOUND", "Message not found in conversation.", 404);
+    }
+
+    const [row] = await this.db
+      .insert(messageReads)
+      .values({
+        conversationId,
+        userId,
+        lastReadMessageId,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [messageReads.conversationId, messageReads.userId],
+        set: {
+          lastReadMessageId,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+
+    return row;
+  }
+
+  async getConversationParticipantRole(
+    conversationId: string,
+    userId: string,
+  ): Promise<ConversationParticipantRole | undefined> {
+    const participant = await this.getParticipant(conversationId, userId);
+    return participant?.roleInConversation;
+  }
+
+  async getConversation(conversationId: string): Promise<Conversation | undefined> {
+    return this.getConversationById(conversationId);
+  }
+
   // ========== MESSAGES ==========
   async getMessages(): Promise<Message[]> {
-    return await this.db.select().from(messages);
+    return await this.db.select().from(legacyMessages);
   }
 
   async createMessage(data: InsertMessage): Promise<Message> {
-    const [message] = await this.db.insert(messages).values(data).returning();
+    const [message] = await this.db.insert(legacyMessages).values(data).returning();
     return message;
   }
 
   async updateMessage(id: string, data: Partial<InsertMessage>): Promise<Message | undefined> {
-    const [message] = await this.db.update(messages).set(data).where(eq(messages.id, id)).returning();
+    const [message] = await this.db
+      .update(legacyMessages)
+      .set(data)
+      .where(eq(legacyMessages.id, id))
+      .returning();
     return message;
   }
 
   async deleteMessage(id: string): Promise<void> {
-    await this.db.delete(messages).where(eq(messages.id, id));
+    await this.db.delete(legacyMessages).where(eq(legacyMessages.id, id));
   }
 
   // ========== CHAT THREADS ==========

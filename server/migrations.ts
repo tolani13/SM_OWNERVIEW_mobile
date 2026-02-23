@@ -353,6 +353,97 @@ async function ensureFinanceHubSchema(log: Logger): Promise<void> {
   log("ensured Finance schema (families/guardians + events/event_fees/transactions/fee_types + dancers fields)", "db");
 }
 
+async function ensureMessagingSchema(log: Logger): Promise<void> {
+  // Preserve legacy announcement-style messages table by renaming it if still using the old name.
+  await db.execute(sql`
+    DO $$
+    BEGIN
+      IF to_regclass('public.legacy_messages') IS NULL
+         AND to_regclass('public.messages') IS NOT NULL
+         AND EXISTS (
+           SELECT 1
+           FROM information_schema.columns
+           WHERE table_schema = 'public'
+             AND table_name = 'messages'
+             AND column_name = 'subject'
+         ) THEN
+        ALTER TABLE "messages" RENAME TO "legacy_messages";
+      END IF;
+    END $$;
+  `);
+
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS "conversations" (
+      "id" text PRIMARY KEY NOT NULL,
+      "studio_id" text NOT NULL,
+      "type" text NOT NULL,
+      "name" text,
+      "allow_parent_replies" boolean NOT NULL DEFAULT false,
+      "created_by_user_id" text NOT NULL,
+      "created_at" timestamp NOT NULL DEFAULT now(),
+      "updated_at" timestamp NOT NULL DEFAULT now(),
+      "archived_at" timestamp
+    )
+  `);
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS "conversations_studio_updated_idx" ON "conversations"("studio_id", "updated_at" DESC)`,
+  );
+
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS "conversation_participants" (
+      "conversation_id" text NOT NULL,
+      "user_id" text NOT NULL,
+      "role_in_conversation" text NOT NULL,
+      "is_muted" boolean NOT NULL DEFAULT false,
+      "created_at" timestamp NOT NULL DEFAULT now(),
+      "updated_at" timestamp NOT NULL DEFAULT now(),
+      CONSTRAINT "conversation_participants_pk" PRIMARY KEY ("conversation_id", "user_id"),
+      CONSTRAINT "conversation_participants_conversation_id_fk"
+        FOREIGN KEY ("conversation_id") REFERENCES "conversations"("id") ON DELETE cascade
+    )
+  `);
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS "conversation_participants_user_idx" ON "conversation_participants"("user_id")`,
+  );
+
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS "messages" (
+      "id" text PRIMARY KEY NOT NULL,
+      "conversation_id" text NOT NULL,
+      "studio_id" text NOT NULL,
+      "sender_user_id" text NOT NULL,
+      "body" text NOT NULL,
+      "created_at" timestamp NOT NULL DEFAULT now(),
+      "updated_at" timestamp NOT NULL DEFAULT now(),
+      "deleted_at" timestamp,
+      CONSTRAINT "messages_conversation_id_conversations_id_fk"
+        FOREIGN KEY ("conversation_id") REFERENCES "conversations"("id") ON DELETE cascade
+    )
+  `);
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS "messages_conversation_created_idx" ON "messages"("conversation_id", "created_at" ASC)`,
+  );
+
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS "message_reads" (
+      "conversation_id" text NOT NULL,
+      "user_id" text NOT NULL,
+      "last_read_message_id" text NOT NULL,
+      "updated_at" timestamp NOT NULL DEFAULT now(),
+      CONSTRAINT "message_reads_pk" PRIMARY KEY ("conversation_id", "user_id"),
+      CONSTRAINT "message_reads_conversation_id_conversations_id_fk"
+        FOREIGN KEY ("conversation_id") REFERENCES "conversations"("id") ON DELETE cascade,
+      CONSTRAINT "message_reads_last_read_message_id_messages_id_fk"
+        FOREIGN KEY ("last_read_message_id") REFERENCES "messages"("id") ON DELETE cascade
+    )
+  `);
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS "message_reads_user_updated_idx" ON "message_reads"("user_id", "updated_at" DESC)`,
+  );
+
+  log("ensured messaging schema (conversations, participants, messages, reads)", "db");
+}
+
 export async function ensureDatabaseSchema(log?: Logger): Promise<void> {
   const logger: Logger =
     log ??
@@ -368,6 +459,7 @@ export async function ensureDatabaseSchema(log?: Logger): Promise<void> {
     await ensureDancerAgeLevelColumns(logger);
     await ensureFeeAccountingColumns(logger);
     await ensureFinanceHubSchema(logger);
+    await ensureMessagingSchema(logger);
     return;
   }
 
@@ -377,6 +469,7 @@ export async function ensureDatabaseSchema(log?: Logger): Promise<void> {
     await ensureDancerAgeLevelColumns(logger);
     await ensureFeeAccountingColumns(logger);
     await ensureFinanceHubSchema(logger);
+    await ensureMessagingSchema(logger);
     return;
   }
 
@@ -385,5 +478,6 @@ export async function ensureDatabaseSchema(log?: Logger): Promise<void> {
   await ensureDancerAgeLevelColumns(logger);
   await ensureFeeAccountingColumns(logger);
   await ensureFinanceHubSchema(logger);
+  await ensureMessagingSchema(logger);
   logger("startup migrations applied", "db");
 }

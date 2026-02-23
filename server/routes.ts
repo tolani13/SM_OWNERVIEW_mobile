@@ -28,9 +28,23 @@ import type {
   EventType,
   EventFeeStatus,
   FeeType,
+  ConversationParticipantRole,
 } from "./schema";
+import {
+  MessagingStorageError,
+  GuardianMessageLimitError,
+} from "./storage";
 
 type ActorRole = "owner" | "manager" | "staff" | "parent";
+
+type MessagingActorRole = "owner" | "staff" | "guardian";
+
+type MessagingActorContext = {
+  userId: string;
+  userName: string;
+  actorRole: MessagingActorRole;
+  studioId: string;
+};
 
 function getActor(req: any): { id: string; name: string; role: ActorRole } {
   const role = (req.headers["x-user-role"] || "owner") as ActorRole;
@@ -39,6 +53,62 @@ function getActor(req: any): { id: string; name: string; role: ActorRole } {
     name: (req.headers["x-user-name"] as string) || "Studio Owner",
     role: ["owner", "manager", "staff", "parent"].includes(role) ? role : "owner",
   };
+}
+
+function resolveMessagingActor(req: any): MessagingActorContext {
+  const actor = getActor(req);
+  const actorRole: MessagingActorRole = actor.role === "parent"
+    ? "guardian"
+    : actor.role === "owner"
+      ? "owner"
+      : "staff";
+
+  return {
+    userId: actor.id,
+    userName: actor.name,
+    actorRole,
+    studioId: "default",
+  };
+}
+
+function canCreateBroadcastConversation(actorRole: MessagingActorRole): boolean {
+  return actorRole === "owner" || actorRole === "staff";
+}
+
+function toParticipantRole(actorRole: MessagingActorRole): ConversationParticipantRole {
+  if (actorRole === "owner") return "owner";
+  if (actorRole === "staff") return "staff";
+  return "guardian";
+}
+
+function parsePositiveLimit(input: unknown): number | undefined {
+  if (typeof input !== "string") return undefined;
+  const parsed = Number.parseInt(input, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return undefined;
+  return parsed;
+}
+
+function respondMessagingError(res: any, error: unknown): void {
+  if (error instanceof GuardianMessageLimitError) {
+    res.status(429).json({
+      error: error.message,
+      code: error.code,
+      limit: error.limit,
+      window: error.window,
+    });
+    return;
+  }
+
+  if (error instanceof MessagingStorageError) {
+    res.status(error.statusCode).json({
+      error: error.message,
+      code: error.code,
+    });
+    return;
+  }
+
+  const message = error instanceof Error ? error.message : "Messaging request failed";
+  res.status(400).json({ error: message });
 }
 
 function isStudioStaff(role: string): boolean {
@@ -1228,6 +1298,206 @@ export async function registerRoutes(
   });
 
   // ========== MESSAGES ==========
+
+  app.get("/api/messages/conversations", async (req, res) => {
+    try {
+      const actor = resolveMessagingActor(req);
+      const conversations = await storage.getUserConversations(actor.userId, actor.studioId);
+
+      res.json(
+        conversations.map((conversation) => ({
+          id: conversation.id,
+          type: conversation.type,
+          name: conversation.name,
+          allowParentReplies: conversation.allowParentReplies,
+          lastMessagePreview: conversation.lastMessagePreview,
+          lastMessageAt: conversation.lastMessageAt,
+          unreadCount: conversation.unreadCount,
+        })),
+      );
+    } catch (error) {
+      console.error("Get messaging conversations error:", error);
+      respondMessagingError(res, error);
+    }
+  });
+
+  app.get("/api/messages/conversations/:id", async (req, res) => {
+    try {
+      const actor = resolveMessagingActor(req);
+      const limit = parsePositiveLimit(req.query.limit);
+      const before = typeof req.query.before === "string" ? req.query.before : undefined;
+      const after = typeof req.query.after === "string" ? req.query.after : undefined;
+
+      const messages = await storage.getConversationMessages(req.params.id, actor.userId, {
+        limit,
+        before,
+        after,
+      });
+
+      res.json(messages);
+    } catch (error) {
+      console.error("Get conversation messages error:", error);
+      respondMessagingError(res, error);
+    }
+  });
+
+  app.post("/api/messages/conversations/direct", async (req, res) => {
+    try {
+      const actor = resolveMessagingActor(req);
+      if (actor.actorRole === "guardian") {
+        return res.status(403).json({
+          error: "Guardians cannot create new conversations.",
+        });
+      }
+
+      const targetUserId = typeof req.body?.targetUserId === "string"
+        ? req.body.targetUserId
+        : typeof req.body?.targetUserId === "number"
+          ? String(req.body.targetUserId)
+          : "";
+
+      if (!targetUserId.trim()) {
+        return res.status(400).json({ error: "targetUserId is required." });
+      }
+
+      const initialMessage = typeof req.body?.initialMessage === "string" ? req.body.initialMessage : "";
+
+      const conversation = await storage.createDirectConversation(
+        actor.studioId,
+        actor.userId,
+        targetUserId.trim(),
+        {
+          creatorRole: toParticipantRole(actor.actorRole),
+          targetRole: "guardian",
+        },
+      );
+
+      let firstMessage = null;
+      if (initialMessage.trim()) {
+        firstMessage = await storage.sendMessage(conversation.id, actor.userId, initialMessage);
+      }
+
+      res.status(201).json({ conversation, firstMessage });
+    } catch (error) {
+      console.error("Create direct conversation error:", error);
+      respondMessagingError(res, error);
+    }
+  });
+
+  app.post("/api/messages/conversations/broadcast", async (req, res) => {
+    try {
+      const actor = resolveMessagingActor(req);
+      if (!canCreateBroadcastConversation(actor.actorRole)) {
+        return res.status(403).json({
+          error: "Only owners/staff can create broadcast conversations.",
+        });
+      }
+
+      const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
+      const allowParentReplies = Boolean(req.body?.allowParentReplies);
+      const target = req.body?.target === "class" ? "class" : "all_guardians";
+      const classId = typeof req.body?.classId === "string"
+        ? req.body.classId
+        : typeof req.body?.classId === "number"
+          ? String(req.body.classId)
+          : undefined;
+      const initialMessage = typeof req.body?.initialMessage === "string" ? req.body.initialMessage : "";
+
+      if (!name) {
+        return res.status(400).json({ error: "name is required." });
+      }
+
+      if (target === "class" && !classId) {
+        return res.status(400).json({ error: "classId is required when target is class." });
+      }
+
+      const conversation = await storage.createBroadcastConversation(actor.studioId, actor.userId, {
+        name,
+        allowParentReplies,
+      });
+
+      const guardianUserIds = await storage.getStudioGuardianUserIds(
+        actor.studioId,
+        target === "class" ? classId : undefined,
+      );
+
+      await storage.addParticipantsForBroadcast(conversation.id, [actor.userId], toParticipantRole(actor.actorRole));
+      await storage.addParticipantsForBroadcast(conversation.id, guardianUserIds, "guardian");
+
+      if (initialMessage.trim()) {
+        await storage.sendMessage(conversation.id, actor.userId, initialMessage);
+      }
+
+      res.status(201).json(conversation);
+    } catch (error) {
+      console.error("Create broadcast conversation error:", error);
+      respondMessagingError(res, error);
+    }
+  });
+
+  app.post("/api/messages/conversations/:id/messages", async (req, res) => {
+    try {
+      const actor = resolveMessagingActor(req);
+      const body = typeof req.body?.body === "string" ? req.body.body : "";
+      if (!body.trim()) {
+        return res.status(400).json({ error: "body is required." });
+      }
+
+      const conversation = await storage.getConversation(req.params.id);
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found." });
+      }
+
+      const roleInConversation = await storage.getConversationParticipantRole(req.params.id, actor.userId);
+      if (!roleInConversation) {
+        return res.status(403).json({ error: "You are not a participant in this conversation." });
+      }
+
+      if (
+        conversation.type === "broadcast" &&
+        roleInConversation === "guardian" &&
+        !conversation.allowParentReplies
+      ) {
+        return res.status(400).json({
+          error: "Replies are disabled for this broadcast.",
+          code: "BROADCAST_PARENT_REPLIES_DISABLED",
+        });
+      }
+
+      const message = await storage.sendMessage(req.params.id, actor.userId, body);
+      res.status(201).json(message);
+    } catch (error) {
+      console.error("Send conversation message error:", error);
+      respondMessagingError(res, error);
+    }
+  });
+
+  app.post("/api/messages/conversations/:id/read", async (req, res) => {
+    try {
+      const actor = resolveMessagingActor(req);
+      const lastReadMessageId = typeof req.body?.lastReadMessageId === "string"
+        ? req.body.lastReadMessageId
+        : typeof req.body?.lastReadMessageId === "number"
+          ? String(req.body.lastReadMessageId)
+          : "";
+
+      if (!lastReadMessageId.trim()) {
+        return res.status(400).json({ error: "lastReadMessageId is required." });
+      }
+
+      const readMarker = await storage.markConversationRead(
+        req.params.id,
+        actor.userId,
+        lastReadMessageId.trim(),
+      );
+
+      res.json(readMarker);
+    } catch (error) {
+      console.error("Mark conversation read error:", error);
+      respondMessagingError(res, error);
+    }
+  });
+
   app.get("/api/messages", async (_req, res) => {
     try {
       const allMessages = await storage.getMessages();

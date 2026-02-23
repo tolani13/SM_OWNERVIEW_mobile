@@ -14,7 +14,7 @@ import Routines from "@/pages/Routines_OwnerView_mobile";
 import Competitions from "@/pages/Competitions_OwnerView_mobile";
 import Finance from "@/pages/Finance_OwnerView_mobile";
 import Announcements from "@/pages/Announcements_OwnerView_mobile";
-import Messages from "@/pages/Messages_OwnerView_mobile";
+import Messages from "@/pages/MessagesPage";
 import StudioSettings from "@/pages/StudioSettings_OwnerView_mobile";
 import Policies from "@/pages/Policies_OwnerView_mobile";
 import RecitalListPage from "@/pages/recitals/RecitalListPage";

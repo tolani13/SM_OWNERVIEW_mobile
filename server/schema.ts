@@ -10,6 +10,7 @@ import {
   date,
   uuid,
   primaryKey,
+  index,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { createId } from "@paralleldrive/cuid2";
@@ -338,7 +339,7 @@ export type Announcement = typeof announcements.$inferSelect;
 export type InsertAnnouncement = typeof announcements.$inferInsert;
 
 // ========== MESSAGES ==========
-export const messages = pgTable("messages", {
+export const legacyMessages = pgTable("legacy_messages", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
   subject: text("subject").notNull(),
   body: text("body").notNull(),
@@ -353,8 +354,80 @@ export const messages = pgTable("messages", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export type Message = typeof messages.$inferSelect;
-export type InsertMessage = typeof messages.$inferInsert;
+export type Message = typeof legacyMessages.$inferSelect;
+export type InsertMessage = typeof legacyMessages.$inferInsert;
+
+export const conversationTypeValues = ["broadcast", "direct"] as const;
+export type ConversationType = (typeof conversationTypeValues)[number];
+
+export const conversationParticipantRoleValues = ["owner", "staff", "guardian"] as const;
+export type ConversationParticipantRole = (typeof conversationParticipantRoleValues)[number];
+
+export const conversations = pgTable("conversations", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  studioId: text("studio_id").notNull(),
+  type: text("type").$type<ConversationType>().notNull(),
+  name: text("name"),
+  allowParentReplies: boolean("allow_parent_replies").notNull().default(false),
+  createdByUserId: text("created_by_user_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  archivedAt: timestamp("archived_at"),
+}, (table) => ({
+  studioUpdatedIdx: index("conversations_studio_updated_idx").on(table.studioId, table.updatedAt.desc()),
+}));
+
+export type Conversation = typeof conversations.$inferSelect;
+export type InsertConversation = typeof conversations.$inferInsert;
+
+export const conversationParticipants = pgTable("conversation_participants", {
+  conversationId: text("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull(),
+  roleInConversation: text("role_in_conversation").$type<ConversationParticipantRole>().notNull(),
+  isMuted: boolean("is_muted").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.conversationId, table.userId] }),
+  userIdx: index("conversation_participants_user_idx").on(table.userId),
+}));
+
+export type ConversationParticipant = typeof conversationParticipants.$inferSelect;
+export type InsertConversationParticipant = typeof conversationParticipants.$inferInsert;
+
+export const conversationMessages = pgTable("messages", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  conversationId: text("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+  studioId: text("studio_id").notNull(),
+  senderUserId: text("sender_user_id").notNull(),
+  body: text("body").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  deletedAt: timestamp("deleted_at"),
+}, (table) => ({
+  conversationCreatedIdx: index("messages_conversation_created_idx").on(
+    table.conversationId,
+    table.createdAt.asc(),
+  ),
+}));
+
+export type ConversationMessage = typeof conversationMessages.$inferSelect;
+export type InsertConversationMessage = typeof conversationMessages.$inferInsert;
+
+export const messageReads = pgTable("message_reads", {
+  conversationId: text("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull(),
+  lastReadMessageId: text("last_read_message_id").notNull().references(() => conversationMessages.id, {
+    onDelete: "cascade",
+  }),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.conversationId, table.userId] }),
+  userUpdatedIdx: index("message_reads_user_updated_idx").on(table.userId, table.updatedAt.desc()),
+}));
+
+export type MessageRead = typeof messageReads.$inferSelect;
+export type InsertMessageRead = typeof messageReads.$inferInsert;
 
 // ========== CHAT THREADS (Parent <-> Studio + CompChat) ==========
 export const chatThreads = pgTable("chat_threads", {
