@@ -623,7 +623,7 @@ export class Storage {
     if (hourCount >= GUARDIAN_MESSAGE_LIMITS.perHour) {
       throw new GuardianMessageLimitError(
         "GUARDIAN_HOURLY_LIMIT_EXCEEDED",
-        `Guardians are limited to ${GUARDIAN_MESSAGE_LIMITS.perHour} messages per hour.",
+        `Guardians are limited to ${GUARDIAN_MESSAGE_LIMITS.perHour} messages per hour.`,
         GUARDIAN_MESSAGE_LIMITS.perHour,
         "hour",
       );
@@ -632,7 +632,7 @@ export class Storage {
     if (dayCount >= GUARDIAN_MESSAGE_LIMITS.perDay) {
       throw new GuardianMessageLimitError(
         "GUARDIAN_DAILY_LIMIT_EXCEEDED",
-        `Guardians are limited to ${GUARDIAN_MESSAGE_LIMITS.perDay} messages per day.",
+        `Guardians are limited to ${GUARDIAN_MESSAGE_LIMITS.perDay} messages per day.`,
         GUARDIAN_MESSAGE_LIMITS.perDay,
         "day",
       );
