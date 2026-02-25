@@ -21,6 +21,7 @@ import {
   useConversations,
   useConversationMessages,
   useCreateBroadcastConversation,
+  useCreateDirectConversation,
   useMarkRead,
   useSendMessage,
 } from "@/hooks/useMessages";
