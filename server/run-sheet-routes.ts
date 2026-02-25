@@ -482,9 +482,18 @@ export function registerRunSheetRoutes(app: Express): void {
         return res.status(404).json({ error: "Competition not found" });
       }
 
-      const parserOverride =
-        resolveRunSheetParserOverride(req.body?.parser) ||
-        resolveRunSheetParserOverride(req.query?.parser);
+      const parserInput = req.body?.parser ?? req.query?.parser;
+      const parserInputNormalized = cleanString(parserInput);
+      const parserOverride = resolveRunSheetParserOverride(parserInput);
+
+      if (parserInputNormalized && !parserOverride) {
+        return res.status(400).json({
+          error: "Invalid parser override.",
+          parserRequested: parserInputNormalized,
+          allowedParsers: Object.keys(RUN_SHEET_PARSER_CONFIG),
+        });
+      }
+
       const parserCandidates = getRunSheetParserCandidates(
         competition.name,
         file.originalname,
@@ -506,9 +515,14 @@ export function registerRunSheetRoutes(app: Express): void {
       }
 
       if (!parserVendor || !extractedEntries) {
-        throw new Error(
-          parserErrors.join(" | ") || "All run-sheet parsers failed.",
-        );
+        return res.status(422).json({
+          error: "Failed to parse run sheet PDF with all available parsers.",
+          parserRequested: parserOverride ?? "auto",
+          parserCandidates,
+          parserErrors,
+          fileName: file.originalname,
+          competitionName: competition.name,
+        });
       }
 
       const parserConfig = RUN_SHEET_PARSER_CONFIG[parserVendor];
@@ -526,6 +540,9 @@ export function registerRunSheetRoutes(app: Express): void {
         parser: 'python',
         parserVendor,
         parserRequested,
+        parserCandidates,
+        parserErrors,
+        fallbackUsed: usedFallback,
         company: parserConfig.companyLabel,
         modeRequested: parserRequested,
         entries,
@@ -533,6 +550,13 @@ export function registerRunSheetRoutes(app: Express): void {
           ...(usedFallback ? [`Primary parser failed; imported with ${parserConfig.companyLabel} parser.`] : []),
           ...(entries.length === 0 ? [`${parserConfig.companyLabel} parser returned no entries.`] : []),
         ],
+        diagnostics: {
+          fileName: file.originalname,
+          competitionName: competition.name,
+          parserAttempts: parserCandidates,
+          parserErrors,
+          entryCount: entries.length,
+        },
         message: `Extracted ${entries.length} entries with ${parserConfig.companyLabel} Python parser. Please review and save.`,
       });
 

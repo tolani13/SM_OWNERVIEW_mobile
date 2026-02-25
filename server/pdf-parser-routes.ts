@@ -396,11 +396,31 @@ export function registerPDFParserRoutes(app: Express): void {
         return res.status(404).json({ error: "Competition not found" });
       }
 
+      const normalizedType = String(type || "").trim().toLowerCase();
+      if (normalizedType && normalizedType !== "runsheet" && normalizedType !== "convention") {
+        return res.status(400).json({
+          error: "Invalid parse type. Expected 'runsheet' or 'convention'.",
+          typeRequested: normalizedType,
+          allowedTypes: ["runsheet", "convention"],
+        });
+      }
+
       // Convention classes: force Python parser path (same pattern as run-sheet)
-      if (String(type || "").toLowerCase() === "convention") {
+      if (normalizedType === "convention") {
         const parserOverride =
           resolveConventionParserOverride(req.body?.parser) ||
           resolveConventionParserOverride(req.query?.parser);
+        const parserInput = req.body?.parser ?? req.query?.parser;
+        const parserInputNormalized = cleanString(parserInput);
+
+        if (parserInputNormalized && !parserOverride) {
+          return res.status(400).json({
+            error: "Invalid convention parser override.",
+            parserRequested: parserInputNormalized,
+            allowedParsers: Object.keys(CONVENTION_PARSER_CONFIG),
+          });
+        }
+
         const parserCandidates = getConventionParserCandidates(
           competition.name,
           file.originalname,
@@ -422,7 +442,14 @@ export function registerPDFParserRoutes(app: Express): void {
         }
 
         if (!parserVendor || !parsedClasses) {
-          throw new Error(parserErrors.join(" | ") || "All convention parsers failed.");
+          return res.status(422).json({
+            error: "Failed to parse convention PDF with all available parsers.",
+            parserRequested: parserOverride ?? "auto",
+            parserCandidates,
+            parserErrors,
+            fileName: file.originalname,
+            competitionName: competition.name,
+          });
         }
 
         const parserConfig = CONVENTION_PARSER_CONFIG[parserVendor];
@@ -446,12 +473,23 @@ export function registerPDFParserRoutes(app: Express): void {
           parser: "python",
           parserVendor,
           parserRequested,
+          parserCandidates,
+          parserErrors,
+          fallbackUsed: usedFallback,
           savedCount: saved.length,
           totalParsed: parsedClasses.length,
           warnings: [
             ...(usedFallback ? [`Primary parser failed; imported with ${parserConfig.companyLabel} parser.`] : []),
             ...(saved.length === 0 ? [`${parserConfig.companyLabel} parser returned no convention classes.`] : []),
           ],
+          diagnostics: {
+            fileName: file.originalname,
+            competitionName: competition.name,
+            parserAttempts: parserCandidates,
+            parserErrors,
+            parsedClassCount: parsedClasses.length,
+            savedClassCount: saved.length,
+          },
           metadata: {
             methodUsed: "python",
             parserVendor,
@@ -465,7 +503,7 @@ export function registerPDFParserRoutes(app: Express): void {
       const parseResult = await pdfParser.parsePDF(
         file.buffer,
         file.originalname,
-        type as 'runsheet' | 'convention' | undefined
+        normalizedType ? (normalizedType as 'runsheet' | 'convention') : undefined
       );
 
       if (!parseResult.success) {
@@ -535,7 +573,17 @@ export function registerPDFParserRoutes(app: Express): void {
         savedCount,
         totalParsed: parseResult.data.length,
         warnings: parseResult.warnings,
-        metadata: parseResult.metadata
+        metadata: parseResult.metadata,
+        diagnostics: {
+          parser: "internal",
+          fileName: file.originalname,
+          competitionName: competition.name,
+          parsedType: parseResult.type,
+          totalParsed: parseResult.data.length,
+          savedCount,
+          errors: parseResult.errors,
+          warnings: parseResult.warnings,
+        }
       });
 
     } catch (error: any) {
