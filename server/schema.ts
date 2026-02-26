@@ -553,6 +553,74 @@ export const events = pgTable("events", {
 export type Event = typeof events.$inferSelect;
 export type InsertEvent = typeof events.$inferInsert;
 
+// ========== EVENT INTEL: PARSED RUN SHEETS / CONVENTION SCHEDULES / PARSING JOBS ==========
+export const eventRunSheets = pgTable("event_run_sheets", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
+  brand: text("brand").notNull(),
+  sessionName: text("session_name"),
+  stageName: text("stage_name"),
+  routineNumber: text("routine_number"),
+  routineName: text("routine_name"),
+  studioName: text("studio_name"),
+  division: text("division"),
+  age: text("age"),
+  level: text("level"),
+  category: text("category"),
+  scheduledTime: text("scheduled_time"),
+  rawLine: text("raw_line"),
+  createdAtUtc: timestamp("created_at_utc").defaultNow().notNull(),
+}, (table) => ({
+  eventIdIdx: index("event_run_sheets_event_id_idx").on(table.eventId),
+  brandIdx: index("event_run_sheets_brand_idx").on(table.brand),
+  createdAtUtcIdx: index("event_run_sheets_created_at_utc_idx").on(table.createdAtUtc.desc()),
+}));
+
+export type EventRunSheet = typeof eventRunSheets.$inferSelect;
+export type InsertEventRunSheet = typeof eventRunSheets.$inferInsert;
+
+export const eventConventionSchedules = pgTable("event_convention_schedules", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
+  brand: text("brand").notNull(),
+  roomName: text("room_name"),
+  blockLabel: text("block_label"),
+  startTime: text("start_time"),
+  endTime: text("end_time"),
+  classType: text("class_type"),
+  facultyName: text("faculty_name"),
+  level: text("level"),
+  createdAtUtc: timestamp("created_at_utc").defaultNow().notNull(),
+}, (table) => ({
+  eventIdIdx: index("event_convention_schedules_event_id_idx").on(table.eventId),
+  brandIdx: index("event_convention_schedules_brand_idx").on(table.brand),
+  createdAtUtcIdx: index("event_convention_schedules_created_at_utc_idx").on(table.createdAtUtc.desc()),
+}));
+
+export type EventConventionSchedule = typeof eventConventionSchedules.$inferSelect;
+export type InsertEventConventionSchedule = typeof eventConventionSchedules.$inferInsert;
+
+export const parsingJobs = pgTable("parsing_jobs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
+  brand: text("brand").notNull(),
+  artifactId: text("artifact_id").notNull(),
+  status: text("status").notNull(),
+  rowsRunSheet: integer("rows_run_sheet").notNull().default(0),
+  rowsConvention: integer("rows_convention").notNull().default(0),
+  errorMessage: text("error_message"),
+  createdAtUtc: timestamp("created_at_utc").defaultNow().notNull(),
+}, (table) => ({
+  eventIdIdx: index("parsing_jobs_event_id_idx").on(table.eventId),
+  brandIdx: index("parsing_jobs_brand_idx").on(table.brand),
+  artifactIdIdx: index("parsing_jobs_artifact_id_idx").on(table.artifactId),
+  statusIdx: index("parsing_jobs_status_idx").on(table.status),
+  createdAtUtcIdx: index("parsing_jobs_created_at_utc_idx").on(table.createdAtUtc.desc()),
+}));
+
+export type ParsingJob = typeof parsingJobs.$inferSelect;
+export type InsertParsingJob = typeof parsingJobs.$inferInsert;
+
 export const eventFees = pgTable("event_fees", {
   id: uuid("id").defaultRandom().primaryKey(),
   dancerId: text("dancer_id").notNull().references(() => dancers.id, { onDelete: "cascade" }),
@@ -669,6 +737,30 @@ export type InsertFeeTypeDefault = typeof feeTypes.$inferInsert;
 
 export const eventsRelations = relations(events, ({ many }) => ({
   eventFees: many(eventFees),
+  eventRunSheets: many(eventRunSheets),
+  eventConventionSchedules: many(eventConventionSchedules),
+  parsingJobs: many(parsingJobs),
+}));
+
+export const eventRunSheetsRelations = relations(eventRunSheets, ({ one }) => ({
+  event: one(events, {
+    fields: [eventRunSheets.eventId],
+    references: [events.id],
+  }),
+}));
+
+export const eventConventionSchedulesRelations = relations(eventConventionSchedules, ({ one }) => ({
+  event: one(events, {
+    fields: [eventConventionSchedules.eventId],
+    references: [events.id],
+  }),
+}));
+
+export const parsingJobsRelations = relations(parsingJobs, ({ one }) => ({
+  event: one(events, {
+    fields: [parsingJobs.eventId],
+    references: [events.id],
+  }),
 }));
 
 export const eventFeesRelations = relations(eventFees, ({ one, many }) => ({
