@@ -159,6 +159,8 @@ export class PDFParser {
       }
     }
 
-    return conventionScore >= runSheetScore;
+    // Default to run-sheet on ties/low-signal docs to avoid misclassifying
+    // competition lineups as convention schedules.
+    return conventionScore > runSheetScore;
   }
 }
