@@ -8,9 +8,13 @@ import multer from "multer";
 import { promises as fs } from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
+import { eq } from "drizzle-orm";
 import { PDFParser } from "./pdf-parser/index";
 import { pdfParsingService } from "./pdf-parser/event-intel/pdfParsingService";
+import { db } from "./db";
+import { eventArtifacts, events } from "./schema";
 import { storage } from "./storage";
 import type { ParsedRunSlot, ParsedConventionClass } from "./pdf-parser/types";
 import type { InsertRunSlot, InsertConventionClass } from "./schema";
@@ -379,6 +383,97 @@ async function extractConventionClassesWithPython(
 }
 
 export function registerPDFParserRoutes(app: Express): void {
+
+  // ========== EVENT INTEL: UPLOAD ARTIFACT ==========
+  app.post("/api/event-intel/events/:eventId/artifacts/upload", upload.single("pdf"), async (req: Request, res: Response) => {
+    try {
+      const { eventId } = req.params;
+      const file = req.file;
+
+      if (!eventId?.trim()) {
+        return res.status(400).json({ error: "eventId is required" });
+      }
+
+      if (!file) {
+        return res.status(400).json({ error: "No PDF file uploaded" });
+      }
+
+      const brand = cleanString(req.body?.brand).toUpperCase();
+      if (!brand) {
+        return res.status(400).json({ error: "brand is required" });
+      }
+
+      const rawArtifactType = cleanString(req.body?.artifactType).toUpperCase();
+      if (rawArtifactType !== "RUN_SHEET" && rawArtifactType !== "CONVENTION_SCHEDULE") {
+        return res.status(400).json({
+          error: "artifactType must be RUN_SHEET or CONVENTION_SCHEDULE",
+        });
+      }
+
+      const [existingEvent] = await db
+        .select({ id: events.id })
+        .from(events)
+        .where(eq(events.id, eventId.trim()))
+        .limit(1);
+
+      if (!existingEvent) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+
+      const sanitizedFileName = file.originalname
+        .replace(/[^a-zA-Z0-9._-]/g, "_")
+        .replace(/_+/g, "_");
+      const relativeStorageKey = path.join(
+        "event-artifacts",
+        eventId.trim(),
+        `${Date.now()}-${sanitizedFileName || "artifact.pdf"}`,
+      );
+
+      const configuredBaseDir = process.env.EVENT_ARTIFACTS_BASE_DIR?.trim();
+      const resolvedPath = configuredBaseDir
+        ? path.resolve(configuredBaseDir, relativeStorageKey)
+        : path.resolve(process.cwd(), relativeStorageKey);
+
+      await fs.mkdir(path.dirname(resolvedPath), { recursive: true });
+      await fs.writeFile(resolvedPath, file.buffer);
+
+      const checksum = createHash("sha256").update(file.buffer).digest("hex");
+      const sourceUrl = cleanString(req.body?.sourceUrl) || `upload://${file.originalname}`;
+
+      const [artifact] = await db
+        .insert(eventArtifacts)
+        .values({
+          eventId: eventId.trim(),
+          brand,
+          artifactType: rawArtifactType,
+          sourceUrl,
+          storageKey: relativeStorageKey,
+          status: "DOWNLOADED",
+          checksum,
+          downloadedAtUtc: new Date(),
+        })
+        .returning({
+          id: eventArtifacts.id,
+          eventId: eventArtifacts.eventId,
+          brand: eventArtifacts.brand,
+          artifactType: eventArtifacts.artifactType,
+          storageKey: eventArtifacts.storageKey,
+          status: eventArtifacts.status,
+          checksum: eventArtifacts.checksum,
+          downloadedAtUtc: eventArtifacts.downloadedAtUtc,
+          createdAtUtc: eventArtifacts.createdAtUtc,
+        });
+
+      return res.status(201).json({
+        success: true,
+        artifact,
+        parseEndpoint: `/api/event-intel/events/${eventId.trim()}/parse/${artifact?.id}`,
+      });
+    } catch (error: any) {
+      console.error("Event-intel upload artifact error:", error);
+      return res.status(500).json({ error: error?.message || "Failed to upload event artifact" });
+    }
+  });
 
   // ========== EVENT INTEL: PARSE EXISTING ARTIFACT ==========
   app.post("/api/event-intel/events/:eventId/parse/:artifactId", async (req: Request, res: Response) => {
