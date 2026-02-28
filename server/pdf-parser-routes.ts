@@ -10,11 +10,11 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
-import { eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { PDFParser } from "./pdf-parser/index";
 import { pdfParsingService } from "./pdf-parser/event-intel/pdfParsingService";
 import { db } from "./db";
-import { eventArtifacts, events } from "./schema";
+import { eventArtifacts, events, parsingJobs } from "./schema";
 import { storage } from "./storage";
 import type { ParsedRunSlot, ParsedConventionClass } from "./pdf-parser/types";
 import type { InsertRunSlot, InsertConventionClass } from "./schema";
@@ -472,6 +472,107 @@ export function registerPDFParserRoutes(app: Express): void {
     } catch (error: any) {
       console.error("Event-intel upload artifact error:", error);
       return res.status(500).json({ error: error?.message || "Failed to upload event artifact" });
+    }
+  });
+
+  // ========== EVENT INTEL: LIST ARTIFACTS ==========
+  app.get("/api/event-intel/events/:eventId/artifacts", async (req: Request, res: Response) => {
+    try {
+      const { eventId } = req.params;
+      if (!eventId?.trim()) {
+        return res.status(400).json({ error: "eventId is required" });
+      }
+
+      const [existingEvent] = await db
+        .select({ id: events.id })
+        .from(events)
+        .where(eq(events.id, eventId.trim()))
+        .limit(1);
+
+      if (!existingEvent) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+
+      const artifacts = await db
+        .select({
+          id: eventArtifacts.id,
+          eventId: eventArtifacts.eventId,
+          brand: eventArtifacts.brand,
+          artifactType: eventArtifacts.artifactType,
+          sourceUrl: eventArtifacts.sourceUrl,
+          storageKey: eventArtifacts.storageKey,
+          status: eventArtifacts.status,
+          checksum: eventArtifacts.checksum,
+          downloadedAtUtc: eventArtifacts.downloadedAtUtc,
+          createdAtUtc: eventArtifacts.createdAtUtc,
+        })
+        .from(eventArtifacts)
+        .where(eq(eventArtifacts.eventId, eventId.trim()))
+        .orderBy(desc(eventArtifacts.createdAtUtc));
+
+      return res.json({
+        eventId: eventId.trim(),
+        count: artifacts.length,
+        artifacts,
+      });
+    } catch (error: any) {
+      console.error("Event-intel list artifacts error:", error);
+      return res.status(500).json({ error: error?.message || "Failed to list event artifacts" });
+    }
+  });
+
+  // ========== EVENT INTEL: LIST PARSING JOBS ==========
+  app.get("/api/event-intel/events/:eventId/parsing-jobs", async (req: Request, res: Response) => {
+    try {
+      const { eventId } = req.params;
+      if (!eventId?.trim()) {
+        return res.status(400).json({ error: "eventId is required" });
+      }
+
+      const [existingEvent] = await db
+        .select({ id: events.id })
+        .from(events)
+        .where(eq(events.id, eventId.trim()))
+        .limit(1);
+
+      if (!existingEvent) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+
+      const artifactId = cleanString(req.query?.artifactId);
+      const limitRaw = Number(req.query?.limit);
+      const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(Math.trunc(limitRaw), 100) : 25;
+
+      const whereClause = artifactId
+        ? and(eq(parsingJobs.eventId, eventId.trim()), eq(parsingJobs.artifactId, artifactId))
+        : eq(parsingJobs.eventId, eventId.trim());
+
+      const jobs = await db
+        .select({
+          id: parsingJobs.id,
+          eventId: parsingJobs.eventId,
+          brand: parsingJobs.brand,
+          artifactId: parsingJobs.artifactId,
+          status: parsingJobs.status,
+          rowsRunSheet: parsingJobs.rowsRunSheet,
+          rowsConvention: parsingJobs.rowsConvention,
+          errorMessage: parsingJobs.errorMessage,
+          createdAtUtc: parsingJobs.createdAtUtc,
+        })
+        .from(parsingJobs)
+        .where(whereClause)
+        .orderBy(desc(parsingJobs.createdAtUtc))
+        .limit(limit);
+
+      return res.json({
+        eventId: eventId.trim(),
+        artifactId: artifactId || null,
+        count: jobs.length,
+        jobs,
+      });
+    } catch (error: any) {
+      console.error("Event-intel list parsing jobs error:", error);
+      return res.status(500).json({ error: error?.message || "Failed to list parsing jobs" });
     }
   });
 
