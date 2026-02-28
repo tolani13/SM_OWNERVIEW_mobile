@@ -519,6 +519,12 @@ export type InsertFee = typeof fees.$inferInsert;
 export const eventTypeValues = ["competition", "nationals", "recital", "other"] as const;
 export type EventType = (typeof eventTypeValues)[number];
 
+export const eventArtifactTypeValues = ["RUN_SHEET", "CONVENTION_SCHEDULE"] as const;
+export type EventArtifactType = (typeof eventArtifactTypeValues)[number];
+
+export const eventArtifactStatusValues = ["NEW", "DOWNLOADED", "FAILED"] as const;
+export type EventArtifactStatus = (typeof eventArtifactStatusValues)[number];
+
 export const eventFeeStatusValues = ["unbilled", "billed", "paid", "partial"] as const;
 export type EventFeeStatus = (typeof eventFeeStatusValues)[number];
 
@@ -554,6 +560,35 @@ export type Event = typeof events.$inferSelect;
 export type InsertEvent = typeof events.$inferInsert;
 
 // ========== EVENT INTEL: PARSED RUN SHEETS / CONVENTION SCHEDULES / PARSING JOBS ==========
+export const eventArtifacts = pgTable("event_artifacts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
+  brand: text("brand").notNull(),
+  artifactType: text("artifact_type").$type<EventArtifactType>().notNull(),
+  sourceUrl: text("source_url").notNull(),
+  storageKey: text("storage_key").notNull(),
+  status: text("status").$type<EventArtifactStatus>().notNull(),
+  checksum: text("checksum"),
+  downloadedAtUtc: timestamp("downloaded_at_utc", { withTimezone: true }),
+  createdAtUtc: timestamp("created_at_utc", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  eventIdIdx: index("event_artifacts_event_id_idx").on(table.eventId),
+  brandIdx: index("event_artifacts_brand_idx").on(table.brand),
+  artifactTypeIdx: index("event_artifacts_artifact_type_idx").on(table.artifactType),
+  statusIdx: index("event_artifacts_status_idx").on(table.status),
+  createdAtUtcIdx: index("event_artifacts_created_at_utc_idx").on(table.createdAtUtc.desc()),
+  eventBrandTypeStatusCreatedIdx: index("event_artifacts_event_brand_type_status_created_idx").on(
+    table.eventId,
+    table.brand,
+    table.artifactType,
+    table.status,
+    table.createdAtUtc.desc(),
+  ),
+}));
+
+export type EventArtifact = typeof eventArtifacts.$inferSelect;
+export type InsertEventArtifact = typeof eventArtifacts.$inferInsert;
+
 export const eventRunSheets = pgTable("event_run_sheets", {
   id: uuid("id").defaultRandom().primaryKey(),
   eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
@@ -737,9 +772,17 @@ export type InsertFeeTypeDefault = typeof feeTypes.$inferInsert;
 
 export const eventsRelations = relations(events, ({ many }) => ({
   eventFees: many(eventFees),
+  eventArtifacts: many(eventArtifacts),
   eventRunSheets: many(eventRunSheets),
   eventConventionSchedules: many(eventConventionSchedules),
   parsingJobs: many(parsingJobs),
+}));
+
+export const eventArtifactsRelations = relations(eventArtifacts, ({ one }) => ({
+  event: one(events, {
+    fields: [eventArtifacts.eventId],
+    references: [events.id],
+  }),
 }));
 
 export const eventRunSheetsRelations = relations(eventRunSheets, ({ one }) => ({
