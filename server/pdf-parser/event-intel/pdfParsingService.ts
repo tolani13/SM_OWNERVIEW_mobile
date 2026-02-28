@@ -1,7 +1,10 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
+import { promises as fs } from "node:fs";
+import path from "node:path";
 import { PDFParse } from "pdf-parse";
 import { db } from "../../db";
 import {
+  eventArtifacts,
   eventConventionSchedules,
   eventRunSheets,
   parsingJobs,
@@ -34,16 +37,74 @@ type BrandParseOutput = {
   conventionScheduleRows: NormalizedConventionScheduleRow[];
 };
 
-class NotImplementedEventArtifactLoader implements EventArtifactLoader {
+class DatabaseEventArtifactLoader implements EventArtifactLoader {
+  private resolveStoragePath(storageKey: string): string {
+    const trimmedStorageKey = String(storageKey || "").trim();
+    if (!trimmedStorageKey) {
+      throw new Error("Artifact storage key is empty.");
+    }
+
+    if (/^https?:\/\//i.test(trimmedStorageKey)) {
+      throw new Error(
+        `Remote artifact URLs are not supported yet (storage_key=${trimmedStorageKey}).`,
+      );
+    }
+
+    if (path.isAbsolute(trimmedStorageKey)) {
+      return path.normalize(trimmedStorageKey);
+    }
+
+    const configuredBaseDir = process.env.EVENT_ARTIFACTS_BASE_DIR?.trim();
+    if (configuredBaseDir) {
+      return path.resolve(configuredBaseDir, trimmedStorageKey);
+    }
+
+    return path.resolve(process.cwd(), trimmedStorageKey);
+  }
+
   async loadArtifact(eventId: string, artifactId: string): Promise<LoadedEventArtifact> {
-    throw new Error(
-      `Event artifact loader is not wired yet for eventId=${eventId}, artifactId=${artifactId}.`,
-    );
+    const [artifact] = await db
+      .select({
+        id: eventArtifacts.id,
+        eventId: eventArtifacts.eventId,
+        brand: eventArtifacts.brand,
+        artifactType: eventArtifacts.artifactType,
+        sourceUrl: eventArtifacts.sourceUrl,
+        storageKey: eventArtifacts.storageKey,
+        status: eventArtifacts.status,
+      })
+      .from(eventArtifacts)
+      .where(and(eq(eventArtifacts.id, artifactId), eq(eventArtifacts.eventId, eventId)))
+      .limit(1);
+
+    if (!artifact) {
+      throw new Error(`Artifact not found for eventId=${eventId}, artifactId=${artifactId}.`);
+    }
+
+    const resolvedStoragePath = this.resolveStoragePath(artifact.storageKey);
+
+    let bytes: Buffer;
+    try {
+      bytes = await fs.readFile(resolvedStoragePath);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown file read error";
+      throw new Error(
+        `Failed to read artifact file for eventId=${eventId}, artifactId=${artifactId}, path=${resolvedStoragePath}. ${message}`,
+      );
+    }
+
+    return {
+      eventId: artifact.eventId,
+      artifactId: artifact.id,
+      brand: artifact.brand,
+      bytes,
+      fileName: path.basename(resolvedStoragePath),
+    };
   }
 }
 
 export class PdfParsingService {
-  constructor(private readonly artifactLoader: EventArtifactLoader = new NotImplementedEventArtifactLoader()) {}
+  constructor(private readonly artifactLoader: EventArtifactLoader = new DatabaseEventArtifactLoader()) {}
 
   /**
    * Lightweight detector used before full parse.

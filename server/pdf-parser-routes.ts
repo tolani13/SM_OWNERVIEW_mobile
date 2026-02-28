@@ -10,6 +10,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { spawn } from "node:child_process";
 import { PDFParser } from "./pdf-parser/index";
+import { pdfParsingService } from "./pdf-parser/event-intel/pdfParsingService";
 import { storage } from "./storage";
 import type { ParsedRunSlot, ParsedConventionClass } from "./pdf-parser/types";
 import type { InsertRunSlot, InsertConventionClass } from "./schema";
@@ -378,6 +379,31 @@ async function extractConventionClassesWithPython(
 }
 
 export function registerPDFParserRoutes(app: Express): void {
+
+  // ========== EVENT INTEL: PARSE EXISTING ARTIFACT ==========
+  app.post("/api/event-intel/events/:eventId/parse/:artifactId", async (req: Request, res: Response) => {
+    try {
+      const { eventId, artifactId } = req.params;
+
+      if (!eventId?.trim() || !artifactId?.trim()) {
+        return res.status(400).json({ error: "eventId and artifactId are required" });
+      }
+
+      await pdfParsingService.parseEventArtifact(eventId.trim(), artifactId.trim());
+
+      return res.status(202).json({
+        success: true,
+        eventId,
+        artifactId,
+        message: "Event artifact parsing completed (or recorded via parsing_jobs).",
+      });
+    } catch (error: any) {
+      console.error("Event-intel parse artifact error:", error);
+      return res.status(400).json({
+        error: error?.message || "Failed to parse event artifact",
+      });
+    }
+  });
   
   // ========== UPLOAD AND PARSE PDF ==========
   app.post("/api/competitions/:competitionId/parse-pdf", upload.single('pdf'), async (req: Request, res: Response) => {
