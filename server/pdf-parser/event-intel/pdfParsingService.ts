@@ -19,6 +19,9 @@ import {
   parseNyCdaConventionSchedule,
   parseNyCdaRunSheet,
 } from "./parsers/nycda";
+import { CompParser } from "../parsers/comp_parser";
+import { ConventionParser } from "../parsers/convention_parser";
+import type { ParsedConventionClass, ParsedRunSlot } from "../types";
 
 type LoadedEventArtifact = {
   eventId: string;
@@ -105,6 +108,9 @@ class DatabaseEventArtifactLoader implements EventArtifactLoader {
 
 export class PdfParsingService {
   constructor(private readonly artifactLoader: EventArtifactLoader = new DatabaseEventArtifactLoader()) {}
+
+  private readonly genericRunSheetParser = new CompParser();
+  private readonly genericConventionParser = new ConventionParser();
 
   /**
    * Lightweight detector used before full parse.
@@ -226,15 +232,65 @@ export class PdfParsingService {
 
   private parseByBrand(brand: string, pdfText: string): BrandParseOutput {
     switch (brand) {
-      case "NYCDA":
-        return {
+      case "NYCDA": {
+        const brandSpecific = {
           runSheetRows: parseNyCdaRunSheet(pdfText),
           conventionScheduleRows: parseNyCdaConventionSchedule(pdfText),
         };
+        if (
+          brandSpecific.runSheetRows.length > 0 ||
+          brandSpecific.conventionScheduleRows.length > 0
+        ) {
+          return brandSpecific;
+        }
+        return this.parseWithGenericParsers(pdfText);
+      }
       default:
-        // TODO: add additional brands and fallback parser behavior.
-        return { runSheetRows: [], conventionScheduleRows: [] };
+        // For non-NYCDA brands (e.g. WCDE), use company-agnostic parsers.
+        return this.parseWithGenericParsers(pdfText);
     }
+  }
+
+  private parseWithGenericParsers(pdfText: string): BrandParseOutput {
+    const runSheetRows = this.genericRunSheetParser
+      .parseRunSheet(pdfText)
+      .map((row) => this.mapRunSheetRow(row));
+
+    const conventionScheduleRows = this.genericConventionParser
+      .parseConvention(pdfText)
+      .map((row) => this.mapConventionRow(row));
+
+    return {
+      runSheetRows,
+      conventionScheduleRows,
+    };
+  }
+
+  private mapRunSheetRow(row: ParsedRunSlot): NormalizedRunSheetRow {
+    return {
+      sessionName: row.day || null,
+      stageName: row.stage || null,
+      routineNumber: row.entryNumber || null,
+      routineName: row.routineName || null,
+      studioName: row.studioName || null,
+      division: row.division || null,
+      level: null,
+      category: row.style || null,
+      scheduledTime: row.performanceTime || null,
+      rawLine: row.rawText || null,
+    };
+  }
+
+  private mapConventionRow(row: ParsedConventionClass): NormalizedConventionScheduleRow {
+    return {
+      roomName: row.room || null,
+      blockLabel: row.day || null,
+      startTime: row.startTime || null,
+      endTime: row.endTime || null,
+      classType: row.className || null,
+      facultyName: row.instructor || null,
+      level: row.level || row.division || null,
+    };
   }
 
   private async extractPdfText(buffer: Buffer): Promise<string> {
