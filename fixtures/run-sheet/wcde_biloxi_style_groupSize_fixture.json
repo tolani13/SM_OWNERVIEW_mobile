@@ -1,0 +1,26 @@
+{
+  "pdfPath": "attached_assets/S.30_Biloxi_Competition_Schedule_1767116592640.pdf",
+  "expectedRowCount": 322,
+  "assertions": [
+    { "entryNumber": "13", "style": "", "groupSize": "Solo" },
+    { "entryNumber": "14", "style": "", "groupSize": "Solo" },
+    { "entryNumber": "22", "style": "", "groupSize": "Duo/Trio" },
+    { "entryNumber": "77", "style": "", "groupSize": "Solo" },
+    { "entryNumber": "78", "style": "", "groupSize": "Solo" },
+    { "entryNumber": "79", "style": "", "groupSize": "Solo" },
+    { "entryNumber": "80", "style": "", "groupSize": "Solo" },
+    { "entryNumber": "81", "style": "", "groupSize": "Solo" },
+    { "entryNumber": "133", "style": "", "groupSize": "Solo" },
+    { "entryNumber": "144", "style": "", "groupSize": "Duo/Trio" },
+    { "entryNumber": "183", "style": "", "groupSize": "Duo/Trio" },
+    { "entryNumber": "210", "style": "", "groupSize": "Solo" },
+    { "entryNumber": "211", "style": "", "groupSize": "Solo" },
+    { "entryNumber": "218", "style": "Open", "groupSize": "" },
+    { "entryNumber": "219", "style": "Lyrical", "groupSize": "" },
+    { "entryNumber": "221", "style": "Hip Hop", "groupSize": "" },
+    { "entryNumber": "222", "style": "Contemporary", "groupSize": "" },
+    { "entryNumber": "223", "style": "Contemporary", "groupSize": "" },
+    { "entryNumber": "224", "style": "Open", "groupSize": "" },
+    { "entryNumber": "225", "style": "Hip Hop", "groupSize": "" }
+  ]
+}

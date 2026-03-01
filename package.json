@@ -17,6 +17,7 @@
     "seed:policies": "tsx script/seed-policies.ts",
     "test:pdf:smoke": "tsx test_wcde_parser.ts",
     "test:pdf:competition": "tsx server/scripts/testCompetitionPdfParser.ts",
+    "test:fixture:run-sheet-normalizer": "tsx server/scripts/testRunSheetNormalizerFixture.ts",
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
