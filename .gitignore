@@ -4,6 +4,10 @@ dist
 
 # local env/runtime artifacts
 .env.local
+.env
+.env.*
+!.env.example
+temp_env_for_claude.txt
 
 # parser scratch/backup artifacts
 server/pdf-parser/parsers/*.bak
