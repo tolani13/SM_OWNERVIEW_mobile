@@ -1,2 +1,7 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# Enforce LF for repository text files to avoid CRLF churn across platforms.
+* text=auto eol=lf
+
+# Keep Windows-native script line endings where expected.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf

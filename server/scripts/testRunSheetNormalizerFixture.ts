@@ -46,13 +46,13 @@ function runPythonParse(pdfPath: string): PythonParsedCompetitionRow[] {
   return parsed as PythonParsedCompetitionRow[];
 }
 
-function asEntrySet(rows: Array<{ entry_num?: string }> | Array<{ entryNumber?: string }>): Set<string> {
+function asEntrySet(
+  rows: Array<{ entry_num?: string }> | Array<{ entryNumber?: string }> | Array<Record<string, unknown>>,
+): Set<string> {
   const set = new Set<string>();
   for (const row of rows) {
-    const key =
-      "entry_num" in row
-        ? String(row.entry_num ?? "").trim()
-        : String((row as { entryNumber?: string }).entryNumber ?? "").trim();
+    const record = row as Record<string, unknown>;
+    const key = String(record.entry_num ?? record.entryNumber ?? "").trim();
     if (/^\d+$/.test(key)) set.add(key);
   }
   return set;

@@ -19,6 +19,108 @@ import { relations } from "drizzle-orm";
 export const dancerLevelValues = ["mini", "junior", "teen", "senior", "elite"] as const;
 export type DancerLevel = (typeof dancerLevelValues)[number];
 
+export const appRoleValues = [
+  "FOUNDER",
+  "SUPERADMIN",
+  "OWNER",
+  "MANAGER",
+  "STAFF",
+  "PARENT",
+] as const;
+export type AppRole = (typeof appRoleValues)[number];
+
+export const studioMembershipStatusValues = ["active", "invited", "suspended"] as const;
+export type StudioMembershipStatus = (typeof studioMembershipStatusValues)[number];
+
+export const users = pgTable(
+  "users",
+  {
+    id: text("id").primaryKey().$defaultFn(() => createId()),
+    clerkUserId: text("clerk_user_id"),
+    email: text("email").notNull(),
+    firstName: text("first_name"),
+    lastName: text("last_name"),
+    systemRole: text("system_role").$type<AppRole>().notNull().default("PARENT"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    clerkUserIdUniqueIdx: uniqueIndex("users_clerk_user_id_unique_idx").on(table.clerkUserId),
+    emailUniqueIdx: uniqueIndex("users_email_unique_idx").on(table.email),
+  }),
+);
+
+export type User = typeof users.$inferSelect;
+export type InsertUser = typeof users.$inferInsert;
+
+export const studios = pgTable(
+  "studios",
+  {
+    id: text("id").primaryKey().$defaultFn(() => createId()),
+    name: text("name").notNull(),
+    studioKey: text("studio_key").notNull(),
+    isActive: boolean("is_active").notNull().default(true),
+    createdByUserId: text("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    studioKeyUniqueIdx: uniqueIndex("studios_studio_key_unique_idx").on(table.studioKey),
+  }),
+);
+
+export type Studio = typeof studios.$inferSelect;
+export type InsertStudio = typeof studios.$inferInsert;
+
+export const studioMemberships = pgTable(
+  "studio_memberships",
+  {
+    id: text("id").primaryKey().$defaultFn(() => createId()),
+    studioId: text("studio_id").notNull().references(() => studios.id, { onDelete: "cascade" }),
+    userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    role: text("role").$type<AppRole>().notNull().default("PARENT"),
+    status: text("status").$type<StudioMembershipStatus>().notNull().default("active"),
+    inviteEmail: text("invite_email"),
+    invitedByUserId: text("invited_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    studioUserUniqueIdx: uniqueIndex("studio_memberships_studio_user_unique_idx").on(
+      table.studioId,
+      table.userId,
+    ),
+    studioInviteEmailIdx: index("studio_memberships_studio_invite_email_idx").on(
+      table.studioId,
+      table.inviteEmail,
+    ),
+  }),
+);
+
+export type StudioMembership = typeof studioMemberships.$inferSelect;
+export type InsertStudioMembership = typeof studioMemberships.$inferInsert;
+
+export const auditLogs = pgTable(
+  "audit_logs",
+  {
+    id: text("id").primaryKey().$defaultFn(() => createId()),
+    studioId: text("studio_id").references(() => studios.id, { onDelete: "set null" }),
+    actorUserId: text("actor_user_id").references(() => users.id, { onDelete: "set null" }),
+    action: text("action").notNull(),
+    resourceType: text("resource_type"),
+    resourceId: text("resource_id"),
+    metadata: json("metadata").$type<Record<string, unknown> | null>(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    studioCreatedIdx: index("audit_logs_studio_created_idx").on(table.studioId, table.createdAt.desc()),
+    actorCreatedIdx: index("audit_logs_actor_created_idx").on(table.actorUserId, table.createdAt.desc()),
+  }),
+);
+
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = typeof auditLogs.$inferInsert;
+
 // ========== FAMILIES / GUARDIANS ==========
 export const familyGuardianRoleValues = ["primary", "secondary"] as const;
 export type FamilyGuardianRole = (typeof familyGuardianRoleValues)[number];
@@ -131,6 +233,8 @@ export const competitions = pgTable("competitions", {
   location: text("location").notNull(),
   startDate: text("start_date").notNull(),
   endDate: text("end_date").notNull(),
+  eventTimezone: text("event_timezone").notNull().default("UTC"),
+  lockAt: timestamp("lock_at", { withTimezone: true }),
   status: text("status").notNull().default("Upcoming"),
   logoUrl: text("logo_url"),
   conventionFee: text("convention_fee").default("0"),
@@ -166,6 +270,7 @@ export type InsertCompetitionRegistration = typeof competitionRegistrations.$inf
 export const competitionRunSheets = pgTable("competition_run_sheets", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
   competitionId: text("competition_id").notNull().references(() => competitions.id, { onDelete: "cascade" }),
+  importJobId: uuid("import_job_id").references(() => runSheetImports.id, { onDelete: "set null" }),
   
   // Core Fields (editable by user)
   entryNumber: text("entry_number"), // Competition entry # (e.g., "1", "42", "248")
@@ -181,6 +286,7 @@ export const competitionRunSheets = pgTable("competition_run_sheets", {
   notes: text("notes"), // Owner notes
   placement: text("placement"), // 1st, 2nd, 3rd, etc.
   award: text("award"), // Special awards
+  publishedAt: timestamp("published_at", { withTimezone: true }),
   
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
@@ -552,12 +658,82 @@ export const events = pgTable("events", {
   type: text("type").$type<EventType>().notNull().default("other"),
   seasonYear: integer("season_year").notNull(),
   dueDate: date("due_date", { mode: "string" }),
+  eventTimezone: text("event_timezone").notNull().default("UTC"),
+  lockAt: timestamp("lock_at", { withTimezone: true }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export type Event = typeof events.$inferSelect;
 export type InsertEvent = typeof events.$inferInsert;
+
+export const runSheetImportSourceTypeValues = [
+  "COMPETITION_RUN_SHEET",
+  "EVENT_INTEL_ARTIFACT",
+] as const;
+export type RunSheetImportSourceType = (typeof runSheetImportSourceTypeValues)[number];
+
+export const runSheetImportParserTypeValues = [
+  "AUTO",
+  "WCDE",
+  "VELOCITY",
+  "HOLLYWOOD_VIBE",
+  "NYCDA",
+  "UNKNOWN",
+] as const;
+export type RunSheetImportParserType = (typeof runSheetImportParserTypeValues)[number];
+
+export const runSheetImportStatusValues = [
+  "processing",
+  "needs_review",
+  "published",
+  "error",
+] as const;
+export type RunSheetImportStatus = (typeof runSheetImportStatusValues)[number];
+
+export const runSheetImportArtifactTypeValues = [
+  "RUN_SHEET",
+  "CONVENTION_SHEET",
+  "EVENT_INTEL_OTHER",
+] as const;
+export type RunSheetImportArtifactType = (typeof runSheetImportArtifactTypeValues)[number];
+
+export const runSheetImports = pgTable("run_sheet_imports", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  sourceType: text("source_type").$type<RunSheetImportSourceType>().notNull(),
+  parserType: text("parser_type").$type<RunSheetImportParserType>().notNull().default("AUTO"),
+  status: text("status").$type<RunSheetImportStatus>().notNull().default("processing"),
+  artifactType: text("artifact_type").$type<RunSheetImportArtifactType>().notNull(),
+  originalFileUrl: text("original_file_url").notNull(),
+  artifactStorageKey: text("artifact_storage_key"),
+  errorMessage: text("error_message"),
+  createdByUserId: text("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
+  studioId: text("studio_id").references(() => studios.id, { onDelete: "set null" }),
+  providerKey: text("provider_key").notNull(),
+  eventId: uuid("event_id").references(() => events.id, { onDelete: "cascade" }),
+  competitionId: text("competition_id").references(() => competitions.id, { onDelete: "cascade" }),
+  lockAt: timestamp("lock_at", { withTimezone: true }),
+  eventTimezone: text("event_timezone").notNull().default("UTC"),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  statusIdx: index("run_sheet_imports_status_idx").on(table.status),
+  competitionIdIdx: index("run_sheet_imports_competition_id_idx").on(table.competitionId),
+  eventIdIdx: index("run_sheet_imports_event_id_idx").on(table.eventId),
+  studioStatusCreatedIdx: index("run_sheet_imports_studio_status_created_idx").on(
+    table.studioId,
+    table.status,
+    table.createdAt.desc(),
+  ),
+  providerKeyCreatedIdx: index("run_sheet_imports_provider_key_created_idx").on(
+    table.providerKey,
+    table.createdAt.desc(),
+  ),
+}));
+
+export type RunSheetImport = typeof runSheetImports.$inferSelect;
+export type InsertRunSheetImport = typeof runSheetImports.$inferInsert;
 
 // ========== EVENT INTEL: PARSED RUN SHEETS / CONVENTION SCHEDULES / PARSING JOBS ==========
 export const eventArtifacts = pgTable("event_artifacts", {
@@ -591,6 +767,7 @@ export type InsertEventArtifact = typeof eventArtifacts.$inferInsert;
 
 export const eventRunSheets = pgTable("event_run_sheets", {
   id: uuid("id").defaultRandom().primaryKey(),
+  importJobId: uuid("import_job_id").references(() => runSheetImports.id, { onDelete: "set null" }),
   eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
   brand: text("brand").notNull(),
   sessionName: text("session_name"),
@@ -604,6 +781,7 @@ export const eventRunSheets = pgTable("event_run_sheets", {
   category: text("category"),
   scheduledTime: text("scheduled_time"),
   rawLine: text("raw_line"),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
   createdAtUtc: timestamp("created_at_utc").defaultNow().notNull(),
 }, (table) => ({
   eventIdIdx: index("event_run_sheets_event_id_idx").on(table.eventId),
@@ -616,6 +794,7 @@ export type InsertEventRunSheet = typeof eventRunSheets.$inferInsert;
 
 export const eventConventionSchedules = pgTable("event_convention_schedules", {
   id: uuid("id").defaultRandom().primaryKey(),
+  importJobId: uuid("import_job_id").references(() => runSheetImports.id, { onDelete: "set null" }),
   eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
   brand: text("brand").notNull(),
   roomName: text("room_name"),
@@ -625,6 +804,7 @@ export const eventConventionSchedules = pgTable("event_convention_schedules", {
   classType: text("class_type"),
   facultyName: text("faculty_name"),
   level: text("level"),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
   createdAtUtc: timestamp("created_at_utc").defaultNow().notNull(),
 }, (table) => ({
   eventIdIdx: index("event_convention_schedules_event_id_idx").on(table.eventId),

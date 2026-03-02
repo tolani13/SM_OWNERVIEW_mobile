@@ -4,6 +4,14 @@ import { storage } from "./storage";
 import { registerAccountingRoutes } from "./accounting-routes";
 import { registerPDFParserRoutes } from "./pdf-parser-routes";
 import { registerRunSheetRoutes } from "./run-sheet-routes";
+import {
+  clerkAuthMiddleware,
+  createStudioByAdmin,
+  inviteStudioOwnerByAdmin,
+  requireFounderOrSuperadmin,
+  toLegacyActorRole,
+  writeAuditLog,
+} from "./auth";
 import { z } from "zod";
 import type {
   InsertDancer,
@@ -47,11 +55,20 @@ type MessagingActorContext = {
 };
 
 function getActor(req: any): { id: string; name: string; role: ActorRole } {
-  const role = (req.headers["x-user-role"] || "owner") as ActorRole;
+  const context = req.auth;
+  if (!context) {
+    const role = (req.headers["x-user-role"] || "owner") as ActorRole;
+    return {
+      id: (req.headers["x-user-id"] as string) || "owner-1",
+      name: (req.headers["x-user-name"] as string) || "Studio Owner",
+      role: ["owner", "manager", "staff", "parent"].includes(role) ? role : "owner",
+    };
+  }
+
   return {
-    id: (req.headers["x-user-id"] as string) || "owner-1",
-    name: (req.headers["x-user-name"] as string) || "Studio Owner",
-    role: ["owner", "manager", "staff", "parent"].includes(role) ? role : "owner",
+    id: context.userId,
+    name: context.displayName,
+    role: toLegacyActorRole(context),
   };
 }
 
@@ -67,7 +84,7 @@ function resolveMessagingActor(req: any): MessagingActorContext {
     userId: actor.id,
     userName: actor.name,
     actorRole,
-    studioId: "default",
+    studioId: req.auth?.studioKey || "default",
   };
 }
 
@@ -416,6 +433,16 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  app.use(
+    "/api/admin",
+    clerkAuthMiddleware(),
+  );
+
+  app.use(
+    "/api/event-intel",
+    clerkAuthMiddleware(),
+  );
+
   const feeStructureSchema = z.object({
     solo: z.string(),
     duetTrio: z.string(),
@@ -1366,16 +1393,11 @@ export async function registerRoutes(
         actor.studioId,
         actor.userId,
         targetUserId.trim(),
-        {
-          creatorRole: toParticipantRole(actor.actorRole),
-          targetRole: "guardian",
-        },
       );
 
-      let firstMessage = null;
-      if (initialMessage.trim()) {
-        firstMessage = await storage.sendMessage(conversation.id, actor.userId, initialMessage);
-      }
+      const firstMessage = initialMessage.trim()
+        ? await storage.sendMessage(conversation.id, actor.userId, initialMessage)
+        : null;
 
       res.status(201).json({ conversation, firstMessage });
     } catch (error) {
@@ -2185,6 +2207,84 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("Delete fee error:", error);
       res.status(500).json({ error: "Failed to delete fee" });
+    }
+  });
+
+  app.post("/api/admin/studios", async (req, res) => {
+    const actor = requireFounderOrSuperadmin(req, res);
+    if (!actor) return;
+
+    try {
+      const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
+      const studioKey = typeof req.body?.studioKey === "string" ? req.body.studioKey.trim() : undefined;
+
+      if (!name) {
+        return res.status(400).json({ error: "name is required" });
+      }
+
+      const studio = await createStudioByAdmin({
+        name,
+        studioKey,
+        actorUserId: actor.userId,
+      });
+
+      await writeAuditLog({
+        studioId: studio.id,
+        actorUserId: actor.userId,
+        action: "ADMIN_CREATE_STUDIO",
+        resourceType: "studio",
+        resourceId: studio.id,
+        metadata: {
+          studioKey: studio.studioKey,
+          studioName: studio.name,
+        },
+      });
+
+      res.status(201).json(studio);
+    } catch (error: any) {
+      console.error("Create admin studio error:", error);
+      res.status(400).json({ error: error?.message || "Failed to create studio" });
+    }
+  });
+
+  app.post("/api/admin/studios/:studioId/invite-owner", async (req, res) => {
+    const actor = requireFounderOrSuperadmin(req, res);
+    if (!actor) return;
+
+    try {
+      const email = typeof req.body?.email === "string" ? req.body.email.trim() : "";
+      const firstName = typeof req.body?.firstName === "string" ? req.body.firstName : undefined;
+      const lastName = typeof req.body?.lastName === "string" ? req.body.lastName : undefined;
+
+      if (!email) {
+        return res.status(400).json({ error: "email is required" });
+      }
+
+      const invite = await inviteStudioOwnerByAdmin({
+        studioId: req.params.studioId,
+        email,
+        firstName,
+        lastName,
+        actorUserId: actor.userId,
+      });
+
+      await writeAuditLog({
+        studioId: invite.studioId,
+        actorUserId: actor.userId,
+        action: "ADMIN_INVITE_OWNER",
+        resourceType: "studio_membership",
+        resourceId: invite.membershipId,
+        metadata: {
+          inviteEmail: invite.inviteEmail,
+          invitedUserId: invite.userId,
+          status: invite.status,
+        },
+      });
+
+      res.status(201).json(invite);
+    } catch (error: any) {
+      console.error("Invite studio owner error:", error);
+      res.status(400).json({ error: error?.message || "Failed to invite studio owner" });
     }
   });
 

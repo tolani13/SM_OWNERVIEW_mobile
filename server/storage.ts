@@ -1,6 +1,6 @@
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
-import { eq, and, asc, desc, inArray, gte, gt, lt, isNull, ne, sql } from "drizzle-orm";
+import { eq, and, asc, desc, inArray, gte, gt, lt, isNull, isNotNull, ne, sql } from "drizzle-orm";
 import {
   dancers,
   teachers,
@@ -8,6 +8,7 @@ import {
   competitions,
   competitionRegistrations,
   competitionRunSheets,
+  runSheetImports,
   runSlots,
   conventionClasses,
   studioClasses,
@@ -51,6 +52,9 @@ import {
   type InsertCompetitionRegistration,
   type CompetitionRunSheet,
   type InsertCompetitionRunSheet,
+  type RunSheetImport,
+  type InsertRunSheetImport,
+  type RunSheetImportStatus,
   type RunSlot,
   type InsertRunSlot,
   type ConventionClass,
@@ -869,6 +873,33 @@ export class Storage {
       .returning();
 
     return conversation;
+  }
+
+  async getStudioGuardianUserIds(studioId: string, _classId?: string): Promise<string[]> {
+    const rows = await this.db
+      .select({ userId: conversationParticipants.userId })
+      .from(conversationParticipants)
+      .innerJoin(
+        conversations,
+        eq(conversationParticipants.conversationId, conversations.id),
+      )
+      .where(
+        and(
+          eq(conversations.studioId, studioId),
+          eq(conversationParticipants.roleInConversation, "guardian"),
+          isNull(conversations.archivedAt),
+        ),
+      );
+
+    const guardianUserIds: string[] = [];
+    for (const row of rows as Array<{ userId: unknown }>) {
+      const userId = typeof row.userId === "string" ? row.userId : String(row.userId ?? "");
+      if (userId) {
+        guardianUserIds.push(userId);
+      }
+    }
+
+    return [...new Set(guardianUserIds)];
   }
 
   async addParticipantsForBroadcast(

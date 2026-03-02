@@ -61,6 +61,11 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  if (!process.env.DATABASE_URL?.trim()) {
+    log("DATABASE_URL is required; refusing to start", "db");
+    process.exit(1);
+  }
+
   try {
     await ensureDatabaseSchema(log);
   } catch (error) {

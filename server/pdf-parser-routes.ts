@@ -16,6 +16,7 @@ import { pdfParsingService } from "./pdf-parser/event-intel/pdfParsingService";
 import { db } from "./db";
 import { eventArtifacts, events, parsingJobs } from "./schema";
 import { storage } from "./storage";
+import { requireFounderOrSuperadmin, writeAuditLog } from "./auth";
 import type { ParsedRunSlot, ParsedConventionClass } from "./pdf-parser/types";
 import type { InsertRunSlot, InsertConventionClass } from "./schema";
 
@@ -386,6 +387,9 @@ export function registerPDFParserRoutes(app: Express): void {
 
   // ========== EVENT INTEL: UPLOAD ARTIFACT ==========
   app.post("/api/event-intel/events/:eventId/artifacts/upload", upload.single("pdf"), async (req: Request, res: Response) => {
+    const actor = requireFounderOrSuperadmin(req, res);
+    if (!actor) return;
+
     try {
       const { eventId } = req.params;
       const file = req.file;
@@ -464,6 +468,21 @@ export function registerPDFParserRoutes(app: Express): void {
           createdAtUtc: eventArtifacts.createdAtUtc,
         });
 
+      await writeAuditLog({
+        studioId: actor.studioId,
+        actorUserId: actor.userId,
+        action: "EVENT_INTEL_UPLOAD_ARTIFACT",
+        resourceType: "event_artifact",
+        resourceId: artifact?.id ?? null,
+        metadata: {
+          eventId: eventId.trim(),
+          brand,
+          artifactType: rawArtifactType,
+          sourceUrl,
+          storageKey: relativeStorageKey,
+        },
+      });
+
       return res.status(201).json({
         success: true,
         artifact,
@@ -477,6 +496,9 @@ export function registerPDFParserRoutes(app: Express): void {
 
   // ========== EVENT INTEL: LIST ARTIFACTS ==========
   app.get("/api/event-intel/events/:eventId/artifacts", async (req: Request, res: Response) => {
+    const actor = requireFounderOrSuperadmin(req, res);
+    if (!actor) return;
+
     try {
       const { eventId } = req.params;
       if (!eventId?.trim()) {
@@ -510,6 +532,17 @@ export function registerPDFParserRoutes(app: Express): void {
         .where(eq(eventArtifacts.eventId, eventId.trim()))
         .orderBy(desc(eventArtifacts.createdAtUtc));
 
+      await writeAuditLog({
+        studioId: actor.studioId,
+        actorUserId: actor.userId,
+        action: "EVENT_INTEL_LIST_ARTIFACTS",
+        resourceType: "event",
+        resourceId: eventId.trim(),
+        metadata: {
+          count: artifacts.length,
+        },
+      });
+
       return res.json({
         eventId: eventId.trim(),
         count: artifacts.length,
@@ -523,6 +556,9 @@ export function registerPDFParserRoutes(app: Express): void {
 
   // ========== EVENT INTEL: LIST PARSING JOBS ==========
   app.get("/api/event-intel/events/:eventId/parsing-jobs", async (req: Request, res: Response) => {
+    const actor = requireFounderOrSuperadmin(req, res);
+    if (!actor) return;
+
     try {
       const { eventId } = req.params;
       if (!eventId?.trim()) {
@@ -564,6 +600,19 @@ export function registerPDFParserRoutes(app: Express): void {
         .orderBy(desc(parsingJobs.createdAtUtc))
         .limit(limit);
 
+      await writeAuditLog({
+        studioId: actor.studioId,
+        actorUserId: actor.userId,
+        action: "EVENT_INTEL_LIST_PARSING_JOBS",
+        resourceType: "event",
+        resourceId: eventId.trim(),
+        metadata: {
+          artifactId: artifactId || null,
+          limit,
+          count: jobs.length,
+        },
+      });
+
       return res.json({
         eventId: eventId.trim(),
         artifactId: artifactId || null,
@@ -578,6 +627,9 @@ export function registerPDFParserRoutes(app: Express): void {
 
   // ========== EVENT INTEL: PARSE EXISTING ARTIFACT ==========
   app.post("/api/event-intel/events/:eventId/parse/:artifactId", async (req: Request, res: Response) => {
+    const actor = requireFounderOrSuperadmin(req, res);
+    if (!actor) return;
+
     try {
       const { eventId, artifactId } = req.params;
 
@@ -585,7 +637,44 @@ export function registerPDFParserRoutes(app: Express): void {
         return res.status(400).json({ error: "eventId and artifactId are required" });
       }
 
+      const [artifact] = await db
+        .select({
+          id: eventArtifacts.id,
+          artifactType: eventArtifacts.artifactType,
+        })
+        .from(eventArtifacts)
+        .where(
+          and(
+            eq(eventArtifacts.id, artifactId.trim()),
+            eq(eventArtifacts.eventId, eventId.trim()),
+          ),
+        )
+        .limit(1);
+
+      if (!artifact) {
+        return res.status(404).json({ error: "Event artifact not found" });
+      }
+
+      if (artifact.artifactType === "RUN_SHEET") {
+        return res.status(410).json({
+          error: "Event Intel RUN_SHEET parsing is deprecated and currently unsupported.",
+          note:
+            "Use the run-sheet import workflow (/api/competitions/:competitionId/run-sheet/import) until async import jobs/workers are finalized.",
+        });
+      }
+
       await pdfParsingService.parseEventArtifact(eventId.trim(), artifactId.trim());
+
+      await writeAuditLog({
+        studioId: actor.studioId,
+        actorUserId: actor.userId,
+        action: "EVENT_INTEL_PARSE_ARTIFACT",
+        resourceType: "event_artifact",
+        resourceId: artifactId.trim(),
+        metadata: {
+          eventId: eventId.trim(),
+        },
+      });
 
       return res.status(202).json({
         success: true,
@@ -624,6 +713,16 @@ export function registerPDFParserRoutes(app: Express): void {
           error: "Invalid parse type. Expected 'runsheet' or 'convention'.",
           typeRequested: normalizedType,
           allowedTypes: ["runsheet", "convention"],
+        });
+      }
+
+      if (normalizedType !== "convention") {
+        return res.status(410).json({
+          error:
+            "Run-sheet parsing via /api/competitions/:competitionId/parse-pdf is deprecated and unsupported.",
+          recommendedEndpoint: "/api/competitions/:competitionId/run-sheet/import",
+          note:
+            "This endpoint is convention-only until async import jobs/workers replace legacy parsing paths.",
         });
       }
 

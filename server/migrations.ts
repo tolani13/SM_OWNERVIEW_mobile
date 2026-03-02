@@ -444,6 +444,186 @@ async function ensureMessagingSchema(log: Logger): Promise<void> {
   log("ensured messaging schema (conversations, participants, messages, reads)", "db");
 }
 
+async function ensureAuthRbacSchema(log: Logger): Promise<void> {
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS "users" (
+      "id" text PRIMARY KEY,
+      "clerk_user_id" text,
+      "email" text NOT NULL,
+      "first_name" text,
+      "last_name" text,
+      "system_role" text NOT NULL DEFAULT 'PARENT',
+      "created_at" timestamp NOT NULL DEFAULT now(),
+      "updated_at" timestamp NOT NULL DEFAULT now()
+    )
+  `);
+  await db.execute(
+    sql`CREATE UNIQUE INDEX IF NOT EXISTS "users_clerk_user_id_unique_idx" ON "users"("clerk_user_id")`,
+  );
+  await db.execute(
+    sql`CREATE UNIQUE INDEX IF NOT EXISTS "users_email_unique_idx" ON "users"("email")`,
+  );
+
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS "studios" (
+      "id" text PRIMARY KEY,
+      "name" text NOT NULL,
+      "studio_key" text NOT NULL,
+      "is_active" boolean NOT NULL DEFAULT true,
+      "created_by_user_id" text REFERENCES "users"("id") ON DELETE set null,
+      "created_at" timestamp NOT NULL DEFAULT now(),
+      "updated_at" timestamp NOT NULL DEFAULT now()
+    )
+  `);
+  await db.execute(
+    sql`CREATE UNIQUE INDEX IF NOT EXISTS "studios_studio_key_unique_idx" ON "studios"("studio_key")`,
+  );
+
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS "studio_memberships" (
+      "id" text PRIMARY KEY,
+      "studio_id" text NOT NULL REFERENCES "studios"("id") ON DELETE cascade,
+      "user_id" text NOT NULL REFERENCES "users"("id") ON DELETE cascade,
+      "role" text NOT NULL DEFAULT 'PARENT',
+      "status" text NOT NULL DEFAULT 'active',
+      "invite_email" text,
+      "invited_by_user_id" text REFERENCES "users"("id") ON DELETE set null,
+      "created_at" timestamp NOT NULL DEFAULT now(),
+      "updated_at" timestamp NOT NULL DEFAULT now()
+    )
+  `);
+  await db.execute(sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS "studio_memberships_studio_user_unique_idx"
+      ON "studio_memberships"("studio_id", "user_id")
+  `);
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS "studio_memberships_studio_invite_email_idx"
+      ON "studio_memberships"("studio_id", "invite_email")
+  `);
+
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS "audit_logs" (
+      "id" text PRIMARY KEY,
+      "studio_id" text REFERENCES "studios"("id") ON DELETE set null,
+      "actor_user_id" text REFERENCES "users"("id") ON DELETE set null,
+      "action" text NOT NULL,
+      "resource_type" text,
+      "resource_id" text,
+      "metadata" json,
+      "created_at" timestamp NOT NULL DEFAULT now()
+    )
+  `);
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS "audit_logs_studio_created_idx"
+      ON "audit_logs"("studio_id", "created_at" DESC)
+  `);
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS "audit_logs_actor_created_idx"
+      ON "audit_logs"("actor_user_id", "created_at" DESC)
+  `);
+
+  await db.execute(sql`
+    INSERT INTO "studios" ("id", "name", "studio_key", "is_active")
+    VALUES ('studio_default', 'Default Studio', 'default', true)
+    ON CONFLICT ("studio_key") DO NOTHING
+  `);
+
+  log("ensured auth/RBAC schema (users, studios, studio_memberships, audit_logs)", "db");
+}
+
+async function ensureRunSheetImportSchema(log: Logger): Promise<void> {
+  await db.execute(sql`ALTER TABLE "competitions" ADD COLUMN IF NOT EXISTS "event_timezone" text NOT NULL DEFAULT 'UTC'`);
+  await db.execute(sql`ALTER TABLE "competitions" ADD COLUMN IF NOT EXISTS "lock_at" timestamptz`);
+
+  await db.execute(sql`ALTER TABLE "events" ADD COLUMN IF NOT EXISTS "event_timezone" text NOT NULL DEFAULT 'UTC'`);
+  await db.execute(sql`ALTER TABLE "events" ADD COLUMN IF NOT EXISTS "lock_at" timestamptz`);
+
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS "run_sheet_imports" (
+      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      "source_type" text NOT NULL,
+      "parser_type" text NOT NULL DEFAULT 'AUTO',
+      "status" text NOT NULL DEFAULT 'processing',
+      "artifact_type" text NOT NULL,
+      "original_file_url" text NOT NULL,
+      "artifact_storage_key" text,
+      "error_message" text,
+      "created_by_user_id" text REFERENCES "users"("id") ON DELETE set null,
+      "studio_id" text REFERENCES "studios"("id") ON DELETE set null,
+      "provider_key" text NOT NULL,
+      "event_id" uuid REFERENCES "events"("id") ON DELETE cascade,
+      "competition_id" text REFERENCES "competitions"("id") ON DELETE cascade,
+      "lock_at" timestamptz,
+      "event_timezone" text NOT NULL DEFAULT 'UTC',
+      "published_at" timestamptz,
+      "created_at" timestamptz NOT NULL DEFAULT now(),
+      "updated_at" timestamptz NOT NULL DEFAULT now(),
+      CONSTRAINT "run_sheet_imports_source_type_check"
+        CHECK ("source_type" IN ('COMPETITION_RUN_SHEET', 'EVENT_INTEL_ARTIFACT')),
+      CONSTRAINT "run_sheet_imports_parser_type_check"
+        CHECK ("parser_type" IN ('AUTO', 'WCDE', 'VELOCITY', 'HOLLYWOOD_VIBE', 'NYCDA', 'UNKNOWN')),
+      CONSTRAINT "run_sheet_imports_status_check"
+        CHECK ("status" IN ('processing', 'needs_review', 'published', 'error')),
+      CONSTRAINT "run_sheet_imports_artifact_type_check"
+        CHECK ("artifact_type" IN ('RUN_SHEET', 'CONVENTION_SHEET', 'EVENT_INTEL_OTHER'))
+    )
+  `);
+
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS "run_sheet_imports_status_idx" ON "run_sheet_imports"("status")`,
+  );
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS "run_sheet_imports_competition_id_idx" ON "run_sheet_imports"("competition_id")`,
+  );
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS "run_sheet_imports_event_id_idx" ON "run_sheet_imports"("event_id")`,
+  );
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS "run_sheet_imports_studio_status_created_idx" ON "run_sheet_imports"("studio_id", "status", "created_at" DESC)`,
+  );
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS "run_sheet_imports_provider_key_created_idx" ON "run_sheet_imports"("provider_key", "created_at" DESC)`,
+  );
+
+  await db.execute(
+    sql`ALTER TABLE "competition_run_sheets" ADD COLUMN IF NOT EXISTS "import_job_id" uuid REFERENCES "run_sheet_imports"("id") ON DELETE set null`,
+  );
+  await db.execute(
+    sql`ALTER TABLE "competition_run_sheets" ADD COLUMN IF NOT EXISTS "published_at" timestamptz`,
+  );
+  await db.execute(sql`
+    UPDATE "competition_run_sheets"
+    SET "published_at" = COALESCE("published_at", "created_at")
+    WHERE "published_at" IS NULL
+  `);
+
+  await db.execute(
+    sql`ALTER TABLE "event_run_sheets" ADD COLUMN IF NOT EXISTS "import_job_id" uuid REFERENCES "run_sheet_imports"("id") ON DELETE set null`,
+  );
+  await db.execute(
+    sql`ALTER TABLE "event_run_sheets" ADD COLUMN IF NOT EXISTS "published_at" timestamptz`,
+  );
+  await db.execute(sql`
+    UPDATE "event_run_sheets"
+    SET "published_at" = COALESCE("published_at", "created_at_utc")
+    WHERE "published_at" IS NULL
+  `);
+
+  await db.execute(
+    sql`ALTER TABLE "event_convention_schedules" ADD COLUMN IF NOT EXISTS "import_job_id" uuid REFERENCES "run_sheet_imports"("id") ON DELETE set null`,
+  );
+  await db.execute(
+    sql`ALTER TABLE "event_convention_schedules" ADD COLUMN IF NOT EXISTS "published_at" timestamptz`,
+  );
+  await db.execute(sql`
+    UPDATE "event_convention_schedules"
+    SET "published_at" = COALESCE("published_at", "created_at_utc")
+    WHERE "published_at" IS NULL
+  `);
+
+  log("ensured async run-sheet ingestion schema (run_sheet_imports + lock/publish columns)", "db");
+}
+
 export async function ensureDatabaseSchema(log?: Logger): Promise<void> {
   const logger: Logger =
     log ??
@@ -460,6 +640,8 @@ export async function ensureDatabaseSchema(log?: Logger): Promise<void> {
     await ensureFeeAccountingColumns(logger);
     await ensureFinanceHubSchema(logger);
     await ensureMessagingSchema(logger);
+    await ensureAuthRbacSchema(logger);
+    await ensureRunSheetImportSchema(logger);
     return;
   }
 
@@ -470,6 +652,8 @@ export async function ensureDatabaseSchema(log?: Logger): Promise<void> {
     await ensureFeeAccountingColumns(logger);
     await ensureFinanceHubSchema(logger);
     await ensureMessagingSchema(logger);
+    await ensureAuthRbacSchema(logger);
+    await ensureRunSheetImportSchema(logger);
     return;
   }
 
@@ -479,5 +663,7 @@ export async function ensureDatabaseSchema(log?: Logger): Promise<void> {
   await ensureFeeAccountingColumns(logger);
   await ensureFinanceHubSchema(logger);
   await ensureMessagingSchema(logger);
+  await ensureAuthRbacSchema(logger);
+  await ensureRunSheetImportSchema(logger);
   logger("startup migrations applied", "db");
 }

@@ -67,14 +67,8 @@ function asProvider(value: unknown): AccountingProvider | null {
 }
 
 function getStudioKey(req: Request): string {
-  const fromHeader = req.headers["x-studio-key"];
-  if (typeof fromHeader === "string" && fromHeader.trim()) return fromHeader.trim();
-
-  const fromQuery = req.query.studioKey;
-  if (typeof fromQuery === "string" && fromQuery.trim()) return fromQuery.trim();
-
-  const bodyStudio = (req.body as { studioKey?: unknown } | undefined)?.studioKey;
-  if (typeof bodyStudio === "string" && bodyStudio.trim()) return bodyStudio.trim();
+  const fromAuth = req.auth?.studioKey;
+  if (typeof fromAuth === "string" && fromAuth.trim()) return fromAuth.trim();
 
   return DEFAULT_STUDIO_KEY;
 }
