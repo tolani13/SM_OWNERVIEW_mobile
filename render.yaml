@@ -17,3 +17,9 @@ services:
       sizeGB: 1
     # Optional region pin; uncomment and set to your closest region
     # region: oregon
+
+  - type: worker
+    name: studio-maestro-run-sheet-worker
+    runtime: node
+    buildCommand: npm install && python -m pip install -r worker/requirements.txt
+    startCommand: python worker/run_sheet_worker.py
