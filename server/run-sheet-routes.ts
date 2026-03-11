@@ -6,17 +6,16 @@
 import type { Express, Request, Response } from "express";
 import { z } from "zod";
 import multer from "multer";
-import { promises as fs } from "node:fs";
-import * as os from "node:os";
-import * as path from "node:path";
-import { spawn } from "node:child_process";
-import { storage } from "./storage";
+import { storeArtifact } from "./artifact-storage";
 import type { InsertCompetitionRunSheet } from "./schema";
+import { storage } from "./storage";
 import {
-  normalizePythonCompetitionRows,
-  type PythonCompetitionParserVendor,
-  type PythonParsedCompetitionRow,
-} from "./utils/runSheetNormalizer";
+  RUN_SHEET_PARSER_CONFIG,
+  cleanString,
+  getRunSheetParserCandidates,
+  mapParserVendorToParserType,
+  resolveRunSheetParserOverride,
+} from "./run-sheet-import";
 
 // Configure multer for memory storage
 const upload = multer({
@@ -32,208 +31,6 @@ const upload = multer({
     }
   }
 });
-
-const RUN_SHEET_PARSER_CONFIG: Record<
-  PythonCompetitionParserVendor,
-  {
-    scriptPath: string;
-    functionName: string;
-    tempPrefix: string;
-    companyLabel: string;
-  }
-> = {
-  wcde: {
-    scriptPath: "parse_wcde_comp.py",
-    functionName: "parse_wcde_comp",
-    tempPrefix: "wcde-run-sheet-",
-    companyLabel: "WCDE",
-  },
-  velocity: {
-    scriptPath: "parse_velocity_comp.py",
-    functionName: "parse_velocity_comp",
-    tempPrefix: "velocity-run-sheet-",
-    companyLabel: "Velocity",
-  },
-  hollywood_vibe: {
-    scriptPath: "parse_hollywood_vibe_comp.py",
-    functionName: "parse_hollywood_vibe_comp",
-    tempPrefix: "hollywood-vibe-run-sheet-",
-    companyLabel: "Hollywood Vibe",
-  },
-};
-
-function cleanString(value: unknown): string {
-  if (value === null || value === undefined) return "";
-  return String(value).replace(/\s+/g, " ").trim();
-}
-
-function detectRunSheetParserVendor(
-  competitionName: string,
-  originalFileName?: string,
-): PythonCompetitionParserVendor {
-  const normalizedCompetition = cleanString(competitionName).toLowerCase();
-  const normalizedFileName = cleanString(originalFileName).toLowerCase();
-
-  const isHollywoodVibe =
-    normalizedCompetition.includes("hollywood vibe") ||
-    normalizedCompetition.includes("hollywoodvibe") ||
-    ((normalizedCompetition.includes("hollywood") || normalizedFileName.includes("hollywood")) &&
-      (normalizedCompetition.includes("vibe") || normalizedFileName.includes("vibe")));
-
-  if (isHollywoodVibe) {
-    return "hollywood_vibe";
-  }
-
-  if (
-    normalizedCompetition.includes("velocity") ||
-    normalizedFileName.includes("velocity") ||
-    normalizedFileName.includes("concord")
-  ) {
-    return "velocity";
-  }
-
-  return "wcde";
-}
-
-function resolveRunSheetParserOverride(raw: unknown): PythonCompetitionParserVendor | null {
-  const normalized = cleanString(raw).toLowerCase();
-  const compact = normalized.replace(/[\s_-]+/g, "");
-  if (normalized === "velocity") return "velocity";
-  if (normalized === "wcde") return "wcde";
-  if (
-    normalized === "hollywood_vibe" ||
-    normalized === "hollywood-vibe" ||
-    normalized === "hollywood vibe" ||
-    normalized === "hollywoodvibe" ||
-    normalized === "hollywood" ||
-    compact === "hollywoodvibe"
-  ) {
-    return "hollywood_vibe";
-  }
-  return null;
-}
-
-function getRunSheetParserCandidates(
-  competitionName: string,
-  originalFileName: string,
-  parserOverride: PythonCompetitionParserVendor | null,
-): PythonCompetitionParserVendor[] {
-  if (parserOverride) return [parserOverride];
-
-  const detected = detectRunSheetParserVendor(competitionName, originalFileName);
-  const fallbackOrder: PythonCompetitionParserVendor[] =
-    detected === "hollywood_vibe"
-      ? ["hollywood_vibe", "wcde", "velocity"]
-      : detected === "velocity"
-        ? ["velocity", "wcde", "hollywood_vibe"]
-        : ["wcde", "velocity", "hollywood_vibe"];
-
-  return fallbackOrder;
-}
-
-function inferDivisionFromCategory(category: string): string {
-  const normalized = cleanString(category).toLowerCase();
-  if (!normalized) return "";
-
-  if (normalized.includes("mini")) return "Mini";
-  if (normalized.includes("junior")) return "Junior";
-  if (normalized.includes("intermediate")) return "Intermediate";
-  if (normalized.includes("teen")) return "Teen";
-  if (normalized.includes("senior")) return "Senior";
-  if (normalized.includes("petite") || normalized.includes("tiny")) return "Mini";
-  return "";
-}
-
-function runPython(args: string[]): Promise<{ stdout: string; stderr: string }> {
-  return new Promise((resolve, reject) => {
-    const child = spawn("python", args, {
-      cwd: process.cwd(),
-      windowsHide: true,
-    });
-
-    let stdout = "";
-    let stderr = "";
-
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk.toString();
-    });
-
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk.toString();
-    });
-
-    child.on("error", (error) => {
-      reject(new Error(`Failed to start Python: ${error.message}`));
-    });
-
-    child.on("close", (code) => {
-      if (code === 0) {
-        resolve({ stdout, stderr });
-        return;
-      }
-
-      const details = (stderr || stdout).trim();
-      reject(new Error(details || `Python exited with code ${code}`));
-    });
-  });
-}
-
-async function extractRunSheetWithPython(
-  pdfBuffer: Buffer,
-  parserVendor: PythonCompetitionParserVendor,
-): Promise<InsertCompetitionRunSheet[]> {
-  const parserConfig = RUN_SHEET_PARSER_CONFIG[parserVendor];
-  const parserScriptPath = path.join(process.cwd(), parserConfig.scriptPath);
-
-  try {
-    await fs.access(parserScriptPath);
-  } catch {
-    throw new Error(`Python parser script ${parserConfig.scriptPath} was not found in the project root.`);
-  }
-
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), parserConfig.tempPrefix));
-  const tempPdfPath = path.join(tempDir, "upload.pdf");
-
-  try {
-    await fs.writeFile(tempPdfPath, pdfBuffer);
-
-    const moduleName = path.parse(parserConfig.scriptPath).name;
-
-    const pythonCode = [
-      "import sys",
-      `from ${moduleName} import ${parserConfig.functionName}`,
-      `df = ${parserConfig.functionName}(sys.argv[1]).fillna('')`,
-      "print(df.to_json(orient='records'))",
-    ].join("\n");
-
-    const { stdout } = await runPython(["-c", pythonCode, tempPdfPath]);
-    const output = stdout.trim();
-
-    if (!output) {
-      throw new Error("Python parser returned no output.");
-    }
-
-    let parsedRows: PythonParsedCompetitionRow[] = [];
-    try {
-      const json = JSON.parse(output);
-      if (!Array.isArray(json)) {
-        throw new Error("Parser output is not an array.");
-      }
-      parsedRows = json as PythonParsedCompetitionRow[];
-    } catch (error) {
-      throw new Error(`Failed to parse Python output as JSON: ${(error as Error).message}`);
-    }
-
-    return normalizePythonCompetitionRows(parsedRows, parserVendor).map((row) => ({
-      competitionId: "", // Set at route level
-      ...row,
-    }));
-  } finally {
-    await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {
-      // ignore temp cleanup failures
-    });
-  }
-}
 
 const runSheetEntrySchema = z.object({
   entryNumber: z.string().trim().optional().nullable(),
@@ -256,7 +53,7 @@ const runSheetBulkSchema = z.object({
 export function registerRunSheetRoutes(app: Express): void {
   
   // ========== IMPORT PDF ==========
-  app.post("/api/competitions/:competitionId/run-sheet/import", upload.single('pdf'), async (req: Request, res: Response) => {
+  app.post("/api/competitions/:competitionId/run-sheet/import", upload.single("pdf"), async (req: Request, res: Response) => {
     try {
       const { competitionId } = req.params;
       const file = req.file;
@@ -265,7 +62,6 @@ export function registerRunSheetRoutes(app: Express): void {
         return res.status(400).json({ error: "No PDF file uploaded" });
       }
 
-      // Verify competition exists
       const competition = await storage.getCompetition(competitionId);
       if (!competition) {
         return res.status(404).json({ error: "Competition not found" });
@@ -288,70 +84,116 @@ export function registerRunSheetRoutes(app: Express): void {
         file.originalname,
         parserOverride,
       );
+      const providerKey = parserOverride ?? parserCandidates[0];
+      const parserType = parserOverride ? mapParserVendorToParserType(parserOverride) : "AUTO";
+      const storedArtifact = await storeArtifact({
+        buffer: file.buffer,
+        fileName: file.originalname,
+        scope: `run-sheet-imports/${competitionId}`,
+        contentType: file.mimetype || "application/pdf",
+      });
 
-      let parserVendor: PythonCompetitionParserVendor | null = null;
-      let extractedEntries: InsertCompetitionRunSheet[] | null = null;
-      const parserErrors: string[] = [];
+      const createdJob = await storage.createRunSheetImport({
+        sourceType: "COMPETITION_RUN_SHEET",
+        parserType,
+        status: "processing",
+        artifactType: "RUN_SHEET",
+        originalFileUrl: storedArtifact.originalFileUrl,
+        artifactStorageKey: storedArtifact.storageKey,
+        errorMessage: null,
+        createdByUserId: req.auth?.userId ?? null,
+        studioId: req.auth?.studioId ?? null,
+        providerKey,
+        eventId: null,
+        competitionId,
+        lockAt: competition.lockAt ?? null,
+        eventTimezone: competition.eventTimezone || "UTC",
+        publishedAt: null,
+      });
 
-      for (const candidate of parserCandidates) {
-        try {
-          extractedEntries = await extractRunSheetWithPython(file.buffer, candidate);
-          parserVendor = candidate;
-          break;
-        } catch (error: any) {
-          parserErrors.push(`[${candidate}] ${error?.message || String(error)}`);
-        }
+      return res.status(202).json({
+        success: true,
+        job_id: createdJob.id,
+        jobId: createdJob.id,
+        status: createdJob.status,
+        provider_key: createdJob.providerKey,
+        parser_type: createdJob.parserType,
+        parser_candidates: parserCandidates,
+        message: "Run-sheet import queued for background processing.",
+      });
+    } catch (error: any) {
+      console.error("Run-sheet enqueue error:", error);
+      return res.status(500).json({ error: error.message || "Failed to queue run-sheet import" });
+    }
+  });
+
+  // ========== LIST IMPORT JOBS ==========
+  app.get("/api/competitions/:competitionId/run-sheet/imports", async (req: Request, res: Response) => {
+    try {
+      const { competitionId } = req.params;
+      const competition = await storage.getCompetition(competitionId);
+      if (!competition) {
+        return res.status(404).json({ error: "Competition not found" });
       }
 
-      if (!parserVendor || !extractedEntries) {
-        return res.status(422).json({
-          error: "Failed to parse run sheet PDF with all available parsers.",
-          parserRequested: parserOverride ?? "auto",
-          parserCandidates,
-          parserErrors,
-          fileName: file.originalname,
-          competitionName: competition.name,
+      const jobs = await storage.listCompetitionRunSheetImports(competitionId);
+      return res.json({ jobs });
+    } catch (error: any) {
+      console.error("List run-sheet imports error:", error);
+      return res.status(500).json({ error: error.message || "Failed to list run-sheet imports" });
+    }
+  });
+
+  // ========== GET IMPORT JOB ==========
+  app.get("/api/competitions/:competitionId/run-sheet/imports/:jobId", async (req: Request, res: Response) => {
+    try {
+      const { competitionId, jobId } = req.params;
+      const job = await storage.getCompetitionRunSheetImport(competitionId, jobId);
+      if (!job) {
+        return res.status(404).json({ error: "Run-sheet import job not found" });
+      }
+
+      const entries = await storage.getCompetitionRunSheetsByImportJob(jobId);
+      return res.json({
+        job_id: job.id,
+        job,
+        entries,
+        entryCount: entries.length,
+      });
+    } catch (error: any) {
+      console.error("Get run-sheet import error:", error);
+      return res.status(500).json({ error: error.message || "Failed to fetch run-sheet import" });
+    }
+  });
+
+  // ========== PUBLISH IMPORT JOB ==========
+  app.post("/api/competitions/:competitionId/run-sheet/imports/:jobId/publish", async (req: Request, res: Response) => {
+    try {
+      const { competitionId, jobId } = req.params;
+      const existingJob = await storage.getCompetitionRunSheetImport(competitionId, jobId);
+      if (!existingJob) {
+        return res.status(404).json({ error: "Run-sheet import job not found" });
+      }
+
+      if (existingJob.status !== "needs_review" && existingJob.status !== "published") {
+        return res.status(409).json({
+          error: `Run-sheet import job is not publishable from status ${existingJob.status}.`,
+          status: existingJob.status,
         });
       }
 
-      const parserConfig = RUN_SHEET_PARSER_CONFIG[parserVendor];
-      const usedFallback = !parserOverride && parserCandidates.length > 1 && parserVendor !== parserCandidates[0];
-      const parserRequested = parserOverride ?? "auto";
-
-      // Always use the Python parser for run-sheet imports.
-      const entries = extractedEntries.map((entry) => ({
-        ...entry,
-        competitionId,
-      }));
-
-      return res.status(200).json({
+      const publishedJob = await storage.publishCompetitionRunSheetImport(competitionId, jobId);
+      const entries = await storage.getCompetitionRunSheetsByImportJob(jobId);
+      return res.json({
         success: true,
-        parser: 'python',
-        parserVendor,
-        parserRequested,
-        parserCandidates,
-        parserErrors,
-        fallbackUsed: usedFallback,
-        company: parserConfig.companyLabel,
-        modeRequested: parserRequested,
-        entries,
-        warnings: [
-          ...(usedFallback ? [`Primary parser failed; imported with ${parserConfig.companyLabel} parser.`] : []),
-          ...(entries.length === 0 ? [`${parserConfig.companyLabel} parser returned no entries.`] : []),
-        ],
-        diagnostics: {
-          fileName: file.originalname,
-          competitionName: competition.name,
-          parserAttempts: parserCandidates,
-          parserErrors,
-          entryCount: entries.length,
-        },
-        message: `Extracted ${entries.length} entries with ${parserConfig.companyLabel} Python parser. Please review and save.`,
+        job_id: jobId,
+        status: publishedJob?.status || existingJob.status,
+        publishedAt: publishedJob?.publishedAt || existingJob.publishedAt || null,
+        entryCount: entries.length,
       });
-
     } catch (error: any) {
-      console.error("PDF import error:", error);
-      return res.status(500).json({ error: error.message || "Failed to import PDF" });
+      console.error("Publish run-sheet import error:", error);
+      return res.status(500).json({ error: error.message || "Failed to publish run-sheet import" });
     }
   });
 
@@ -501,3 +343,5 @@ export function registerRunSheetRoutes(app: Express): void {
     }
   });
 }
+
+

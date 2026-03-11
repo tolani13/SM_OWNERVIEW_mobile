@@ -15,3 +15,5 @@ server/pdf-parser/parsers/*.bak
 # local extracted model/data artifacts
 eng.traineddata
 git/
+artifacts/
+

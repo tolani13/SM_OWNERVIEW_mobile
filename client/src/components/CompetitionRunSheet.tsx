@@ -89,6 +89,43 @@ export function CompetitionRunSheet({ competitionId, homeStudioName }: Competiti
     }
   };
 
+  const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+  const pollRunSheetImport = async (jobId: string, parserRequested: string) => {
+    const deadline = Date.now() + 120_000;
+
+    while (Date.now() < deadline) {
+      const response = await fetch(`/api/competitions/${competitionId}/run-sheet/imports/${jobId}`);
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || "Failed to poll run-sheet import job");
+      }
+
+      const result = await response.json();
+      const status = result.job?.status;
+      if (status === "needs_review" || status === "published") {
+        setEntries(Array.isArray(result.entries) ? result.entries : []);
+        setLastImportMeta({
+          importType: "runsheet",
+          parserRequested,
+          parserUsed: result.job?.providerKey || parserRequested,
+          company: undefined,
+        });
+        queryClient.invalidateQueries({ queryKey: ["run-sheet", competitionId] });
+        toast.success(`Run sheet import ready: ${result.entryCount || 0} entries loaded.`);
+        return;
+      }
+
+      if (status === "error") {
+        throw new Error(result.job?.errorMessage || "Run sheet import failed");
+      }
+
+      await wait(1500);
+    }
+
+    toast("Run sheet import is still processing in the background.", { icon: "⏳" });
+  };
+
   const handlePDFUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -128,24 +165,13 @@ export function CompetitionRunSheet({ competitionId, homeStudioName }: Competiti
         }
 
         const result = await response.json();
-
-        // Show extracted entries for review (not saved yet)
-        setEntries(result.entries);
-        setLastImportMeta({
-          importType: "runsheet",
-          parserRequested: requestedParser,
-          parserUsed: result.parserVendor || result.company || result.parser || "python",
-          company: result.company || undefined,
-        });
-        queryClient.invalidateQueries({ queryKey: ["run-sheet", competitionId] });
-
-        toast.success(
-          `Run sheet extracted: ${result.entries.length} entries (${result.company || result.parserVendor || "auto"} parser). Review and save.`,
-        );
-
-        if (result.warnings && result.warnings.length > 0) {
-          result.warnings.forEach((warning: string) => toast(warning, { icon: "⚠️" }));
+        const jobId = result.job_id || result.jobId;
+        if (!jobId) {
+          throw new Error("Run sheet import job id missing from response");
         }
+
+        toast.success(`Run sheet import queued as job ${jobId}. Processing in background...`);
+        void pollRunSheetImport(jobId, requestedParser);
       } else {
         formData.append("type", "convention");
 
@@ -734,3 +760,4 @@ export function CompetitionRunSheet({ competitionId, homeStudioName }: Competiti
     </div>
   );
 }
+

@@ -1759,6 +1759,82 @@ export class Storage {
   async deleteCompetitionRunSheetsByCompetition(competitionId: string): Promise<void> {
     await this.db.delete(competitionRunSheets).where(eq(competitionRunSheets.competitionId, competitionId));
   }
+
+  async createRunSheetImport(data: InsertRunSheetImport): Promise<RunSheetImport> {
+    const [job] = await this.db.insert(runSheetImports).values(data).returning();
+    return job;
+  }
+
+  async listCompetitionRunSheetImports(competitionId: string, limit = 20): Promise<RunSheetImport[]> {
+    return await this.db
+      .select()
+      .from(runSheetImports)
+      .where(eq(runSheetImports.competitionId, competitionId))
+      .orderBy(desc(runSheetImports.createdAt))
+      .limit(limit);
+  }
+
+  async getCompetitionRunSheetImport(
+    competitionId: string,
+    jobId: string,
+  ): Promise<RunSheetImport | undefined> {
+    const [job] = await this.db
+      .select()
+      .from(runSheetImports)
+      .where(and(eq(runSheetImports.id, jobId), eq(runSheetImports.competitionId, competitionId)))
+      .limit(1);
+    return job;
+  }
+
+  async getCompetitionRunSheetsByImportJob(jobId: string): Promise<CompetitionRunSheet[]> {
+    return await this.db
+      .select()
+      .from(competitionRunSheets)
+      .where(eq(competitionRunSheets.importJobId, jobId));
+  }
+
+  async publishCompetitionRunSheetImport(
+    competitionId: string,
+    jobId: string,
+  ): Promise<RunSheetImport | undefined> {
+    const publishedAt = new Date();
+
+    return await this.db.transaction(async (tx) => {
+      const [existingJob] = await tx
+        .select()
+        .from(runSheetImports)
+        .where(and(eq(runSheetImports.id, jobId), eq(runSheetImports.competitionId, competitionId)))
+        .limit(1);
+
+      if (!existingJob) {
+        return undefined;
+      }
+
+      await tx
+        .update(competitionRunSheets)
+        .set({ publishedAt })
+        .where(
+          and(
+            eq(competitionRunSheets.competitionId, competitionId),
+            eq(competitionRunSheets.importJobId, jobId),
+          ),
+        );
+
+      const [updatedJob] = await tx
+        .update(runSheetImports)
+        .set({
+          status: 'published',
+          publishedAt,
+          errorMessage: null,
+          updatedAt: publishedAt,
+        })
+        .where(eq(runSheetImports.id, jobId))
+        .returning();
+
+      return updatedJob;
+    });
+  }
 }
 
 export const storage = new Storage(process.env.DATABASE_URL!);
+
